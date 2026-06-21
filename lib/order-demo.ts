@@ -10,6 +10,12 @@ export const DEMO_OUTLETS: Outlet[] = [
     address: "Level 2, Pavilion KL",
     kind: "Bistro",
     emoji: "🍽️",
+    open_time: "10:00",
+    close_time: "22:00",
+    prep_time_minutes: 20,
+    latitude: 3.1488,
+    longitude: 101.7137,
+    is_accepting_orders: true,
   },
   {
     id: "demo-steamboat",
@@ -17,6 +23,12 @@ export const DEMO_OUTLETS: Outlet[] = [
     address: "LG Floor, Sunway Pyramid",
     kind: "Steamboat",
     emoji: "🍲",
+    open_time: "11:30",
+    close_time: "21:30",
+    prep_time_minutes: 30,
+    latitude: 3.0733,
+    longitude: 101.6067,
+    is_accepting_orders: true,
   },
 ];
 

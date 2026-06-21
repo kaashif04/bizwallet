@@ -1,38 +1,56 @@
 import type { MenuItem } from "./order-types";
 
-export type VariantOption = { label: string; priceDelta?: number };
+export type VariantOption = {
+  id: string;
+  label: string;
+  priceDelta?: number;
+  externalPosId?: string | null;
+};
 export type VariantGroup = {
   id: string;
   label: string;
   required?: boolean;
+  selectionType: "single" | "multiple";
+  externalPosId?: string | null;
   options: VariantOption[];
 };
 
-// For now variant groups are derived from the item's category. Later these can
-// come from the database (e.g. a JSONB `variants` column on menu_items synced
-// from your POS).
+// Demo-only fallback so demo outlets (id starting with "demo-") stay fully
+// explorable without Supabase. Real outlets get their modifier_groups /
+// modifier_options from the POS via lib/modifiers.ts — this hardcoded set is
+// never used for them.
 const DRINK_VARIANTS: VariantGroup[] = [
   {
     id: "size",
     label: "Size",
     required: true,
-    options: [{ label: "Regular" }, { label: "Large", priceDelta: 2 }],
+    selectionType: "single",
+    options: [
+      { id: "size-regular", label: "Regular" },
+      { id: "size-large", label: "Large", priceDelta: 2 },
+    ],
   },
   {
     id: "ice",
     label: "Ice level",
     required: true,
-    options: [{ label: "Normal" }, { label: "Less ice" }, { label: "No ice" }],
+    selectionType: "single",
+    options: [
+      { id: "ice-normal", label: "Normal" },
+      { id: "ice-less", label: "Less ice" },
+      { id: "ice-no", label: "No ice" },
+    ],
   },
   {
     id: "sugar",
     label: "Sugar level",
     required: true,
+    selectionType: "single",
     options: [
-      { label: "100%" },
-      { label: "50%" },
-      { label: "25%" },
-      { label: "0%" },
+      { id: "sugar-100", label: "100%" },
+      { id: "sugar-50", label: "50%" },
+      { id: "sugar-25", label: "25%" },
+      { id: "sugar-0", label: "0%" },
     ],
   },
 ];
@@ -42,7 +60,12 @@ const MAIN_VARIANTS: VariantGroup[] = [
     id: "spice",
     label: "Spice level",
     required: true,
-    options: [{ label: "Mild" }, { label: "Medium" }, { label: "Hot" }],
+    selectionType: "single",
+    options: [
+      { id: "spice-mild", label: "Mild" },
+      { id: "spice-medium", label: "Medium" },
+      { id: "spice-hot", label: "Hot" },
+    ],
   },
 ];
 

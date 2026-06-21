@@ -12,11 +12,19 @@ import {
   POPULAR,
   PAST_ORDERS,
   DEMO_REWARDS,
+  DEMO_TIERS,
   type PastOrder,
   type Reward,
 } from "@/lib/dashboard-demo";
+import type { LoyaltyTier } from "@/lib/loyalty";
 
-const DEMO = { name: "Aisyah", balance: 128.5, currency: "MYR", points: 350 };
+const DEMO = {
+  name: "Aisyah",
+  balance: 128.5,
+  currency: "MYR",
+  points: 350,
+  lifetimePoints: 350,
+};
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function outletName(o: any): string {
@@ -38,8 +46,10 @@ export default async function CustomerDashboardPage() {
   let balance = DEMO.balance;
   let currency = DEMO.currency;
   let points = DEMO.points;
+  let lifetimePoints = DEMO.lifetimePoints;
   let popular = POPULAR;
   let rewards: Reward[] = DEMO_REWARDS;
+  let tiers: LoyaltyTier[] = DEMO_TIERS;
   let pastOrders: PastOrder[] = PAST_ORDERS;
   let userId: string | null = null;
 
@@ -50,7 +60,7 @@ export default async function CustomerDashboardPage() {
     } = await supabase.auth.getUser();
 
     // Public reads — work even when signed out.
-    const [{ data: items }, { data: rewardRows }] = await Promise.all([
+    const [{ data: items }, { data: rewardRows }, { data: tierRows }] = await Promise.all([
       supabase
         .from("menu_items")
         .select("id,name,price,image_url")
@@ -61,6 +71,10 @@ export default async function CustomerDashboardPage() {
         .select("id,name,description,points_cost,kind,value")
         .eq("is_active", true)
         .order("points_cost"),
+      supabase
+        .from("loyalty_tiers")
+        .select("id,name,points_required,discount_percentage,theme_color")
+        .order("points_required"),
     ]);
 
     if (items && items.length > 0) {
@@ -72,6 +86,15 @@ export default async function CustomerDashboardPage() {
       }));
     }
     if (rewardRows && rewardRows.length > 0) rewards = rewardRows as Reward[];
+    if (tierRows && tierRows.length > 0) {
+      tiers = tierRows.map((t) => ({
+        id: t.id,
+        name: t.name,
+        points_required: t.points_required,
+        discount_percentage: Number(t.discount_percentage),
+        theme_color: t.theme_color,
+      }));
+    }
 
     if (user) {
       userId = user.id;
@@ -85,7 +108,7 @@ export default async function CustomerDashboardPage() {
             .single(),
           supabase
             .from("loyalty_accounts")
-            .select("points_balance")
+            .select("points_balance, points_earned")
             .eq("user_id", user.id)
             .single(),
           supabase
@@ -100,6 +123,7 @@ export default async function CustomerDashboardPage() {
       balance = wallet ? Number(wallet.balance) : DEMO.balance;
       currency = wallet?.currency ?? DEMO.currency;
       points = loyalty ? loyalty.points_balance : DEMO.points;
+      lifetimePoints = loyalty ? loyalty.points_earned : DEMO.lifetimePoints;
 
       if (orderRows && orderRows.length > 0) {
         pastOrders = orderRows.map((o, i) => ({
@@ -127,6 +151,8 @@ export default async function CustomerDashboardPage() {
             balance={balance}
             currency={currency}
             points={points}
+            lifetimePoints={lifetimePoints}
+            tiers={tiers}
             rewards={rewards}
             userId={userId}
           />

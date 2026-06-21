@@ -58,7 +58,7 @@ export default function OutletManager({
     setName("");
     setLocation("");
     setOpen(false);
-    router.push(`/admin?outlet=${data!.id}`);
+    router.push(`/admin/dashboard/outlets?outlet=${data!.id}`);
     router.refresh();
   }
 
@@ -69,7 +69,7 @@ export default function OutletManager({
           {outlets.map((o) => (
             <Link
               key={o.id}
-              href={`/admin?outlet=${o.id}`}
+              href={`/admin/dashboard/outlets?outlet=${o.id}`}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
                 o.id === selectedId
                   ? "bg-slate-900 text-white"

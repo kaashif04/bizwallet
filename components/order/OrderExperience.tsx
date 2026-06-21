@@ -28,12 +28,16 @@ export default function OrderExperience({
   walletBalance: initialWalletBalance,
   currency,
   userId,
+  discountPercentage = 0,
+  tierName = null,
 }: {
   outlets: Outlet[];
   menuByOutlet: Record<string, MenuItem[]>;
   walletBalance: number;
   currency: string;
   userId: string | null;
+  discountPercentage?: number;
+  tierName?: string | null;
 }) {
   const cart = useCart();
   const router = useRouter();
@@ -52,6 +56,8 @@ export default function OrderExperience({
   function chooseOutlet(o: Outlet) {
     if (outlet && o.id !== outlet.id) cart.clear(); // switching outlet resets cart
     setOutlet(o);
+    // Remembered for 30 days so a future visit can default back to it.
+    document.cookie = `selected_outlet_id=${o.id}; path=/; max-age=${60 * 60 * 24 * 30}`;
     setStep("menu");
   }
 
@@ -104,6 +110,8 @@ export default function OrderExperience({
               currency={currency}
               walletBalance={walletBalance}
               userId={userId}
+              discountPercentage={discountPercentage}
+              tierName={tierName}
               onBack={() => setStep("menu")}
               onPlaced={(r) => {
                 setPlaced({

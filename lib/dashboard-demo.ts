@@ -1,6 +1,18 @@
 // Dummy content for the rich customer dashboard. Real wallet/points/name come
 // from Supabase; these are visual placeholders (Unsplash imagery).
 
+import type { LoyaltyTier } from "./loyalty";
+
+// Mirrors the 4 default tiers seeded by
+// supabase/migrations/20260621150000_loyalty_tiers.sql, so the demo path
+// (Supabase unconfigured) looks identical to a fresh real database.
+export const DEMO_TIERS: LoyaltyTier[] = [
+  { id: "demo-member", name: "Member", points_required: 0, discount_percentage: 0, theme_color: "#94A3B8" },
+  { id: "demo-silver", name: "Silver", points_required: 500, discount_percentage: 5, theme_color: "#C0C0C0" },
+  { id: "demo-gold", name: "Gold", points_required: 1500, discount_percentage: 10, theme_color: "#D4AF37" },
+  { id: "demo-elite", name: "Elite", points_required: 3000, discount_percentage: 15, theme_color: "#111827" },
+];
+
 export type Promo = {
   id: string;
   title: string;

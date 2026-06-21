@@ -4,9 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { UsersIcon, MegaphoneIcon, TicketIcon } from "@/components/customer/icons";
+import { CupIcon, UsersIcon, MegaphoneIcon, TicketIcon } from "@/components/customer/icons";
 
 const NAV = [
+  { href: "/admin/dashboard/outlets", label: "Outlets & Live Orders", Icon: CupIcon },
   { href: "/admin/dashboard/customers", label: "Customer CRM", Icon: UsersIcon },
   { href: "/admin/dashboard/marketing", label: "Marketing & Broadcasts", Icon: MegaphoneIcon },
   { href: "/admin/dashboard/vouchers", label: "Voucher Engine", Icon: TicketIcon },
@@ -109,12 +110,20 @@ function SidebarContent({
 
       <div className="space-y-1 border-t border-slate-100 px-3 py-4">
         <Link
-          href="/admin"
+          href="/customer/dashboard"
           onClick={onNavigate}
           className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-100"
         >
-          ← Outlets &amp; live orders
+          Customer view
         </Link>
+        <form action="/auth/signout" method="post">
+          <button
+            type="submit"
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-500 hover:bg-slate-100"
+          >
+            Sign out
+          </button>
+        </form>
         <div className="px-3 pt-2 text-xs text-slate-400">
           Signed in as <span className="font-medium text-slate-600">{ownerName}</span>
         </div>

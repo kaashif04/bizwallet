@@ -23,24 +23,4 @@ export type OwnerOrder = {
   paymentMethod: string | null;
 };
 
-export type OwnerMenuItem = {
-  id: string;
-  name: string;
-  description: string | null;
-  category: string | null;
-  price: number;
-  stockQuantity: number;
-  isAvailable: boolean;
-};
-
 export type OwnerOutlet = { id: string; name: string; address: string | null };
-
-// Shape accepted by menu_items updates.
-export type MenuPatch = Partial<{
-  name: string;
-  category: string | null;
-  description: string | null;
-  price: number;
-  stock_quantity: number;
-  is_available: boolean;
-}>;

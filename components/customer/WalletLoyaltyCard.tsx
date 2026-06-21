@@ -5,32 +5,40 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import AnimatedNumber from "./AnimatedNumber";
 import RewardsCatalog from "./RewardsCatalog";
+import PerksModal from "./PerksModal";
 import { PlusIcon } from "./icons";
 import { currencySymbol } from "@/lib/format";
-import { computeTierProgress } from "@/lib/loyalty";
+import { computeTierProgress, tierGradient, type LoyaltyTier } from "@/lib/loyalty";
 import type { Reward } from "@/lib/dashboard-demo";
 
 export default function WalletLoyaltyCard({
   balance,
   currency,
   points: initialPoints,
+  lifetimePoints,
+  tiers,
   rewards,
   userId,
 }: {
   balance: number;
   currency: string;
-  points: number;
+  points: number; // spendable points_balance — drives the ring + redemptions
+  lifetimePoints: number; // points_earned — drives tier status, never decreases
+  tiers: LoyaltyTier[];
   rewards: Reward[];
   userId: string | null;
 }) {
   const sym = currencySymbol(currency);
   const [points, setPoints] = useState(initialPoints);
   const [showRewards, setShowRewards] = useState(false);
+  const [showPerks, setShowPerks] = useState(false);
 
-  const tier = computeTierProgress(points);
+  const tier = computeTierProgress(tiers, lifetimePoints);
+  const gradient = tierGradient(tier.currentTier.name);
+  const progressPct = Math.round(tier.progress * 100);
+
   const r = 26;
   const circumference = 2 * Math.PI * r;
-  const offset = circumference * (1 - tier.progress);
 
   return (
     <>
@@ -41,10 +49,10 @@ export default function WalletLoyaltyCard({
         onClick={() => setShowRewards(true)}
         role="button"
         tabIndex={0}
-        className="relative cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-800 to-slate-900 p-6 text-white shadow-glass"
+        className={`relative cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br ${gradient} p-6 text-white shadow-glass transition-colors duration-700`}
       >
         <div className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-white/10 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-14 -left-8 h-44 w-44 rounded-full bg-brand-400/20 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-14 -left-8 h-44 w-44 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent_35%,rgba(255,255,255,0.10)_48%,transparent_62%)]" />
 
         <div className="relative flex items-start justify-between">
@@ -83,6 +91,8 @@ export default function WalletLoyaltyCard({
                 stroke="rgba(255,255,255,0.2)"
                 strokeWidth="6"
               />
+              {/* Decorative reveal ring around the spendable balance — not a
+                  progress indicator; tier progress lives in the bar below. */}
               <motion.circle
                 cx="32"
                 cy="32"
@@ -92,8 +102,8 @@ export default function WalletLoyaltyCard({
                 strokeWidth="6"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
-                initial={false}
-                animate={{ strokeDashoffset: offset }}
+                initial={{ strokeDashoffset: circumference }}
+                animate={{ strokeDashoffset: 0 }}
                 transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
               />
             </svg>
@@ -104,20 +114,52 @@ export default function WalletLoyaltyCard({
           </div>
         </div>
 
-        <div className="relative mt-4 flex items-center justify-between border-t border-white/10 pt-3 text-xs">
-          <span className="text-white/80">
-            {tier.next ? (
-              <>
-                <span className="font-semibold text-white">
-                  {tier.pointsToNext.toLocaleString()} pts
-                </span>{" "}
-                to {tier.next}
-              </>
-            ) : (
-              "Top tier unlocked 🎉"
-            )}
+        <div className="relative mt-5 border-t border-white/10 pt-4">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowPerks(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 backdrop-blur-sm transition active:scale-95"
+          >
+            <span
+              className="h-2.5 w-2.5 rounded-full ring-2 ring-white/40"
+              style={{ backgroundColor: tier.currentTier.theme_color }}
+            />
+            <span className="text-sm font-bold text-white">{tier.current} Tier</span>
+            <span className="text-white/60">›</span>
+          </button>
+
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-xs text-white/80">
+              <span>
+                {tier.nextTier ? (
+                  <>
+                    <span className="font-semibold text-white">
+                      {tier.pointsToNext.toLocaleString()} pts
+                    </span>{" "}
+                    to unlock {tier.next} Tier
+                  </>
+                ) : (
+                  "🎉 Top tier unlocked — every perk is yours"
+                )}
+              </span>
+              <span className="font-semibold text-white">{progressPct}%</span>
+            </div>
+            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-white/15">
+              <motion.div
+                className="h-full rounded-full bg-white"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPct}%` }}
+                transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+              />
+            </div>
+          </div>
+
+          <span className="mt-3 block text-right text-xs font-semibold text-white/80">
+            View rewards →
           </span>
-          <span className="font-semibold text-white">View rewards →</span>
         </div>
       </motion.div>
 
@@ -129,6 +171,16 @@ export default function WalletLoyaltyCard({
             userId={userId}
             rewards={rewards}
             onRedeemed={(nb) => setPoints(nb)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showPerks && (
+          <PerksModal
+            tier={tier.currentTier}
+            allTiers={tiers}
+            onClose={() => setShowPerks(false)}
           />
         )}
       </AnimatePresence>
