@@ -15,6 +15,11 @@ const DEMO: ProfileData = {
   points: 350,
   tier: "Silver",
   memberSince: "June 2026",
+  dateOfBirth: null,
+  gender: null,
+  dietaryPreferences: [],
+  address: null,
+  marketingConsent: null,
 };
 
 export default async function ProfilePage() {
@@ -29,9 +34,9 @@ export default async function ProfilePage() {
     if (user) {
       const [{ data: profile }, { data: loyalty }, { data: tierRows }] = await Promise.all([
         supabase
-          .from("profiles")
+          .from("members")
           .select(
-            "full_name,email,phone,role,avatar_url,email_verified,phone_verified,created_at"
+            "full_name,email,phone,role,avatar_url,email_verified,phone_verified,created_at,date_of_birth,gender,dietary_preferences,address,marketing_consent"
           )
           .eq("id", user.id)
           .single(),
@@ -73,6 +78,11 @@ export default async function ProfilePage() {
               year: "numeric",
             })
           : "",
+        dateOfBirth: profile?.date_of_birth ?? null,
+        gender: profile?.gender ?? null,
+        dietaryPreferences: profile?.dietary_preferences ?? [],
+        address: profile?.address ?? null,
+        marketingConsent: profile?.marketing_consent ?? null,
       };
     }
   } catch {
@@ -80,7 +90,7 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-50 via-white to-rose-50/40">
+    <div className="min-h-dvh bg-brand-50">
       <div className="mx-auto max-w-md px-5 pb-28 pt-6">
         <header className="mb-5">
           <h1 className="text-2xl font-bold text-slate-900">Profile</h1>

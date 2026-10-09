@@ -40,7 +40,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 via-white to-rose-50 px-4">
+    <main className="flex min-h-dvh items-center justify-center bg-brand-50 px-4">
       <div className="w-full max-w-md rounded-[28px] border border-white/70 bg-white/80 p-8 shadow-glass backdrop-blur-xl">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
           Set a new password

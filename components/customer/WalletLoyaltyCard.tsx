@@ -142,7 +142,7 @@ export default function WalletLoyaltyCard({
                     to unlock {tier.next} Tier
                   </>
                 ) : (
-                  "🎉 Top tier unlocked — every perk is yours"
+                  "Top tier unlocked. Every perk is yours."
                 )}
               </span>
               <span className="font-semibold text-white">{progressPct}%</span>

@@ -1,64 +1,39 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { MenuItem, VariantSelection } from "@/lib/order-types";
-import { getVariantGroups, type VariantGroup } from "@/lib/menu-variants";
-import { fetchModifierGroups } from "@/lib/modifiers";
+import type { VariantGroup } from "@/lib/menu-variants";
 import { currencySymbol } from "@/lib/format";
 import { useCart } from "./cart-context";
+import ItemMark from "./ItemMark";
 
 function defaultSelection(groups: VariantGroup[]): Record<string, string[]> {
   return Object.fromEntries(
-    groups.map((g) => [
-      g.id,
-      g.selectionType === "single" && g.required && g.options[0]
-        ? [g.options[0].id]
-        : [],
-    ])
+    groups.map((g) => {
+      const defaults = g.options.filter((o) => o.isDefault).map((o) => o.id);
+      if (defaults.length) return [g.id, defaults];
+      return [g.id, g.selectionType === "single" && g.required && g.options[0] ? [g.options[0].id] : []];
+    })
   );
 }
 
 export default function AddToCartSheet({
   item,
+  groups,
   currency,
   onClose,
 }: {
   item: MenuItem;
+  groups: VariantGroup[];
   currency: string;
   onClose: () => void;
 }) {
   const cart = useCart();
   const sym = currencySymbol(currency);
-  const isDemoItem = item.outletId.startsWith("demo-");
-  const initialGroups = useMemo(
-    () => (isDemoItem ? getVariantGroups(item) : []),
-    [isDemoItem, item]
-  );
-
-  const [groups, setGroups] = useState<VariantGroup[]>(initialGroups);
-  const [loading, setLoading] = useState(!isDemoItem);
   const [sel, setSel] = useState<Record<string, string[]>>(() =>
-    defaultSelection(initialGroups)
+    defaultSelection(groups)
   );
-
-  useEffect(() => {
-    if (isDemoItem) return; // already seeded synchronously above
-    let cancelled = false;
-    fetchModifierGroups(item.id).then((fetched) => {
-      if (cancelled) return;
-      setGroups(fetched);
-      setSel(defaultSelection(fetched));
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-    // item never changes without this component unmounting first (see
-    // OrderExperience — the sheet is only rendered while sheetItem is set,
-    // and nothing can swap items underneath an open sheet).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const [qty, setQty] = useState(1);
   const groupRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -70,9 +45,11 @@ export default function AddToCartSheet({
       if (group.selectionType === "single") {
         return { ...prev, [group.id]: [optionId] };
       }
-      const next = current.includes(optionId)
-        ? current.filter((id) => id !== optionId)
-        : [...current, optionId];
+      if (current.includes(optionId)) {
+        return { ...prev, [group.id]: current.filter((id) => id !== optionId) };
+      }
+      // At the max: drop the oldest pick rather than refusing the tap.
+      const next = [...current, optionId].slice(-(group.maxSelect ?? Infinity));
       return { ...prev, [group.id]: next };
     });
   }
@@ -84,11 +61,10 @@ export default function AddToCartSheet({
         const opt = g.options.find((o) => o.id === id);
         if (!opt) continue;
         out.push({
+          modifierId: opt.id,
           group: g.label,
           option: opt.label,
           priceDelta: opt.priceDelta ?? 0,
-          groupExternalPosId: g.externalPosId ?? null,
-          optionExternalPosId: opt.externalPosId ?? null,
         });
       }
     }
@@ -111,6 +87,7 @@ export default function AddToCartSheet({
       return;
     }
     cart.add(item, qty, selections);
+    navigator.vibrate?.(12);
     onClose();
   }
 
@@ -145,11 +122,9 @@ export default function AddToCartSheet({
 
         <div className="max-h-[80vh] overflow-y-auto px-5 pb-6">
           <div className="flex items-start gap-4 pt-3">
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-50 to-brand-100 text-3xl">
-              {item.emoji ?? "🍽️"}
-            </span>
+            <ItemMark name={item.name} className="h-20 w-20 rounded-3xl text-4xl" />
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-bold text-slate-900">{item.name}</h2>
+              <h2 className="text-2xl font-semibold leading-tight text-slate-900">{item.name}</h2>
               {item.description && (
                 <p className="mt-0.5 text-sm text-slate-500">{item.description}</p>
               )}
@@ -160,18 +135,7 @@ export default function AddToCartSheet({
             </div>
           </div>
 
-          {loading ? (
-            <div className="mt-5 space-y-4">
-              {[0, 1].map((i) => (
-                <div key={i} className="space-y-2">
-                  <div className="h-3.5 w-24 animate-pulse rounded bg-slate-100" />
-                  <div className="h-11 w-full animate-pulse rounded-xl bg-slate-100" />
-                  <div className="h-11 w-full animate-pulse rounded-xl bg-slate-100" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            groups.map((g) => (
+          {groups.map((g) => (
               <motion.div
                 key={g.id}
                 ref={(el) => {
@@ -260,8 +224,7 @@ export default function AddToCartSheet({
                   })}
                 </div>
               </motion.div>
-            ))
-          )}
+            ))}
 
           <div className="mt-6 flex items-center justify-between">
             <span className="text-sm font-semibold text-slate-900">Quantity</span>
@@ -293,7 +256,7 @@ export default function AddToCartSheet({
             className={`mt-6 flex w-full items-center justify-between rounded-2xl px-5 py-3.5 text-sm font-semibold transition active:scale-[0.99] ${
               unmetGroup
                 ? "bg-slate-100 text-slate-500"
-                : "bg-brand-600 text-white shadow-lg shadow-brand-600/25"
+                : "bg-brand-600 text-white shadow-lg shadow-brand-700/30 hover:bg-brand-700"
             }`}
           >
             <span>{unmetGroup ? `Select ${unmetGroup.label}` : "Add to cart"}</span>

@@ -50,7 +50,7 @@ export default async function WalletPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-50 via-white to-rose-50/40">
+    <div className="min-h-dvh bg-brand-50">
       <div className="mx-auto max-w-md px-5 pb-28 pt-6">
         <header className="mb-5">
           <h1 className="text-2xl font-bold text-slate-900">My Wallet</h1>

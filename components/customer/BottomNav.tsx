@@ -18,15 +18,16 @@ export default function BottomNav() {
   return (
     <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
       <div className="mx-auto max-w-md px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="pointer-events-auto flex items-center justify-around rounded-2xl border border-slate-100 bg-white/90 px-2 py-2 shadow-[0_-6px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+        <div className="pointer-events-auto flex items-center justify-around rounded-2xl border border-slate-200/70 bg-white/95 px-2 py-2 shadow-lg backdrop-blur-xl">
           {items.map((it) => {
-            const active = pathname === it.href;
+            const active = pathname === it.href || pathname.startsWith(it.href + "/");
             const Icon = it.icon;
             return (
               <Link
                 key={it.href}
                 href={it.href}
-                className="relative flex flex-1 flex-col items-center gap-1 py-1.5"
+                aria-current={active ? "page" : undefined}
+                className="relative flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 transition-transform active:scale-90"
               >
                 {active && (
                   <motion.span
@@ -37,12 +38,12 @@ export default function BottomNav() {
                 )}
                 <Icon
                   className={`h-6 w-6 transition-colors ${
-                    active ? "text-brand-600" : "text-slate-400"
+                    active ? "text-brand-600" : "text-slate-500"
                   }`}
                 />
                 <span
-                  className={`text-[11px] font-medium transition-colors ${
-                    active ? "text-brand-600" : "text-slate-400"
+                  className={`text-[11px] font-semibold transition-colors ${
+                    active ? "text-brand-700" : "text-slate-500"
                   }`}
                 >
                   {it.label}

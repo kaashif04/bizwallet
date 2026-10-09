@@ -1,6 +1,6 @@
 export default function DashboardLoading() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-50 via-white to-rose-50/40">
+    <div className="min-h-dvh bg-brand-50">
       <div className="mx-auto max-w-md px-5 pb-36 pt-6">
         {/* header */}
         <div className="flex items-center justify-between">

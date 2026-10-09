@@ -4,7 +4,13 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import BrandMark from "@/components/BrandMark";
 import type { Reward } from "@/lib/dashboard-demo";
+
+// redeem_reward's p_reward_id is a strict Postgres uuid — reject anything
+// else client-side instead of letting a raw "invalid input syntax" error
+// through (e.g. if a non-UUID placeholder id ever ends up in `rewards`).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function RewardsCatalog({
   onClose,
@@ -30,6 +36,9 @@ export default function RewardsCatalog({
     setError(null);
     if (!userId) return setError("Sign in to redeem rewards.");
     if (localPoints < r.points_cost) return setError("Not enough points yet.");
+    if (!UUID_RE.test(r.id)) {
+      return setError("This reward isn't available for redemption right now.");
+    }
     setBusyId(r.id);
     const { data, error } = await supabase.rpc("redeem_reward", {
       p_user_id: userId,
@@ -84,12 +93,14 @@ export default function RewardsCatalog({
                 initial={{ scale: 0.6, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", damping: 12, stiffness: 220 }}
-                className="text-5xl"
+                className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-600 text-white"
               >
-                🎉
+                <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
               </motion.p>
               <h3 className="mt-3 text-lg font-bold text-slate-900">
-                {success.reward} unlocked!
+                {success.reward} unlocked
               </h3>
               <p className="mt-1 text-sm text-slate-500">
                 Show this code at the counter:
@@ -126,8 +137,15 @@ export default function RewardsCatalog({
                         key={r.id}
                         className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
                       >
-                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-100 to-brand-200 text-2xl">
-                          {r.kind === "voucher" ? "🎟️" : "🎁"}
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
+                          {r.kind === "voucher" ? (
+                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" aria-hidden="true">
+                              <path d="M3 8a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2a2 2 0 0 0 0 4v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2a2 2 0 0 0 0-4V8Z" />
+                              <path d="M14 7v10" strokeDasharray="2 2" />
+                            </svg>
+                          ) : (
+                            <BrandMark className="h-6 w-6" />
+                          )}
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-slate-900">{r.name}</p>

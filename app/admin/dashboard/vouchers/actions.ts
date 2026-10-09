@@ -12,7 +12,7 @@ async function requireOwner() {
   } = await supabase.auth.getUser();
   if (!user) return null;
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("members")
     .select("role")
     .eq("id", user.id)
     .single();

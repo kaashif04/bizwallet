@@ -18,7 +18,7 @@ export async function sendBroadcastAction(
   if (!user) return { status: "error", message: "Not signed in." };
 
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("members")
     .select("role")
     .eq("id", user.id)
     .single();

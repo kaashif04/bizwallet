@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import BrandMark from "@/components/BrandMark";
 
 export default function OwnerLogin({ onSwitch }: { onSwitch: () => void }) {
   const router = useRouter();
@@ -48,8 +49,8 @@ export default function OwnerLogin({ onSwitch }: { onSwitch: () => void }) {
   return (
     <div className="rounded-[28px] border border-white/10 bg-slate-900/95 p-8 shadow-2xl backdrop-blur-xl">
       <div className="mb-7 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-2xl ring-1 ring-white/15">
-          🔐
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-brand-300 ring-1 ring-white/15">
+          <BrandMark className="h-8 w-8" />
         </div>
         <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white">
           Owner Portal

@@ -11,8 +11,66 @@ body {
   height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   @apply bg-brand-50 text-slate-900 antialiased;
+  /* Money everywhere: digits line up in balances, prices and ledgers. */
+  font-variant-numeric: tabular-nums;
+  caret-color: theme("colors.brand.600");
+}
+
+/* No double-tap zoom delay on controls: taps feel instant. */
+a,
+button,
+input,
+label,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+h1,
+h2 {
+  @apply font-display;
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+::selection {
+  background: theme("colors.brand.200");
+  color: theme("colors.brand.900");
+}
+
+:focus-visible {
+  outline: 2px solid theme("colors.brand.600");
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: theme("colors.slate.300") transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Hide number-input spinners for a cleaner OTP / phone field. */

@@ -20,10 +20,10 @@ export default function LoginPage() {
   const dir = view === "owner" ? 1 : -1;
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-brand-50 via-white to-rose-50 px-4 py-12">
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-brand-50 px-4 py-12">
       {/* Decorative ambient blobs for depth. */}
       <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 animate-blob rounded-full bg-brand-200/50 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -right-16 h-96 w-96 animate-blob rounded-full bg-rose-200/40 blur-3xl [animation-delay:4s]" />
+      <div className="pointer-events-none absolute -bottom-24 -right-16 h-96 w-96 animate-blob rounded-full bg-brand-300/30 blur-3xl [animation-delay:4s]" />
 
       <div
         className="relative w-full max-w-md"

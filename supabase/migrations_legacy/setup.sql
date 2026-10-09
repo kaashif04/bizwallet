@@ -11,11 +11,42 @@
 --   PART 7 — Tiered Loyalty / Gamification: loyalty_tiers + auto-upgrade
 --   PART 8 — Smart Scheduling: outlet hours/prep time + orders.scheduled_for
 --   PART 9 — Live Store Status & Proximity: outlet lat/long + is_accepting_orders
+--   PART 10 — Profile completion + gamification: extra profile fields + points
+--   PART 11 — Real POS dispatch: outlet_pos_credentials + orders.pos_dispatch_* + sample modifiers
 --
 -- HOW TO RUN: paste this whole file into the Supabase Dashboard -> SQL Editor
--- and click Run. Intended for a FRESH project (run once). Order matters and is
--- already correct top-to-bottom.
+-- and click Run. This is the ONE file you need — it is the complete, current
+-- schema; nothing else in supabase/migrations/ needs to be run after it.
+-- Intended for a FRESH project, or a project whose public schema was just
+-- wiped with `drop schema public cascade; create schema public;`. Order
+-- matters and is already correct top-to-bottom.
 -- =============================================================================
+
+
+-- -----------------------------------------------------------------------------
+-- Schema-level grants for anon/authenticated/service_role.
+--
+-- A brand-new Supabase PROJECT gets these pre-wired by the platform via
+-- ALTER DEFAULT PRIVILEGES bound to the original public schema's object id —
+-- so they normally don't need to be set explicitly. But that binding is by
+-- id, not name: if this script is ever run after `drop schema public cascade;
+-- create schema public;` (a full reset on an EXISTING project, as opposed to
+-- a fresh project), the new schema is a different object and the platform's
+-- defaults no longer apply to it. Every table below would then have correct
+-- RLS policies that never even get evaluated, because Postgres rejects the
+-- query at the coarser table-grant check before RLS runs at all —
+-- surfacing as "permission denied for table ...". Setting these explicitly
+-- here makes the script work identically in both scenarios.
+-- -----------------------------------------------------------------------------
+grant usage on schema public to anon, authenticated, service_role;
+
+grant all on all tables    in schema public to anon, authenticated, service_role;
+grant all on all sequences in schema public to anon, authenticated, service_role;
+grant all on all functions in schema public to anon, authenticated, service_role;
+
+alter default privileges in schema public grant all on tables    to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 
 
 -- #############################################################################
@@ -35,10 +66,24 @@ create extension if not exists pgcrypto;
 -- -----------------------------------------------------------------------------
 -- Using enums keeps statuses/roles consistent. To add a value later:
 --   alter type order_status add value 'completed';
-create type public.user_role        as enum ('customer', 'owner');
-create type public.wallet_txn_type  as enum ('credit', 'debit');
-create type public.loyalty_txn_type as enum ('earn', 'redeem', 'adjust', 'expire');
-create type public.order_status     as enum ('pending', 'preparing', 'ready', 'completed', 'cancelled');
+-- CREATE TYPE has no `IF NOT EXISTS` — guarded with DO blocks so pasting this
+-- whole file a second time (e.g. by accident) doesn't error out partway.
+do $$ begin
+  create type public.user_role as enum ('customer', 'owner');
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  create type public.wallet_txn_type as enum ('credit', 'debit');
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  create type public.loyalty_txn_type as enum ('earn', 'redeem', 'adjust', 'expire');
+exception when duplicate_object then null;
+end $$;
+do $$ begin
+  create type public.order_status as enum ('pending', 'preparing', 'ready', 'completed', 'cancelled');
+exception when duplicate_object then null;
+end $$;
 
 
 -- -----------------------------------------------------------------------------
@@ -1959,3 +2004,180 @@ alter table public.outlets
   add column if not exists latitude  numeric(9,6) check (latitude between -90 and 90),
   add column if not exists longitude numeric(9,6) check (longitude between -180 and 180),
   add column if not exists is_accepting_orders boolean not null default true;
+
+
+-- #############################################################################
+-- ## PART 10 — Profile completion + gamification
+-- #############################################################################
+-- Optional marketing-relevant profile fields (date of birth, gender, dietary
+-- preferences, address, marketing consent) plus a small one-time loyalty-
+-- points bonus the first time each field — including the pre-existing
+-- `phone` column — is filled in.
+--
+-- Real phone-number *verification* (OTP) is intentionally out of scope here:
+-- it requires an SMS/WhatsApp provider (e.g. Twilio) configured in this
+-- project's Auth settings, a separate cost/setup decision. `phone` is just a
+-- plain editable field for now, like `full_name`; `phone_verified` is left
+-- untouched so it keeps meaning "actually verified" if real OTP is wired up
+-- later.
+--
+-- Points are awarded via a BEFORE UPDATE trigger on profiles — the table
+-- clients can already update under RLS ("profiles: update own") — which
+-- performs the privileged loyalty_accounts write itself, the same pattern
+-- profiles_protect_role and loyalty_accounts_check_tier already use for
+-- privileged side effects clients can't perform directly (RLS blocks direct
+-- client writes to loyalty_*; see PART 2's "these SECURITY DEFINER
+-- functions are the ONLY sanctioned way to move money or points" comment).
+-- -----------------------------------------------------------------------------
+alter table public.profiles
+  add column if not exists date_of_birth date,
+  add column if not exists gender text,
+  add column if not exists dietary_preferences text[] not null default '{}',
+  add column if not exists address text,
+  -- null = not yet answered; true/false = answered either way. The bonus
+  -- below is awarded for ANSWERING this question, not for consenting —
+  -- making points conditional on saying "yes" would make the consent
+  -- something other than freely given.
+  add column if not exists marketing_consent boolean,
+  -- Tracks which fields have already paid out their one-time bonus, so
+  -- re-saving the same field (or clearing and refilling it) never re-awards.
+  add column if not exists profile_bonus_claimed text[] not null default '{}';
+
+create or replace function public.award_profile_completion_points()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_bonus_points constant integer := 20;
+  v_field        text;
+  v_filled       boolean;
+  v_newly_earned integer := 0;
+begin
+  foreach v_field in array array[
+    'phone', 'date_of_birth', 'gender', 'dietary_preferences', 'address', 'marketing_consent'
+  ]
+  loop
+    if v_field = any (coalesce(old.profile_bonus_claimed, '{}')) then
+      continue; -- already claimed for this user, never re-award
+    end if;
+
+    v_filled := case v_field
+      when 'phone'               then new.phone is not null and new.phone <> ''
+      when 'date_of_birth'       then new.date_of_birth is not null
+      when 'gender'              then new.gender is not null and new.gender <> ''
+      when 'dietary_preferences' then coalesce(array_length(new.dietary_preferences, 1), 0) > 0
+      when 'address'             then new.address is not null and new.address <> ''
+      when 'marketing_consent'   then new.marketing_consent is not null
+      else false
+    end;
+
+    if v_filled then
+      new.profile_bonus_claimed := array_append(coalesce(new.profile_bonus_claimed, '{}'), v_field);
+      v_newly_earned := v_newly_earned + v_bonus_points;
+    end if;
+  end loop;
+
+  if v_newly_earned > 0 then
+    update public.loyalty_accounts
+       set points_balance = points_balance + v_newly_earned,
+           points_earned  = points_earned + v_newly_earned
+     where user_id = new.id;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_award_completion_points on public.profiles;
+create trigger profiles_award_completion_points
+  before update on public.profiles
+  for each row execute function public.award_profile_completion_points();
+
+
+-- #############################################################################
+-- ## PART 11 — Real POS dispatch + sample modifiers
+-- #############################################################################
+-- Closes the loop on `dispatchOrderToPOS()`, which used to be a mock: a
+-- placed order now actually gets POSTed to the outlet's POS webhook from a
+-- server route, and the result (sent / failed / not yet configured) is
+-- tracked on the order so the owner dashboard can show it. Also seeds a
+-- few of PART 3's demo items with modifier groups, since the modifier
+-- picker UI and sync_full_menu() were otherwise fully built but had nothing
+-- to show on the seeded demo menu.
+-- -----------------------------------------------------------------------------
+
+do $$ begin
+  create type public.pos_dispatch_status as enum ('not_configured', 'sent', 'failed');
+exception when duplicate_object then null;
+end $$;
+
+-- -----------------------------------------------------------------------------
+-- 1. Per-outlet POS webhook credentials — a separate table, not columns on
+-- outlets, because "outlets: public read" (using (true)) already allows
+-- anyone to select every column on that table; a secret stored there would
+-- leak to anon. Same posture as marketing_campaigns / promo_codes above:
+-- RLS enabled, zero policies, so only service_role (which bypasses RLS) can
+-- ever read or write it. No row for an outlet = no real POS configured yet,
+-- so dispatch is a safe no-op until you insert one yourself.
+-- -----------------------------------------------------------------------------
+create table if not exists public.outlet_pos_credentials (
+  outlet_id      uuid primary key references public.outlets (id) on delete cascade,
+  webhook_url    text not null,
+  webhook_secret text not null,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+alter table public.outlet_pos_credentials enable row level security;
+-- No policies: only the service-role dispatch route (app/api/pos/v1/dispatch-order)
+-- touches this table.
+
+-- -----------------------------------------------------------------------------
+-- 2. Dispatch-tracking columns on orders. Not secret, so no RLS change is
+-- needed here — same reasoning PART 8/9 already used for their own new
+-- nullable columns on existing tables.
+-- -----------------------------------------------------------------------------
+alter table public.orders
+  add column if not exists pos_dispatch_status public.pos_dispatch_status not null default 'not_configured',
+  add column if not exists pos_ticket_id        text,
+  add column if not exists pos_dispatch_error   text;
+
+-- -----------------------------------------------------------------------------
+-- 3. Sample modifiers for 3 of PART 3's 5 seeded demo items (the other 2 are
+-- deliberately left bare so both "has modifiers" / "no modifiers" branches
+-- of the picker stay exercised). Keyed by name since the seed has no stable
+-- literal id, same constraint PART 3 itself works around. external_pos_id is
+-- left null throughout — hand-seeded rows never collide with a real
+-- sync_full_menu() sync, which always requires a non-null external_pos_id.
+-- -----------------------------------------------------------------------------
+with target_items as (
+  select id, name from public.menu_items
+  where name in ('Signature Latté', 'Caramel Macchiato', 'Iced Americano')
+),
+new_groups as (
+  insert into public.modifier_groups (item_id, name, selection_type, is_required, display_order)
+  select ti.id, g.name, g.selection_type, g.is_required, g.display_order
+  from target_items ti
+  cross join (values
+    ('Size',        'single', true,  1),
+    ('Sugar Level', 'single', false, 2)
+  ) as g(name, selection_type, is_required, display_order)
+  where not exists (
+    select 1 from public.modifier_groups mg
+    where mg.item_id = ti.id and mg.name = g.name
+  )
+  returning id, item_id, name
+)
+insert into public.modifier_options (group_id, name, price_delta, display_order)
+select ng.id, o.name, o.price_delta, o.display_order
+from new_groups ng
+join (values
+  ('Size', 'Regular', 0::numeric,    1),
+  ('Size', 'Large',   2.00::numeric, 2),
+  ('Sugar Level', '0%',   0::numeric, 1),
+  ('Sugar Level', '50%',  0::numeric, 2),
+  ('Sugar Level', '100%', 0::numeric, 3)
+) as o(group_name, name, price_delta, display_order)
+  on o.group_name = ng.name;

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import ProfileCompletionSheet from "./ProfileCompletionSheet";
 
 export type ProfileData = {
   name: string;
@@ -16,7 +17,14 @@ export type ProfileData = {
   points: number;
   tier: string;
   memberSince: string;
+  dateOfBirth: string | null;
+  gender: string | null;
+  dietaryPreferences: string[];
+  address: string | null;
+  marketingConsent: boolean | null;
 };
+
+const COMPLETION_BONUS_POINTS = 20;
 
 export default function ProfileView({ data }: { data: ProfileData }) {
   const [supabase] = useState(() => createClient());
@@ -24,9 +32,23 @@ export default function ProfileView({ data }: { data: ProfileData }) {
   const [draft, setDraft] = useState(data.name);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showCompletionSheet, setShowCompletionSheet] = useState(false);
 
   const initial = name.trim().charAt(0).toUpperCase() || "U";
   const isOwner = data.role === "owner";
+
+  const completionFlags = [
+    !!data.phone,
+    !!data.dateOfBirth,
+    !!data.gender,
+    data.dietaryPreferences.length > 0,
+    !!data.address,
+    data.marketingConsent !== null,
+  ];
+  const completedCount = completionFlags.filter(Boolean).length;
+  const totalFields = completionFlags.length;
+  const completionPercent = Math.round((completedCount / totalFields) * 100);
+  const pointsRemaining = (totalFields - completedCount) * COMPLETION_BONUS_POINTS;
 
   async function save() {
     const next = draft.trim();
@@ -42,7 +64,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
       } = await supabase.auth.getUser();
       // RLS "profiles: update own" allows a user to update their own row.
       if (user) {
-        await supabase.from("profiles").update({ full_name: next }).eq("id", user.id);
+        await supabase.from("members").update({ full_name: next }).eq("id", user.id);
       }
     } catch {
       // Demo / no backend — just update locally.
@@ -141,6 +163,42 @@ export default function ProfileView({ data }: { data: ProfileData }) {
         </div>
       </div>
 
+      {/* Profile completion / gamification */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+        className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Complete your profile</p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {completedCount} of {totalFields} done
+              {pointsRemaining > 0 ? ` · earn up to ${pointsRemaining} more pts` : " · all done"}
+            </p>
+          </div>
+          <span className="text-sm font-bold text-brand-600">{completionPercent}%</span>
+        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600"
+            initial={{ width: 0 }}
+            animate={{ width: `${completionPercent}%` }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          />
+        </div>
+        {completionPercent < 100 && (
+          <button
+            type="button"
+            onClick={() => setShowCompletionSheet(true)}
+            className="mt-4 w-full rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white"
+          >
+            Add details
+          </button>
+        )}
+      </motion.div>
+
       {/* Contact + verification */}
       <div className="rounded-3xl border border-slate-100 bg-white p-2 shadow-sm">
         <Row
@@ -194,6 +252,23 @@ export default function ProfileView({ data }: { data: ProfileData }) {
       </form>
 
       <p className="text-center text-[11px] text-slate-400">BizCafé · v0.1.0</p>
+
+      <AnimatePresence>
+        {showCompletionSheet && (
+          <ProfileCompletionSheet
+            data={{
+              phone: data.phone,
+              dateOfBirth: data.dateOfBirth,
+              gender: data.gender,
+              dietaryPreferences: data.dietaryPreferences,
+              address: data.address,
+              marketingConsent: data.marketingConsent,
+            }}
+            onClose={() => setShowCompletionSheet(false)}
+            onSaved={() => setShowCompletionSheet(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

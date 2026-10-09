@@ -14,7 +14,7 @@ export type AdminCustomer = {
 
 export type CustomerOrderRow = {
   id: string;
-  orderNumber: number;
+  orderNumber: string;
   status: string;
   total: number;
   outletName: string;

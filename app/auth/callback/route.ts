@@ -6,12 +6,16 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/customer/dashboard";
+  const raw = searchParams.get("next");
+  const next = raw?.startsWith("/") && !raw.startsWith("//") ? raw : "/customer/dashboard";
 
   if (code) {
     const supabase = createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // OAuth sign-ups can't carry app = 'bizwallet' metadata, so provision
+      // the member here (no-op for existing members and BizPos staff).
+      await supabase.rpc("ensure_member");
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

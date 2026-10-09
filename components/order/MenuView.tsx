@@ -1,34 +1,29 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import type { MenuItem, Outlet } from "@/lib/order-types";
+import { AnimatePresence, motion } from "framer-motion";
+import type { MenuItem } from "@/lib/order-types";
 import { currencySymbol } from "@/lib/format";
 import { useCart } from "./cart-context";
-
-const CATEGORY_ORDER = ["Mains", "Drinks", "Add-ons"];
-function orderIndex(c: string): number {
-  const i = CATEGORY_ORDER.indexOf(c);
-  return i === -1 ? 99 : i;
-}
+import ItemMark from "./ItemMark";
 
 export default function MenuView({
-  outlet,
+  title,
+  subtitle,
   items,
   currency,
-  onChangeOutlet,
   onItemClick,
 }: {
-  outlet: Outlet;
-  items: MenuItem[];
+  title: string;
+  subtitle: string;
+  items: MenuItem[]; // already in category display order
   currency: string;
-  onChangeOutlet: () => void;
   onItemClick: (item: MenuItem) => void;
 }) {
-  const categories = useMemo(() => {
-    const set = Array.from(new Set(items.map((i) => i.category)));
-    return set.sort((a, b) => orderIndex(a) - orderIndex(b));
-  }, [items]);
+  const categories = useMemo(
+    () => Array.from(new Set(items.map((i) => i.category))),
+    [items]
+  );
 
   const [active, setActive] = useState(categories[0] ?? "");
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -61,20 +56,14 @@ export default function MenuView({
   return (
     <div className="mx-auto max-w-md">
       {/* Sticky header + category chips */}
-      <div className="sticky top-0 z-20 bg-brand-50/85 backdrop-blur-lg">
-        <div className="flex items-center gap-3 px-5 pb-3 pt-5">
-          <button
-            type="button"
-            onClick={onChangeOutlet}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm"
-            aria-label="Change outlet"
-          >
-            <span className="text-lg">←</span>
-          </button>
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-brand-600">{outlet.kind ?? "Outlet"}</p>
-            <h1 className="truncate text-lg font-bold text-slate-900">{outlet.name}</h1>
-          </div>
+      <div className="sticky top-0 z-20 border-b border-slate-200/60 bg-brand-50/90 backdrop-blur-xl">
+        <div className="flex items-end justify-between gap-3 px-5 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))]">
+          <h1 className="min-w-0 truncate text-[1.65rem] font-semibold leading-tight text-slate-900">
+            {title}
+          </h1>
+          <span className="mb-1 shrink-0 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-brand-50">
+            {subtitle}
+          </span>
         </div>
 
         <div className="flex gap-2 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -83,10 +72,11 @@ export default function MenuView({
               key={c}
               type="button"
               onClick={() => jumpTo(c)}
-              className={`relative whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition ${
+              aria-current={active === c ? "true" : undefined}
+              className={`relative whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
                 active === c
                   ? "text-white"
-                  : "border border-slate-200 bg-white text-slate-600"
+                  : "bg-white text-slate-600 shadow-sm hover:text-slate-900"
               }`}
             >
               {active === c && (
@@ -103,7 +93,7 @@ export default function MenuView({
       </div>
 
       {/* Menu sections */}
-      <div className="space-y-7 px-5 pb-44 pt-4">
+      <div className="space-y-9 px-5 pb-44 pt-6">
         {categories.map((cat) => (
           <section
             key={cat}
@@ -113,8 +103,8 @@ export default function MenuView({
             }}
             className="scroll-mt-32"
           >
-            <h2 className="mb-3 text-base font-bold text-slate-900">{cat}</h2>
-            <div className="space-y-3">
+            <h2 className="mb-3 px-1 text-xl font-semibold text-slate-900">{cat}</h2>
+            <div className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm">
               {items
                 .filter((i) => i.category === cat)
                 .map((item) => (
@@ -131,7 +121,7 @@ export default function MenuView({
 
         {items.length === 0 && (
           <p className="py-16 text-center text-sm text-slate-500">
-            No items available for this outlet yet.
+            Nothing on the menu right now.
           </p>
         )}
       </div>
@@ -154,48 +144,58 @@ function MenuItemCard({
     .reduce((n, l) => n + l.quantity, 0);
 
   return (
-    <motion.button
+    <button
       type="button"
       onClick={onClick}
-      whileTap={{ scale: 0.99 }}
-      className="flex w-full items-center gap-4 rounded-2xl border border-slate-100 bg-white p-3 text-left shadow-sm transition hover:shadow-md"
+      className="group flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-brand-50/60 active:bg-brand-50"
     >
-      <span className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 text-3xl">
-        {item.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.imageUrl}
-            alt=""
-            className="h-full w-full rounded-xl object-cover"
-          />
-        ) : (
-          item.emoji ?? "🍽️"
-        )}
-        {count > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-600 px-1 text-[11px] font-semibold text-white">
-            {count}
-          </span>
-        )}
-      </span>
+      <ItemMark
+        name={item.name}
+        className="h-16 w-16 rounded-2xl text-[1.75rem] transition-transform duration-300 group-active:scale-95"
+      />
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold text-slate-900">
-          {item.name}
-        </span>
+        <span className="block text-[15px] font-semibold leading-snug text-slate-900">{item.name}</span>
         {item.description && (
-          <span className="mt-0.5 line-clamp-2 block text-xs text-slate-500">
+          <span className="mt-0.5 line-clamp-2 block text-[13px] leading-snug text-slate-500">
             {item.description}
           </span>
         )}
-        <span className="mt-1 block text-sm font-semibold text-brand-700">
+        <span className="mt-1.5 block text-sm font-bold text-slate-900">
           {currencySymbol(currency)}
           {item.price.toFixed(2)}
         </span>
       </span>
 
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-lg leading-none text-white shadow-sm">
-        +
+      <span className="relative flex h-9 min-w-[2.25rem] shrink-0 items-center justify-center">
+        <AnimatePresence mode="popLayout" initial={false}>
+          {count > 0 ? (
+            <motion.span
+              key={count}
+              initial={{ scale: 0.4, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.4, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 600, damping: 26 }}
+              className="flex h-9 min-w-[2.25rem] items-center justify-center rounded-full bg-brand-600 px-2 text-sm font-bold text-white shadow-md shadow-brand-700/25"
+              aria-label={`${count} in cart`}
+            >
+              {count}
+            </motion.span>
+          ) : (
+            <motion.span
+              key="add"
+              initial={{ scale: 0.4, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.4, opacity: 0 }}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-white transition-colors group-hover:bg-brand-600"
+            >
+              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
+                <path d="M8 3v10M3 8h10" />
+              </svg>
+            </motion.span>
+          )}
+        </AnimatePresence>
       </span>
-    </motion.button>
+    </button>
   );
 }

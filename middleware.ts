@@ -7,7 +7,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 //  - A 'customer' trying to open /admin/*            -> /customer
 //  - An 'owner' trying to open /customer/*           -> /admin
 //
-// Role comes from public.profiles (RLS lets a user read their own row). For a
+// Role comes from public.members (RLS lets a user read their own row). For a
 // high-traffic app you'd promote `role` into a JWT custom claim to avoid this
 // per-request lookup, but a single indexed query is fine for now.
 export async function middleware(request: NextRequest) {
@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
   // user, so an owner can also shop as their own customer.
   if (user && isAdminArea) {
     const { data: profile } = await supabase
-      .from("profiles")
+      .from("members")
       .select("role")
       .eq("id", user.id)
       .single();

@@ -1,112 +1,56 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { CartProvider } from "@/components/order/cart-context";
-import OrderExperience from "@/components/order/OrderExperience";
-import { DEMO_OUTLETS, DEMO_MENU_BY_OUTLET } from "@/lib/order-demo";
-import type { MenuItem, Outlet } from "@/lib/order-types";
+import type { PickupOutlet } from "@/lib/guest-order";
 
+// Pickup pre-orders. BizPos's outlets table is company-private, so the list
+// comes from guest_list_outlets (only branches that accept pickup).
 export default async function OrderPage() {
-  // Demo fallbacks so the flow is fully explorable before Supabase is wired up.
-  let outlets: Outlet[] = DEMO_OUTLETS;
-  let menuByOutlet: Record<string, MenuItem[]> = DEMO_MENU_BY_OUTLET;
-  let walletBalance = 88.0;
-  let currency = "MYR";
-  let userId: string | null = null;
-  let discountPercentage = 0;
-  let tierName: string | null = null;
+  const { data } = await createClient().rpc("guest_list_outlets");
+  const outlets = (data ?? []) as PickupOutlet[];
 
-  try {
-    const supabase = createClient();
-    const [{ data: outletRows }, { data: itemRows }, userResult] =
-      await Promise.all([
-        supabase
-          .from("outlets")
-          .select(
-            "id,name,address,open_time,close_time,prep_time_minutes,latitude,longitude,is_accepting_orders"
-          )
-          .eq("is_active", true)
-          .order("name"),
-        supabase
-          .from("menu_items")
-          .select("id,outlet_id,name,description,category,price,image_url,is_available,external_pos_id")
-          .eq("is_available", true),
-        supabase.auth.getUser(),
-      ]);
-
-    if (outletRows && outletRows.length > 0) {
-      outlets = outletRows.map((o) => ({
-        id: o.id,
-        name: o.name,
-        address: o.address,
-        open_time: o.open_time,
-        close_time: o.close_time,
-        prep_time_minutes: o.prep_time_minutes,
-        latitude: o.latitude != null ? Number(o.latitude) : null,
-        longitude: o.longitude != null ? Number(o.longitude) : null,
-        is_accepting_orders: o.is_accepting_orders,
-      }));
-
-      const grouped: Record<string, MenuItem[]> = {};
-      (itemRows ?? []).forEach((r) => {
-        const item: MenuItem = {
-          id: r.id,
-          outletId: r.outlet_id,
-          name: r.name,
-          description: r.description,
-          category: r.category ?? "Others",
-          price: Number(r.price),
-          imageUrl: r.image_url,
-          isAvailable: r.is_available,
-          externalPosId: r.external_pos_id,
-        };
-        (grouped[r.outlet_id] ??= []).push(item);
-      });
-      menuByOutlet = grouped;
-    }
-
-    const user = userResult.data.user;
-    if (user) {
-      userId = user.id;
-      const [{ data: wallet }, { data: loyalty }] = await Promise.all([
-        supabase
-          .from("wallets")
-          .select("balance,currency")
-          .eq("user_id", user.id)
-          .single(),
-        supabase
-          .from("loyalty_accounts")
-          .select("tier:loyalty_tiers(name, discount_percentage)")
-          .eq("user_id", user.id)
-          .single(),
-      ]);
-      if (wallet) {
-        walletBalance = Number(wallet.balance);
-        currency = wallet.currency;
-      }
-      // PostgREST embeds a to-one FK relation as an object, but some client
-      // typings/configs surface it as a 1-element array — handle both.
-      type TierRow = { name: string; discount_percentage: number };
-      const rel = loyalty?.tier as unknown as TierRow | TierRow[] | null | undefined;
-      const tier = Array.isArray(rel) ? rel[0] : rel;
-      if (tier) {
-        tierName = tier.name;
-        discountPercentage = Number(tier.discount_percentage);
-      }
-    }
-  } catch {
-    // Supabase not configured / unreachable -> keep demo data.
-  }
+  // Already sorted by company, then branch.
+  const byCompany = new Map<string, PickupOutlet[]>();
+  for (const o of outlets) byCompany.set(o.company, [...(byCompany.get(o.company) ?? []), o]);
+  const showCompany = byCompany.size > 1;
 
   return (
-    <CartProvider>
-      <OrderExperience
-        outlets={outlets}
-        menuByOutlet={menuByOutlet}
-        walletBalance={walletBalance}
-        currency={currency}
-        userId={userId}
-        discountPercentage={discountPercentage}
-        tierName={tierName}
-      />
-    </CartProvider>
+    <main className="min-h-dvh bg-brand-50">
+      <div className="mx-auto max-w-md px-5 pb-16 pt-[max(2rem,env(safe-area-inset-top))]">
+        <h1 className="text-[2rem] font-semibold leading-tight text-slate-900">Order for pickup</h1>
+        <p className="mt-2 text-sm text-slate-600">
+          Pick a branch. At a table? Scan the QR code on it instead.
+        </p>
+
+        {Array.from(byCompany, ([company, branches]) => (
+          <section key={company} className="mt-8">
+            {showCompany && <h2 className="mb-3 px-1 text-xl font-semibold text-slate-900">{company}</h2>}
+            <ul className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm">
+              {branches.map((o) => (
+                <li key={o.id}>
+                  <Link
+                    href={`/order/p/${o.id}`}
+                    className="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-brand-50/60 active:bg-brand-50"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[15px] font-semibold text-slate-900">{o.name}</span>
+                      {o.address && <span className="mt-0.5 block text-[13px] text-slate-500">{o.address}</span>}
+                    </span>
+                    <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+                      <path d="M6 3l5 5-5 5" />
+                    </svg>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+
+        {outlets.length === 0 && (
+          <p className="mt-10 rounded-3xl bg-white px-6 py-10 text-center text-sm text-slate-500 shadow-sm">
+            No branches are taking pickup orders right now.
+          </p>
+        )}
+      </div>
+    </main>
   );
 }

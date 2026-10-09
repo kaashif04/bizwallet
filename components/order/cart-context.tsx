@@ -23,7 +23,7 @@ function signature(itemId: string, selections: VariantSelection[]): string {
     itemId +
     "|" +
     selections
-      .map((s) => `${s.group}:${s.option}`)
+      .map((s) => s.modifierId)
       .sort()
       .join(",")
   );

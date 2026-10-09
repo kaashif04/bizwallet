@@ -17,6 +17,7 @@ import {
   type Reward,
 } from "@/lib/dashboard-demo";
 import type { LoyaltyTier } from "@/lib/loyalty";
+import { outletNames } from "@/lib/guest-order";
 
 const DEMO = {
   name: "Aisyah",
@@ -27,11 +28,6 @@ const DEMO = {
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function outletName(o: any): string {
-  const rel = o.outlet;
-  if (Array.isArray(rel)) return rel[0]?.name ?? "Outlet";
-  return rel?.name ?? "Outlet";
-}
 function summarizeItems(items: any): string {
   if (!Array.isArray(items) || items.length === 0) return "Items";
   const names = items.map((it) => it?.name).filter(Boolean) as string[];
@@ -47,7 +43,7 @@ export default async function CustomerDashboardPage() {
   let currency = DEMO.currency;
   let points = DEMO.points;
   let lifetimePoints = DEMO.lifetimePoints;
-  let popular = POPULAR;
+  const popular = POPULAR;
   let rewards: Reward[] = DEMO_REWARDS;
   let tiers: LoyaltyTier[] = DEMO_TIERS;
   let pastOrders: PastOrder[] = PAST_ORDERS;
@@ -59,13 +55,9 @@ export default async function CustomerDashboardPage() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Public reads — work even when signed out.
-    const [{ data: items }, { data: rewardRows }, { data: tierRows }] = await Promise.all([
-      supabase
-        .from("menu_items")
-        .select("id,name,price,image_url")
-        .eq("is_available", true)
-        .limit(4),
+    // Public reads — work even when signed out. (BizPos menu_items isn't
+    // readable by members, so "Popular now" stays on its placeholder content.)
+    const [{ data: rewardRows }, { data: tierRows }] = await Promise.all([
       supabase
         .from("loyalty_rewards")
         .select("id,name,description,points_cost,kind,value")
@@ -77,15 +69,11 @@ export default async function CustomerDashboardPage() {
         .order("points_required"),
     ]);
 
-    if (items && items.length > 0) {
-      popular = items.map((m, i) => ({
-        id: m.id,
-        name: m.name,
-        price: Number(m.price),
-        image: m.image_url ?? POPULAR[i % POPULAR.length].image,
-      }));
-    }
-    if (rewardRows && rewardRows.length > 0) rewards = rewardRows as Reward[];
+    // Note: intentionally `if (rewardRows)`, not `.length > 0` — an empty
+    // real result must produce a real empty list (RewardsCatalog already
+    // shows "No rewards available yet."), not the non-redeemable DEMO_REWARDS
+    // fallback (its ids like "r1" aren't UUIDs and crash redeem_reward).
+    if (rewardRows) rewards = rewardRows as Reward[];
     if (tierRows && tierRows.length > 0) {
       tiers = tierRows.map((t) => ({
         id: t.id,
@@ -98,9 +86,9 @@ export default async function CustomerDashboardPage() {
 
     if (user) {
       userId = user.id;
-      const [{ data: profile }, { data: wallet }, { data: loyalty }, { data: orderRows }] =
+      const [{ data: profile }, { data: wallet }, { data: loyalty }, { data: orderRows }, names] =
         await Promise.all([
-          supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+          supabase.from("members").select("full_name").eq("id", user.id).single(),
           supabase
             .from("wallets")
             .select("balance, currency")
@@ -112,11 +100,13 @@ export default async function CustomerDashboardPage() {
             .eq("user_id", user.id)
             .single(),
           supabase
-            .from("orders")
-            .select("id,total,items,outlet:outlets(name)")
-            .eq("user_id", user.id)
+            .from("guest_orders")
+            .select("id,subtotal,items,outlet_id")
+            .eq("member_id", user.id)
+            .neq("status", "rejected")
             .order("created_at", { ascending: false })
             .limit(6),
+          outletNames(supabase),
         ]);
 
       name = profile?.full_name ?? user.email?.split("@")[0] ?? DEMO.name;
@@ -128,9 +118,9 @@ export default async function CustomerDashboardPage() {
       if (orderRows && orderRows.length > 0) {
         pastOrders = orderRows.map((o, i) => ({
           id: o.id,
-          outlet: outletName(o),
+          outlet: names.get(o.outlet_id) ?? "BizCafé",
           items: summarizeItems(o.items),
-          total: Number(o.total),
+          total: Number(o.subtotal),
           image: PAST_ORDERS[i % PAST_ORDERS.length].image,
         }));
       }
@@ -140,7 +130,7 @@ export default async function CustomerDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-50 via-white to-rose-50/40">
+    <div className="min-h-dvh bg-brand-50">
       <div className="mx-auto max-w-md px-5 pb-36 pt-6">
         <DashboardHeader name={name} />
 

@@ -5,9 +5,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser, isSuperAdminEmail } from "@/lib/admin/auth";
 import type { SetupState } from "./types";
 
-// Creates an outlet and assigns a manager as its owner.
+// Promotes a BizWallet member to owner (access to the CRM portal). Outlets
+// themselves live in BizPos now.
 // Signature matches useFormState: (prevState, formData) => newState.
-export async function createOutletAction(
+export async function promoteOwnerAction(
   _prev: SetupState,
   formData: FormData
 ): Promise<SetupState> {
@@ -17,55 +18,38 @@ export async function createOutletAction(
     return { status: "error", message: "Not authorized — Super Admin only." };
   }
 
-  const name = String(formData.get("name") ?? "").trim();
-  const location = String(formData.get("location") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
-
-  if (!name) return { status: "error", message: "Outlet name is required." };
   if (!email || !email.includes("@")) {
-    return { status: "error", message: "A valid manager email is required." };
+    return { status: "error", message: "A valid email is required." };
   }
 
-  // Service-role client: bypasses RLS so we can look up any user, change their
-  // role, and create an outlet owned by them.
+  // Service-role client: bypasses RLS so we can look up any member and change
+  // their role (the members trigger blocks role changes from end users).
   const admin = createAdminClient();
 
-  // 1. Does an account with this email exist? (profiles mirrors the auth email.)
-  const { data: profile, error: lookupErr } = await admin
-    .from("profiles")
+  const { data: member, error: lookupErr } = await admin
+    .from("members")
     .select("id, full_name, role")
     .ilike("email", email)
     .maybeSingle();
 
   if (lookupErr) return { status: "error", message: lookupErr.message };
-  if (!profile) {
+  if (!member) {
     return {
       status: "error",
-      message: `No account found for ${email}. Ask them to sign up first, then assign them.`,
+      message: `No BizWallet account found for ${email}. Ask them to sign up first.`,
     };
   }
-
-  // 2. Promote to owner (idempotent — skip if already an owner).
-  if (profile.role !== "owner") {
-    const { error: roleErr } = await admin
-      .from("profiles")
-      .update({ role: "owner" })
-      .eq("id", profile.id);
-    if (roleErr) return { status: "error", message: roleErr.message };
+  if (member.role === "owner") {
+    return { status: "success", message: `${member.full_name ?? email} is already an owner.` };
   }
 
-  // 3. Create the outlet, owned by this user.
-  const { error: outletErr } = await admin.from("outlets").insert({
-    name,
-    address: location || null,
-    owner_id: profile.id,
-    is_active: true,
-  });
-  if (outletErr) return { status: "error", message: outletErr.message };
+  const { error: roleErr } = await admin
+    .from("members")
+    .update({ role: "owner" })
+    .eq("id", member.id);
+  if (roleErr) return { status: "error", message: roleErr.message };
 
   revalidatePath("/admin/setup");
-  return {
-    status: "success",
-    message: `"${name}" created — ${profile.full_name ?? email} is now its owner.`,
-  };
+  return { status: "success", message: `${member.full_name ?? email} is now an owner.` };
 }

@@ -77,7 +77,7 @@ export default function LoyaltyProgress({ data }: { data: TierProgress }) {
             </p>
           ) : (
             <p className="mt-3 text-sm font-medium text-slate-700">
-              Top tier reached 🎉
+              Top tier reached
             </p>
           )}
 

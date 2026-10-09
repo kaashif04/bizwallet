@@ -4,8 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import BrandMark from "@/components/BrandMark";
 
 type Method = "email" | "phone";
+
+// Where to land after auth: the ?redirect= set by middleware or the guest
+// order page, same-origin paths only.
+function nextPath(): string {
+  const r = new URLSearchParams(window.location.search).get("redirect");
+  return r && r.startsWith("/") && !r.startsWith("//") ? r : "/customer/dashboard";
+}
 
 export default function CustomerLogin({ onSwitch }: { onSwitch: () => void }) {
   const router = useRouter();
@@ -39,7 +47,7 @@ export default function CustomerLogin({ onSwitch }: { onSwitch: () => void }) {
     });
     setLoading(false);
     if (error) return setError(error.message);
-    router.push("/customer/dashboard");
+    router.push(nextPath());
     router.refresh();
   }
 
@@ -53,8 +61,8 @@ export default function CustomerLogin({ onSwitch }: { onSwitch: () => void }) {
       options: {
         // Stored on auth.users.raw_user_meta_data — the Phase-1 trigger reads
         // these to provision the profile (and the wallet + loyalty account).
-        data: { full_name: fullName, role: "customer" },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: { full_name: fullName, app: "bizwallet" },
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath())}`,
       },
     });
     setLoading(false);
@@ -62,7 +70,7 @@ export default function CustomerLogin({ onSwitch }: { onSwitch: () => void }) {
 
     // Email confirmation OFF -> a session is returned, go straight in.
     if (data.session) {
-      router.push("/customer/dashboard");
+      router.push(nextPath());
       router.refresh();
       return;
     }
@@ -75,7 +83,7 @@ export default function CustomerLogin({ onSwitch }: { onSwitch: () => void }) {
     reset();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath())}` },
     });
     if (error) setError(error.message);
   }
@@ -117,16 +125,16 @@ export default function CustomerLogin({ onSwitch }: { onSwitch: () => void }) {
     <div className="rounded-[28px] border border-white/70 bg-white/80 p-8 shadow-glass backdrop-blur-xl">
       {/* Brand */}
       <div className="mb-7 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-600 text-2xl shadow-lg shadow-brand-600/30">
-          ☕
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-lg shadow-brand-700/30">
+          <BrandMark className="h-8 w-8" />
         </div>
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+        <h1 className="mt-5 text-3xl font-semibold text-slate-900">
           Welcome to BizCafé
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           {mode === "signup"
-            ? "Create your wallet & rewards account"
-            : "Sign in to your wallet & rewards"}
+            ? "Free account. Earn 1 point for every RM1."
+            : "Sign in to your wallet and rewards"}
         </p>
       </div>
 

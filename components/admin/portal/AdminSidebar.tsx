@@ -4,10 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { CupIcon, UsersIcon, MegaphoneIcon, TicketIcon } from "@/components/customer/icons";
+import { UsersIcon, MegaphoneIcon, TicketIcon } from "@/components/customer/icons";
 
 const NAV = [
-  { href: "/admin/dashboard/outlets", label: "Outlets & Live Orders", Icon: CupIcon },
   { href: "/admin/dashboard/customers", label: "Customer CRM", Icon: UsersIcon },
   { href: "/admin/dashboard/marketing", label: "Marketing & Broadcasts", Icon: MegaphoneIcon },
   { href: "/admin/dashboard/vouchers", label: "Voucher Engine", Icon: TicketIcon },

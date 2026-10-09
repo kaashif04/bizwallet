@@ -12,7 +12,7 @@ export default async function CustomerDetailPage({
   const admin = createAdminClient();
 
   const { data: profile } = await admin
-    .from("profiles")
+    .from("members")
     .select("id, full_name, email, phone, role, avatar_url, created_at")
     .eq("id", params.id)
     .maybeSingle();
@@ -28,9 +28,9 @@ export default async function CustomerDetailPage({
         .eq("user_id", params.id)
         .maybeSingle(),
       admin
-        .from("orders")
-        .select("id, order_number, status, total, created_at, outlet:outlets(name)")
-        .eq("user_id", params.id)
+        .from("transactions")
+        .select("id, status, total, created_at, outlet:outlets(name)")
+        .eq("member_id", params.id)
         .order("created_at", { ascending: false })
         .limit(20),
       admin
@@ -39,17 +39,15 @@ export default async function CustomerDetailPage({
         .eq("user_id", params.id)
         .order("created_at", { ascending: false })
         .limit(20),
-      admin.from("orders").select("total, status").eq("user_id", params.id),
+      admin.from("transactions").select("total").eq("member_id", params.id).eq("status", "completed"),
     ]);
 
-  const lifetimeSpent = (allOrders ?? [])
-    .filter((o) => o.status !== "cancelled")
-    .reduce((sum, o) => sum + Number(o.total), 0);
+  const lifetimeSpent = (allOrders ?? []).reduce((sum, o) => sum + Number(o.total), 0);
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const orders: CustomerOrderRow[] = (orderRows ?? []).map((o: any) => ({
     id: o.id,
-    orderNumber: o.order_number,
+    orderNumber: o.id.slice(0, 8),
     status: o.status,
     total: Number(o.total),
     outletName: Array.isArray(o.outlet) ? o.outlet[0]?.name ?? "Outlet" : o.outlet?.name ?? "Outlet",
@@ -218,11 +216,10 @@ function StatCard({ label, value }: { label: string; value: string }) {
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    pending: "bg-amber-100 text-amber-700",
-    preparing: "bg-blue-100 text-blue-700",
-    ready: "bg-violet-100 text-violet-700",
+    open: "bg-amber-100 text-amber-700",
     completed: "bg-emerald-100 text-emerald-700",
-    cancelled: "bg-slate-100 text-slate-500",
+    voided: "bg-rose-100 text-rose-600",
+    refunded: "bg-slate-100 text-slate-500",
   };
   return (
     <span
