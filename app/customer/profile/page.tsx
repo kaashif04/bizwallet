@@ -8,7 +8,6 @@ const DEMO: ProfileData = {
   name: "Aisyah",
   email: "aisyah@example.com",
   phone: "+60 12-345 6789",
-  role: "customer",
   avatarUrl: null,
   emailVerified: true,
   phoneVerified: false,
@@ -36,7 +35,7 @@ export default async function ProfilePage() {
         supabase
           .from("members")
           .select(
-            "full_name,email,phone,role,avatar_url,email_verified,phone_verified,created_at,date_of_birth,gender,dietary_preferences,address,marketing_consent"
+            "full_name,email,phone,avatar_url,email_verified,phone_verified,created_at,date_of_birth,gender,dietary_preferences,address,marketing_consent"
           )
           .eq("id", user.id)
           .single(),
@@ -66,7 +65,6 @@ export default async function ProfilePage() {
         name: profile?.full_name ?? user.email?.split("@")[0] ?? "There",
         email: profile?.email ?? user.email ?? "",
         phone: profile?.phone ?? user.phone ?? "",
-        role: profile?.role ?? "customer",
         avatarUrl: profile?.avatar_url ?? null,
         emailVerified: profile?.email_verified ?? Boolean(user.email_confirmed_at),
         phoneVerified: profile?.phone_verified ?? false,

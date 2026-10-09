@@ -3,13 +3,10 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 // Route protection + session refresh.
 //
-//  - Unauthenticated users hitting a protected area  -> /login
-//  - A 'customer' trying to open /admin/*            -> /customer
-//  - An 'owner' trying to open /customer/*           -> /admin
+//  - Signed out on /customer/*                       -> /login
+//  - Signed in without a member row (BizPos staff)   -> /login?account=staff
 //
-// Role comes from public.members (RLS lets a user read their own row). For a
-// high-traffic app you'd promote `role` into a JWT custom claim to avoid this
-// per-request lookup, but a single indexed query is fine for now.
+// BizWallet is customer-only; managers use the BizPos dashboard.
 export async function middleware(request: NextRequest) {
   // Start with a passthrough response we can attach refreshed cookies to.
   let response = NextResponse.next({ request });
@@ -45,27 +42,24 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isAdminArea = path.startsWith("/admin");
   const isCustomerArea = path.startsWith("/customer");
 
   // Not signed in -> bounce to login (remembering where they wanted to go).
-  if ((isAdminArea || isCustomerArea) && !user) {
+  if (isCustomerArea && !user) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", path);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Only the ADMIN area is role-gated. The customer area is open to any signed-in
-  // user, so an owner can also shop as their own customer.
-  if (user && isAdminArea) {
-    const { data: profile } = await supabase
+  // One login for every Biz app: a staff account has no member row here.
+  if (user && isCustomerArea) {
+    const { data: member } = await supabase
       .from("members")
-      .select("role")
+      .select("id")
       .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "owner") {
-      return NextResponse.redirect(new URL("/customer/dashboard", request.url));
+      .maybeSingle();
+    if (!member) {
+      return NextResponse.redirect(new URL("/login?account=staff", request.url));
     }
   }
 

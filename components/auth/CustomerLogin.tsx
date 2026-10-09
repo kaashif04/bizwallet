@@ -15,7 +15,7 @@ function nextPath(): string {
   return r && r.startsWith("/") && !r.startsWith("//") ? r : "/customer/dashboard";
 }
 
-export default function CustomerLogin({ onSwitch }: { onSwitch: () => void }) {
+export default function CustomerLogin() {
   const router = useRouter();
   const [supabase] = useState(() => createClient());
 
@@ -305,17 +305,6 @@ export default function CustomerLogin({ onSwitch }: { onSwitch: () => void }) {
           )}
         </form>
       )}
-
-      {/* Owner switch */}
-      <div className="mt-7 border-t border-slate-100 pt-5 text-center">
-        <button
-          type="button"
-          onClick={onSwitch}
-          className="text-sm font-medium text-slate-400 transition hover:text-brand-600"
-        >
-          Owner Login →
-        </button>
-      </div>
     </div>
   );
 }

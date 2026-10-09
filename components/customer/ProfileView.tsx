@@ -10,7 +10,6 @@ export type ProfileData = {
   name: string;
   email: string;
   phone: string;
-  role: string;
   avatarUrl: string | null;
   emailVerified: boolean;
   phoneVerified: boolean;
@@ -35,7 +34,6 @@ export default function ProfileView({ data }: { data: ProfileData }) {
   const [showCompletionSheet, setShowCompletionSheet] = useState(false);
 
   const initial = name.trim().charAt(0).toUpperCase() || "U";
-  const isOwner = data.role === "owner";
 
   const completionFlags = [
     !!data.phone,
@@ -103,13 +101,6 @@ export default function ProfileView({ data }: { data: ProfileData }) {
           <h2 className="mt-4 text-xl font-bold text-slate-900">{name}</h2>
         )}
 
-        <span
-          className={`mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-            isOwner ? "bg-slate-900 text-white" : "bg-brand-100 text-brand-700"
-          }`}
-        >
-          {isOwner ? "Owner" : "Customer"}
-        </span>
 
         {editing ? (
           <div className="mt-4 flex gap-2">
@@ -230,15 +221,6 @@ export default function ProfileView({ data }: { data: ProfileData }) {
         My orders
       </Link>
 
-      {/* Owners can jump to their store dashboard */}
-      {isOwner && (
-        <Link
-          href="/admin"
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-        >
-          Owner dashboard →
-        </Link>
-      )}
 
       {/* Sign out */}
       <form action="/auth/signout" method="post">
