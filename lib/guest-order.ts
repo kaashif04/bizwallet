@@ -91,11 +91,22 @@ export function toMenu(menu: GuestMenu): {
 // claiming it after sign-up. It only lives on the device that ordered.
 const key = (id: string) => `bw_guest_order:${id}`;
 
-export function saveClaimToken(id: string, claimToken: string) {
+export function saveClaimToken(id: string, claimToken: string, menuPath: string) {
   try {
     localStorage.setItem(key(id), claimToken);
+    localStorage.setItem(`${key(id)}:menu`, menuPath);
   } catch {
     // Private mode: the status page will say it can't find the order.
+  }
+}
+
+// Where this order was placed from (/order/t/<token> or /order/p/<outlet>),
+// so the status page can offer "Order more".
+export function loadMenuPath(id: string): string | null {
+  try {
+    return localStorage.getItem(`${key(id)}:menu`);
+  } catch {
+    return null;
   }
 }
 

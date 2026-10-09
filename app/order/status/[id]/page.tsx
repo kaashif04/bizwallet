@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
-import { loadClaimToken, type GuestOrderStatus } from "@/lib/guest-order";
+import { loadClaimToken, loadMenuPath, type GuestOrderStatus } from "@/lib/guest-order";
 
 const STEPS: Record<string, string> = {
   pending: "Waiting for the outlet to confirm",
@@ -36,7 +36,11 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
   const [signedIn, setSignedIn] = useState(false);
   const claimTried = useRef(false);
 
-  useEffect(() => setClaimToken(loadClaimToken(params.id)), [params.id]);
+  const [menuPath, setMenuPath] = useState<string | null>(null);
+  useEffect(() => {
+    setClaimToken(loadClaimToken(params.id));
+    setMenuPath(loadMenuPath(params.id));
+  }, [params.id]);
 
   const refresh = useCallback(async () => {
     if (!claimToken) return;
@@ -139,6 +143,23 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           {order.paid ? "Paid. Thank you." : "Pay at the counter when you're done."}
         </p>
       )}
+
+      {/* Orders placed before the menu path was saved fall back to the
+          previous page, which is the menu the order came from. */}
+      <button
+        type="button"
+        onClick={() => {
+          if (menuPath) window.location.assign(menuPath);
+          else if (window.history.length > 1) window.history.back();
+          else window.location.assign("/customer/order");
+        }}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-600 px-5 py-4 text-[15px] font-semibold text-white shadow-lg shadow-brand-700/30 transition hover:bg-brand-700 active:scale-[0.98]"
+      >
+        <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
+          <path d="M8 3v10M3 8h10" />
+        </svg>
+        {order.status === "rejected" ? "Back to the menu" : order.paid ? "Order again" : "Order more"}
+      </button>
 
       <ul className="mt-6 divide-y divide-slate-200/70">
         {order.items.map((i, n) => (

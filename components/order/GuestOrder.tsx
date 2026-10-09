@@ -108,7 +108,7 @@ export default function GuestOrder(
             token={props.token}
             onClose={() => setReviewing(false)}
             onPlaced={(id, claimToken) => {
-              saveClaimToken(id, claimToken);
+              saveClaimToken(id, claimToken, window.location.pathname);
               cart.clear();
               router.push(`/order/status/${id}`);
             }}
