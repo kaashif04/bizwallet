@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import BrandMark from "@/components/BrandMark";
 import type { Reward } from "@/lib/dashboard-demo";
 
 // redeem_reward's p_reward_id is a strict Postgres uuid — reject anything
@@ -144,7 +143,10 @@ export default function RewardsCatalog({
                               <path d="M14 7v10" strokeDasharray="2 2" />
                             </svg>
                           ) : (
-                            <BrandMark className="h-6 w-6" />
+                            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M4 11h16v9H4zM3 7h18v4H3zM12 7v13" />
+                              <path d="M12 7c-1.5-3-5-3-5-1s3 1 5 1c2 0 5 1 5-1s-3.5-2-5 1Z" />
+                            </svg>
                           )}
                         </span>
                         <div className="min-w-0 flex-1">

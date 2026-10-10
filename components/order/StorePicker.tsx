@@ -3,11 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import ItemMark from "./ItemMark";
+import BranchLogo from "./BranchLogo";
 import type { PickupOutlet } from "@/lib/guest-order";
 
 // Pick a store, then dine in (scan the table QR) or order ahead for pickup.
-export default function StorePicker({ branches }: { branches: PickupOutlet[] }) {
+export default function StorePicker({ branches, logos = {} }: { branches: PickupOutlet[]; logos?: Record<string, string> }) {
   const [open, setOpen] = useState<string | null>(branches.length === 1 ? branches[0].id : null);
   const showCompany = new Set(branches.map((b) => b.company_id)).size > 1;
 
@@ -23,7 +23,7 @@ export default function StorePicker({ branches }: { branches: PickupOutlet[] }) 
               aria-expanded={isOpen}
               className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-brand-50/60"
             >
-              <ItemMark name={b.name} className="h-11 w-11 rounded-xl text-lg" />
+              <BranchLogo name={b.name} logoUrl={logos[b.id]} className="h-12 w-12 rounded-2xl text-lg" />
               <span className="min-w-0 flex-1">
                 <span className="block text-[15px] font-semibold text-slate-900">{b.name}</span>
                 <span className="block truncate text-[13px] text-slate-500">

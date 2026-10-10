@@ -8,6 +8,7 @@ const display = Fredoka({ subsets: ["latin"], variable: "--font-display" });
 
 export const metadata: Metadata = {
   title: { default: "BizWallet", template: "%s · BizWallet" },
+  appleWebApp: { capable: true, title: "BizWallet", statusBarStyle: "default" },
   description: "Order from your table, pay at the counter, earn points every visit.",
 };
 

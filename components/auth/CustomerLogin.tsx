@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import BrandMark from "@/components/BrandMark";
 
 type Method = "email" | "phone";
 
@@ -125,9 +124,8 @@ export default function CustomerLogin() {
     <div className="rounded-[2rem] bg-white p-7 shadow-xl sm:p-8">
       {/* Brand */}
       <div className="mb-7 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-lg shadow-brand-700/30">
-          <BrandMark className="h-8 w-8" />
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.svg" alt="BizWallet" className="mx-auto h-20 w-20 drop-shadow-lg" />
         <h1 className="mt-5 text-3xl text-slate-900">
           Welcome to BizWallet
         </h1>

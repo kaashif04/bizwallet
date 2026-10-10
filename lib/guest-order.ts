@@ -155,3 +155,14 @@ export async function outletNames(
   const { data } = await supabase.rpc("guest_list_outlets");
   return new Map(((data ?? []) as PickupOutlet[]).map((o) => [o.id, o.name]));
 }
+
+// Branch logos from BizEazy Hub (outlet_id -> image URL). Empty until the
+// wallet_outlet_logos migration is live; callers fall back to a monogram.
+export async function outletLogos(
+  supabase: { rpc: (fn: "wallet_outlet_logos") => PromiseLike<{ data: unknown }> }
+): Promise<Record<string, string>> {
+  const { data } = await supabase.rpc("wallet_outlet_logos");
+  return Object.fromEntries(
+    ((data ?? []) as { outlet_id: string; logo_url: string }[]).map((r) => [r.outlet_id, r.logo_url])
+  );
+}

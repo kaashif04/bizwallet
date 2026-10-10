@@ -7,7 +7,7 @@ import BottomNav from "@/components/customer/BottomNav";
 import StorePicker from "@/components/order/StorePicker";
 import { DEMO_TIERS, type Reward } from "@/lib/dashboard-demo";
 import type { LoyaltyTier } from "@/lib/loyalty";
-import { type PickupOutlet } from "@/lib/guest-order";
+import { outletLogos, type PickupOutlet } from "@/lib/guest-order";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function summarizeItems(items: any): string {
@@ -35,6 +35,7 @@ export default async function CustomerDashboardPage() {
     { data: tierRows },
     { data: orderRows },
     { data: branchData },
+    logos,
   ] = await Promise.all([
     supabase.from("members").select("full_name").eq("id", uid).maybeSingle(),
     supabase.from("wallets").select("balance, currency").eq("user_id", uid).maybeSingle(),
@@ -56,6 +57,7 @@ export default async function CustomerDashboardPage() {
       .order("created_at", { ascending: false })
       .limit(6),
     supabase.rpc("guest_list_outlets"),
+    outletLogos(supabase),
   ]);
 
   const branches = (branchData ?? []) as PickupOutlet[];
@@ -138,7 +140,7 @@ export default async function CustomerDashboardPage() {
           <section>
             <SectionHeader title="Stores" />
             {branches.length ? (
-              <StorePicker branches={branches} />
+              <StorePicker branches={branches} logos={logos} />
             ) : (
               <p className="rounded-3xl bg-white px-5 py-6 text-sm text-slate-600 shadow-sm">
                 No store is taking online orders right now. Order with our staff at the restaurant.

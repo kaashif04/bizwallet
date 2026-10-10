@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
 import type { MenuItem } from "@/lib/order-types";
-import { saveClaimToken, toMenu, type GuestMenu } from "@/lib/guest-order";
+import { outletLogos, saveClaimToken, toMenu, type GuestMenu } from "@/lib/guest-order";
 import { useCart } from "./cart-context";
 import MenuView from "./MenuView";
 import AddToCartSheet from "./AddToCartSheet";
@@ -27,13 +27,16 @@ export default function GuestOrder(
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sheetItem, setSheetItem] = useState<MenuItem | null>(null);
   const [reviewing, setReviewing] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
       .rpc("guest_get_menu", props.token ? { p_token: props.token } : { p_outlet: props.outletId })
       .then(({ data, error }) => {
-        if (error) setLoadError(error.message);
-        else setMenu(data as GuestMenu);
+        if (error) return setLoadError(error.message);
+        const m = data as GuestMenu;
+        setMenu(m);
+        outletLogos(supabase).then((logos) => setLogoUrl(logos[m.outlet.id] ?? null));
       });
   }, [supabase, props.token, props.outletId]);
 
@@ -92,6 +95,7 @@ export default function GuestOrder(
       <MenuView
         title={menu.outlet.name}
         subtitle={menu.table ? `Table ${menu.table.label}` : "Pickup order"}
+        logoUrl={logoUrl}
         items={items}
         currency={CURRENCY}
         onItemClick={setSheetItem}

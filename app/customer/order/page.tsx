@@ -2,11 +2,12 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import BottomNav from "@/components/customer/BottomNav";
 import StorePicker from "@/components/order/StorePicker";
-import type { PickupOutlet } from "@/lib/guest-order";
+import { outletLogos, type PickupOutlet } from "@/lib/guest-order";
 
 // Order tab: pick a store, then dine in (scan the table QR) or pickup.
 export default async function OrderPage() {
-  const { data } = await createClient().rpc("guest_list_outlets");
+  const supabase = createClient();
+  const [{ data }, logos] = await Promise.all([supabase.rpc("guest_list_outlets"), outletLogos(supabase)]);
   const branches = (data ?? []) as PickupOutlet[];
 
   return (
@@ -33,7 +34,7 @@ export default async function OrderPage() {
 
         <h2 className="mb-3 mt-9 px-1 text-xl font-semibold text-slate-900">Choose a store</h2>
         {branches.length ? (
-          <StorePicker branches={branches} />
+          <StorePicker branches={branches} logos={logos} />
         ) : (
           <p className="rounded-3xl bg-white px-6 py-10 text-center text-sm text-slate-500 shadow-sm">
             No store is taking online orders right now.
