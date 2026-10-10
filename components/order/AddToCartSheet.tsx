@@ -121,8 +121,17 @@ export default function AddToCartSheet({
         </div>
 
         <div className="max-h-[80vh] overflow-y-auto px-5 pb-6">
+          {item.imageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              decoding="async"
+              className="mt-3 aspect-[4/3] w-full rounded-3xl bg-slate-100 object-cover"
+            />
+          )}
           <div className="flex items-start gap-4 pt-3">
-            <ItemMark name={item.name} className="h-20 w-20 rounded-3xl text-4xl" />
+            {!item.imageUrl && <ItemMark name={item.name} className="h-20 w-20 rounded-3xl text-4xl" />}
             <div className="min-w-0 flex-1">
               <h2 className="text-2xl font-semibold leading-tight text-slate-900">{item.name}</h2>
               {item.description && (

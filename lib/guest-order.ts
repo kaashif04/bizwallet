@@ -18,6 +18,7 @@ export type GuestMenu = {
     name: string;
     description: string | null;
     price: number;
+    image_url: string | null;
     category_id: string | null;
     free_from_spend: number | null;
     free_spend_category_ids: string[] | null;
@@ -66,6 +67,7 @@ export function toMenu(menu: GuestMenu): {
     category: (i.category_id && catName.get(i.category_id)?.name) || "Other",
     categoryId: i.category_id,
     price: Number(i.price),
+    imageUrl: i.image_url,
     freeFromSpend: i.free_from_spend == null ? null : Number(i.free_from_spend),
     freeSpendCategoryIds: i.free_spend_category_ids ?? [],
     freeHint:

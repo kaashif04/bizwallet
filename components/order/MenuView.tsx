@@ -151,10 +151,21 @@ function MenuItemCard({
       onClick={onClick}
       className="group flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-brand-50/60 active:bg-brand-50"
     >
-      <ItemMark
-        name={item.name}
-        className="h-16 w-16 rounded-2xl text-[1.75rem] transition-transform duration-300 group-active:scale-95"
-      />
+      {item.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={item.imageUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="h-20 w-20 shrink-0 rounded-2xl bg-slate-100 object-cover transition-transform duration-300 group-active:scale-95"
+        />
+      ) : (
+        <ItemMark
+          name={item.name}
+          className="h-16 w-16 rounded-2xl text-[1.75rem] transition-transform duration-300 group-active:scale-95"
+        />
+      )}
 
       <span className="min-w-0 flex-1">
         <span className="block text-[15px] font-semibold leading-snug text-slate-900">{item.name}</span>

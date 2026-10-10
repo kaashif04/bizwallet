@@ -12,7 +12,7 @@ export type MenuItem = {
   freeFromSpend?: number | null;
   freeSpendCategoryIds?: string[];
   freeHint?: string; // e.g. "Free with RM20 of Steamboat"
-  imageUrl?: string | null;
+  imageUrl?: string | null; // BizPos photo (public URL, <=1200px) or null
   emoji?: string;
   isAvailable?: boolean;
   externalPosId?: string | null;
