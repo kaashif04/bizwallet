@@ -1,12 +1,11 @@
-// Menu items arrive from BizPos without photos. Instead of a generic emoji,
-// each item gets a monogram in one of a few warm "menu board" tones, picked
-// from its name so the same drink always looks the same.
+// Dishes without a photo get a monogram in one of the playful accent tones,
+// picked from the name so the same dish always looks the same.
 const TONES = [
-  { bg: "#f8ecdf", fg: "#934524" }, // caramel
-  { bg: "#e7eedd", fg: "#47662a" }, // matcha
-  { bg: "#f5e2e2", fg: "#8b3a45" }, // berry
-  { bg: "#ece2d8", fg: "#5a3d2b" }, // cocoa
-  { bg: "#faefd2", fg: "#80530f" }, // honey
+  { bg: "#ffead9", fg: "#a33a0b" }, // tangerine
+  { bg: "#dcf7ec", fg: "#0f6b4a" }, // mint
+  { bg: "#ffe1ea", fg: "#a3184a" }, // berry
+  { bg: "#dff0fd", fg: "#145f99" }, // sky
+  { bg: "#fff4cc", fg: "#8a5a00" }, // sun
 ];
 
 export default function ItemMark({ name, className = "" }: { name: string; className?: string }) {
@@ -17,7 +16,7 @@ export default function ItemMark({ name, className = "" }: { name: string; class
     <span
       aria-hidden="true"
       className={`flex shrink-0 select-none items-center justify-center font-display font-semibold ${className}`}
-      style={{ background: tone.bg, color: tone.fg, fontVariationSettings: '"SOFT" 100' }}
+      style={{ background: tone.bg, color: tone.fg }}
     >
       {name.trim().charAt(0).toUpperCase() || "·"}
     </span>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
+import Confetti from "@/components/order/Confetti";
 import { loadClaimToken, loadMenuPath, type GuestOrderStatus } from "@/lib/guest-order";
 
 const STEPS: Record<string, string> = {
@@ -119,7 +120,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
 
   return (
     <Shell>
-      <span className="inline-block rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-brand-50">
+      <span className="inline-block rounded-full bg-sun-300 px-3 py-1 text-xs font-extrabold text-slate-900">
         {order.table_label ? `Table ${order.table_label}` : "Pickup order"}
       </span>
       <motion.h1
@@ -127,13 +128,14 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="mt-4 text-[2rem] font-semibold leading-[1.1] text-slate-900"
+        className="mt-4 text-[2.1rem] leading-[1.1] text-slate-900"
         aria-live="polite"
       >
         {headline}
       </motion.h1>
 
       {order.status !== "rejected" && <Track step={step} />}
+      {step === 2 && <Confetti />}
       {order.status === "rejected" && order.reject_reason && (
         <p className="mt-2 text-sm text-slate-600">{order.reject_reason}</p>
       )}
@@ -153,7 +155,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           else if (window.history.length > 1) window.history.back();
           else window.location.assign("/customer/order");
         }}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-600 px-5 py-4 text-[15px] font-semibold text-white shadow-lg shadow-brand-700/30 transition hover:bg-brand-700 active:scale-[0.98]"
+        className="mt-3 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-5 text-base font-extrabold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.97]"
       >
         <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
           <path d="M8 3v10M3 8h10" />
@@ -192,21 +194,21 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="relative mt-8 overflow-hidden rounded-3xl bg-slate-900 p-6 text-white shadow-xl"
+          className="relative mt-8 overflow-hidden rounded-[2rem] bg-brand-600 p-6 text-white shadow-xl shadow-brand-600/30"
         >
-          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-brand-500/30 blur-2xl" />
-          <p className="relative font-display text-4xl font-semibold text-brand-300">
+          <span className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-sun-500/35" />
+          <p className="relative font-display text-5xl font-semibold text-sun-300">
             +{Math.floor(Number(order.subtotal))} pts
           </p>
           <p className="relative mt-2 text-lg font-semibold">
             {order.paid ? "You can still claim points for this order" : "Join to earn points on this order"}
           </p>
-          <p className="relative mt-1 text-sm text-slate-300">
+          <p className="relative mt-1 text-sm text-brand-50">
             1 point for every RM1. Redeem them for free drinks and vouchers.
           </p>
           <Link
             href={`/login?redirect=${encodeURIComponent(`/order/status/${params.id}`)}`}
-            className="relative mt-5 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-400 active:scale-[0.98]"
+            className="relative mt-5 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-extrabold text-brand-800 transition hover:bg-brand-50 active:scale-[0.97]"
           >
             Create a free account
             <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
@@ -243,9 +245,9 @@ function Track({ step }: { step: number }) {
         const current = i === step;
         return (
           <li key={t.key} aria-current={current ? "step" : undefined}>
-            <div className="relative h-1.5 overflow-hidden rounded-full bg-slate-200">
+            <div className="relative h-2.5 overflow-hidden rounded-full bg-slate-200">
               <motion.div
-                className="absolute inset-y-0 left-0 rounded-full bg-brand-600"
+                className="absolute inset-y-0 left-0 rounded-full bg-brand-500"
                 initial={false}
                 animate={{ width: done ? "100%" : "0%" }}
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: i * 0.08 }}

@@ -66,7 +66,7 @@ export default async function CustomerDashboardPage() {
   const currency = wallet?.currency ?? "MYR";
   const recent: RecentOrder[] = (orderRows ?? []).map((o) => ({
     id: o.id,
-    outlet: branchName.get(o.outlet_id) ?? "BizCafé",
+    outlet: branchName.get(o.outlet_id) ?? "Restaurant",
     items: summarizeItems(o.items),
     total: Number(o.subtotal),
     href: o.transaction_id ? `/customer/orders/${o.transaction_id}` : "/customer/orders",
@@ -89,21 +89,38 @@ export default async function CustomerDashboardPage() {
             userId={uid}
           />
 
-          <Link
-            href="/scan"
-            className="flex items-center gap-4 rounded-3xl bg-brand-600 p-5 text-white shadow-lg shadow-brand-700/25 transition hover:bg-brand-700 active:scale-[0.99]"
-          >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
-              <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" />
-                <path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 16h3" />
-              </svg>
-            </span>
-            <span className="flex-1">
-              <span className="block text-lg font-semibold">Scan to order</span>
-              <span className="block text-sm text-brand-100">At a table? Order from your phone, earn points</span>
-            </span>
-          </Link>
+          <div className="grid grid-cols-2 gap-3">
+            <Link
+              href="/scan"
+              className="flex flex-col gap-3 rounded-3xl bg-sky-100 p-5 text-sky-700 transition hover:brightness-95 active:scale-[0.97]"
+            >
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+                <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" />
+                  <path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 16h3" />
+                </svg>
+              </span>
+              <span>
+                <span className="block font-display text-xl font-semibold text-slate-900">Scan table</span>
+                <span className="block text-sm font-semibold">Dine in, order here</span>
+              </span>
+            </Link>
+            <Link
+              href="/customer/order"
+              className="flex flex-col gap-3 rounded-3xl bg-berry-100 p-5 text-berry-700 transition hover:brightness-95 active:scale-[0.97]"
+            >
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+                <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M5 8h14l-1 12H6L5 8Z" />
+                  <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+                </svg>
+              </span>
+              <span>
+                <span className="block font-display text-xl font-semibold text-slate-900">Order ahead</span>
+                <span className="block text-sm font-semibold">Pick a store</span>
+              </span>
+            </Link>
+          </div>
 
           <NextReward points={loyalty?.points_balance ?? 0} rewards={(rewardRows ?? []) as Reward[]} />
 
@@ -139,9 +156,9 @@ export default async function CustomerDashboardPage() {
 function SectionHeader({ title, actionHref }: { title: string; actionHref?: string }) {
   return (
     <div className="mb-3 flex items-end justify-between px-1">
-      <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+      <h2 className="text-xl text-slate-900">{title}</h2>
       {actionHref && (
-        <Link href={actionHref} className="text-sm font-semibold text-brand-700 hover:text-brand-800">
+        <Link href={actionHref} className="rounded-full bg-white px-3 py-1 text-sm font-bold text-brand-700 shadow-sm hover:text-brand-800">
           See all
         </Link>
       )}
@@ -158,23 +175,31 @@ function NextReward({ points, rewards }: { points: number; rewards: Reward[] }) 
   const pct = Math.min(100, Math.round((points / target.points_cost) * 100));
 
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-sm">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-xl font-semibold text-slate-900">
-          {ready ? `${target.name} is yours` : `Next: ${target.name}`}
+    <div className="flex items-center gap-4 rounded-3xl bg-white p-5 shadow-sm">
+      <span className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${ready ? "bg-mint-100 text-mint-700" : "bg-sun-100 text-sun-700"}`}>
+        <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M4 11h16v9H4zM3 7h18v4H3zM12 7v13" />
+          <path d="M12 7c-1.5-3-5-3-5-1s3 1 5 1c2 0 5 1 5-1s-3.5-2-5 1Z" />
+        </svg>
+      </span>
+      <div className="min-w-0 flex-1">
+        <h2 className="text-lg leading-tight text-slate-900">
+          {ready ? `${target.name} is yours!` : target.name}
         </h2>
-        <span className="shrink-0 text-sm font-semibold text-brand-700">
-          {ready ? "Ready" : `${(target.points_cost - points).toLocaleString()} pts to go`}
-        </span>
+        <div
+          className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-100"
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`Progress to ${target.name}`}
+        >
+          <div className={`h-full rounded-full ${ready ? "bg-mint-500" : "bg-sun-500"}`} style={{ width: `${Math.max(pct, 4)}%` }} />
+        </div>
+        <p className="mt-1.5 text-sm font-semibold text-slate-600">
+          {ready ? "Tap your points card to redeem" : `${(target.points_cost - points).toLocaleString()} more points to go`}
+        </p>
       </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-        <div className="h-full rounded-full bg-brand-500 transition-[width] duration-700" style={{ width: `${pct}%` }} />
-      </div>
-      <p className="mt-2 text-sm text-slate-600">
-        {ready
-          ? "Tap your points card above to redeem it."
-          : `${points.toLocaleString()} of ${target.points_cost.toLocaleString()} points. 1 point for every RM1.`}
-      </p>
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { outletNames } from "@/lib/guest-order";
 // BizPos transaction_status: open | completed | voided | refunded
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   open: { label: "Open bill", cls: "bg-amber-100 text-amber-700" },
-  completed: { label: "Paid", cls: "bg-emerald-100 text-emerald-700" },
+  completed: { label: "Paid", cls: "bg-mint-100 text-mint-700" },
   voided: { label: "Voided", cls: "bg-rose-100 text-rose-600" },
   refunded: { label: "Refunded", cls: "bg-slate-100 text-slate-500" },
 };
@@ -31,7 +31,7 @@ export default async function OrdersListPage() {
 
   const orders = rows ?? [];
   const nameMap = await names;
-  const outletName = (o: { outlet_id: string }) => nameMap.get(o.outlet_id) ?? "BizCafé";
+  const outletName = (o: { outlet_id: string }) => nameMap.get(o.outlet_id) ?? "Restaurant";
   const sym = currencySymbol("MYR");
 
   return (

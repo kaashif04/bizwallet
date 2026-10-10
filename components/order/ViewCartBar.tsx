@@ -28,7 +28,7 @@ export default function ViewCartBar({
           <button
             type="button"
             onClick={onClick}
-            className="flex w-full items-center justify-between rounded-2xl bg-slate-900 px-5 py-4 text-white shadow-xl transition hover:bg-slate-800 active:scale-[0.98]"
+            className="flex h-14 w-full items-center justify-between rounded-full bg-brand-600 pl-2 pr-6 text-white shadow-xl shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.97]"
           >
             <span className="flex items-center gap-3">
               <motion.span
@@ -36,13 +36,13 @@ export default function ViewCartBar({
                 initial={{ scale: 1.5 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 500, damping: 18 }}
-                className="flex h-7 min-w-[1.75rem] items-center justify-center rounded-full bg-white/20 px-1.5 text-sm font-bold"
+                className="flex h-10 min-w-[2.5rem] items-center justify-center rounded-full bg-white px-2 text-base font-extrabold text-brand-700"
               >
                 {totalItems}
               </motion.span>
-              <span className="text-[15px] font-semibold">Review order</span>
+              <span className="text-base font-extrabold">View order</span>
             </span>
-            <span className="text-[15px] font-bold">
+            <span className="text-base font-extrabold">
               {sym}
               {totalPrice.toFixed(2)}
             </span>

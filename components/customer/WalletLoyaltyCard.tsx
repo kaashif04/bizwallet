@@ -6,9 +6,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import AnimatedNumber from "./AnimatedNumber";
 import RewardsCatalog from "./RewardsCatalog";
 import PerksModal from "./PerksModal";
-import { PlusIcon } from "./icons";
 import { currencySymbol } from "@/lib/format";
-import { computeTierProgress, tierGradient, type LoyaltyTier } from "@/lib/loyalty";
+import { computeTierProgress, type LoyaltyTier } from "@/lib/loyalty";
 import type { Reward } from "@/lib/dashboard-demo";
 
 export default function WalletLoyaltyCard({
@@ -34,11 +33,7 @@ export default function WalletLoyaltyCard({
   const [showPerks, setShowPerks] = useState(false);
 
   const tier = computeTierProgress(tiers, lifetimePoints);
-  const gradient = tierGradient(tier.currentTier.name);
   const progressPct = Math.round(tier.progress * 100);
-
-  const r = 26;
-  const circumference = 2 * Math.PI * r;
 
   return (
     <>
@@ -47,119 +42,85 @@ export default function WalletLoyaltyCard({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         onClick={() => setShowRewards(true)}
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setShowRewards(true)}
         role="button"
         tabIndex={0}
-        className={`relative cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br ${gradient} p-6 text-white shadow-glass transition-colors duration-700`}
+        aria-label={`${points} points. Open rewards`}
+        className="relative cursor-pointer overflow-hidden rounded-[2rem] bg-brand-600 p-6 text-white shadow-xl shadow-brand-600/30 transition active:scale-[0.99]"
       >
-        <div className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-white/10 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-14 -left-8 h-44 w-44 rounded-full bg-white/10 blur-2xl" />
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent_35%,rgba(255,255,255,0.10)_48%,transparent_62%)]" />
+        {/* Playful shapes */}
+        <span className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-sun-500/35" />
+        <span className="pointer-events-none absolute -bottom-16 right-16 h-36 w-36 rounded-full bg-berry-500/30" />
+        <span className="pointer-events-none absolute left-1/2 top-6 h-3 w-3 rounded-full bg-sun-300" />
+        <span className="pointer-events-none absolute right-24 top-16 h-2 w-2 rounded-full bg-white/70" />
 
-        <div className="relative flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <span className="h-6 w-8 rounded-md bg-gradient-to-br from-amber-200 to-amber-400 shadow-inner" />
-              <span className="text-sm font-medium text-white/70">Store Credit</span>
-            </div>
-
-            <div className="mt-5 flex items-baseline gap-1.5">
-              <span className="text-lg font-medium text-white/80">{sym}</span>
-              <AnimatedNumber
-                value={balance}
-                decimals={2}
-                className="text-4xl font-bold tracking-tight"
-              />
-            </div>
-
-            <Link
-              href="/customer/wallet"
-              onClick={(e) => e.stopPropagation()}
-              className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-800 shadow-lg transition active:scale-95"
-            >
-              <PlusIcon className="h-4 w-4" />
-              Top Up
-            </Link>
-          </div>
-
-          <div className="relative h-24 w-24 shrink-0">
-            <svg className="h-full w-full -rotate-90" viewBox="0 0 64 64">
-              <circle
-                cx="32"
-                cy="32"
-                r={r}
-                fill="none"
-                stroke="rgba(255,255,255,0.2)"
-                strokeWidth="6"
-              />
-              {/* Decorative reveal ring around the spendable balance — not a
-                  progress indicator; tier progress lives in the bar below. */}
-              <motion.circle
-                cx="32"
-                cy="32"
-                r={r}
-                fill="none"
-                stroke="white"
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                initial={{ strokeDashoffset: circumference }}
-                animate={{ strokeDashoffset: 0 }}
-                transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-lg font-bold leading-none">{points}</span>
-              <span className="text-[10px] text-white/70">pts</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative mt-5 border-t border-white/10 pt-4">
+        <div className="relative flex items-center justify-between">
+          <span className="text-sm font-bold text-brand-100">Your points</span>
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               setShowPerks(true);
             }}
-            className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 backdrop-blur-sm transition active:scale-95"
+            className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-extrabold text-brand-800 shadow-md transition active:scale-95"
           >
             <span
-              className="h-2.5 w-2.5 rounded-full ring-2 ring-white/40"
+              className="h-2.5 w-2.5 rounded-full"
               style={{ backgroundColor: tier.currentTier.theme_color }}
             />
-            <span className="text-sm font-bold text-white">{tier.current} Tier</span>
-            <span className="text-white/60">›</span>
+            {tier.current}
+            <span aria-hidden="true">›</span>
           </button>
+        </div>
 
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-xs text-white/80">
-              <span>
-                {tier.nextTier ? (
-                  <>
-                    <span className="font-semibold text-white">
-                      {tier.pointsToNext.toLocaleString()} pts
-                    </span>{" "}
-                    to unlock {tier.next} Tier
-                  </>
-                ) : (
-                  "Top tier unlocked. Every perk is yours."
-                )}
-              </span>
-              <span className="font-semibold text-white">{progressPct}%</span>
-            </div>
-            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-white/15">
-              <motion.div
-                className="h-full rounded-full bg-white"
-                initial={{ width: 0 }}
-                animate={{ width: `${progressPct}%` }}
-                transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </div>
+        <div className="relative mt-3 flex items-center gap-3">
+          <motion.svg
+            viewBox="0 0 20 20"
+            className="h-11 w-11 text-sun-300 drop-shadow"
+            fill="currentColor"
+            aria-hidden="true"
+            initial={{ rotate: -30, scale: 0.4 }}
+            animate={{ rotate: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 12, delay: 0.2 }}
+          >
+            <path d="M10 1.5l2.5 5.2 5.7.8-4.1 4 1 5.6L10 14.4l-5.1 2.7 1-5.6-4.1-4 5.7-.8L10 1.5Z" />
+          </motion.svg>
+          <AnimatedNumber value={points} decimals={0} className="font-display text-6xl font-semibold leading-none" />
+        </div>
+
+        <div className="relative mt-5">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-semibold text-brand-50">
+              {tier.nextTier ? (
+                <>
+                  <span className="font-extrabold text-white">{tier.pointsToNext.toLocaleString()} pts</span> to {tier.next}
+                </>
+              ) : (
+                "Top tier. Every perk is yours."
+              )}
+            </span>
+            <span className="font-extrabold">{progressPct}%</span>
           </div>
+          <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-white/25">
+            <motion.div
+              className="h-full rounded-full bg-sun-300"
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.max(progressPct, 3)}%` }}
+              transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
+            />
+          </div>
+        </div>
 
-          <span className="mt-3 block text-right text-xs font-semibold text-white/80">
-            View rewards →
-          </span>
+        <div className="relative mt-5 flex items-center justify-between">
+          <Link
+            href="/customer/wallet"
+            onClick={(e) => e.stopPropagation()}
+            className="text-sm font-semibold text-brand-50 underline-offset-4 hover:underline"
+          >
+            {sym}
+            {balance.toFixed(2)} credit
+          </Link>
+          <span className="rounded-full bg-white/20 px-4 py-2 text-sm font-extrabold">Rewards →</span>
         </div>
       </motion.div>
 

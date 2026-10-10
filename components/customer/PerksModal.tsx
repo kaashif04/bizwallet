@@ -59,7 +59,7 @@ export default function PerksModal({
                 transition={{ delay: 0.06 * i, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3.5"
               >
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm text-emerald-600">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-mint-100 text-sm text-mint-700">
                   ✓
                 </span>
                 <p className="text-sm font-medium leading-snug text-slate-700">{perk}</p>

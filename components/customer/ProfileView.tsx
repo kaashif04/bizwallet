@@ -233,7 +233,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
         </button>
       </form>
 
-      <p className="text-center text-[11px] text-slate-400">BizCafé · v0.1.0</p>
+      <p className="text-center text-[11px] text-slate-400">BizWallet</p>
 
       <AnimatePresence>
         {showCompletionSheet && (
@@ -281,7 +281,7 @@ function Row({
       </div>
       {verified !== undefined &&
         (verified ? (
-          <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+          <span className="inline-flex items-center rounded-full bg-mint-100 px-2.5 py-1 text-[11px] font-semibold text-mint-700">
             Verified
           </span>
         ) : (

@@ -28,13 +28,13 @@ export default function DashboardHeader({
       className="flex items-center justify-between"
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-600 font-display text-xl font-semibold text-white shadow-md shadow-brand-700/25">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sun-300 font-display text-xl font-semibold text-slate-900">
           {initial}
         </div>
         <div>
-          <p className="text-sm text-slate-500">{greeting},</p>
-          <h1 className="text-2xl font-semibold leading-tight text-slate-900">
-            {name}
+          <p className="text-sm font-semibold text-slate-500">{greeting}</p>
+          <h1 className="text-2xl leading-tight text-slate-900">
+            Hi, {name}
           </h1>
         </div>
       </div>

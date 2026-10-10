@@ -1,24 +1,23 @@
 import type { Config } from "tailwindcss";
 
-// Warm "roast" neutrals. Replaces Tailwind's cool slate everywhere (the app
-// uses slate-* ~600 times) so grays sit in the same hue family as the coffee
-// brand instead of fighting it.
-const roast = {
-  50: "#faf7f4",
-  100: "#f3eee8",
-  200: "#e6ded5",
-  300: "#d2c6b9",
-  400: "#a3927f",
-  500: "#7a6a5a",
-  600: "#5f5245",
-  700: "#4a3f35",
-  800: "#322a23",
-  900: "#211b16",
-  950: "#15100c",
+// Soft neutral grays with a touch of warmth. Replaces Tailwind's cool slate
+// everywhere (the app uses slate-* ~600 times).
+const neutral = {
+  50: "#fafaf9",
+  100: "#f4f3f1",
+  200: "#e7e5e2",
+  300: "#d4d1cc",
+  400: "#a29d96",
+  500: "#736d66",
+  600: "#5a544e",
+  700: "#45403b",
+  800: "#2e2a27",
+  900: "#1f1c1a",
+  950: "#141210",
 };
 
-// Shadows tinted with roast-900 instead of pure black, one light source (above).
-const tint = "33 27 22";
+// Shadows tinted warm brown instead of pure black, one light source (above).
+const tint = "60 30 10";
 
 const config: Config = {
   content: [
@@ -30,23 +29,28 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-body)", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "Georgia", "serif"],
+        display: ["var(--font-display)", "var(--font-body)", "system-ui", "sans-serif"],
       },
       colors: {
-        slate: roast,
-        // Warm "coffee" brand accent used across the customer experience.
+        slate: neutral,
+        // Juicy tangerine. 600 is the button colour: white text on it is 4.9:1.
         brand: {
-          50: "#fdf8f3",
-          100: "#f8ecdf",
-          200: "#efd4ba",
-          300: "#e3b488",
-          400: "#d68f57",
-          500: "#c87234",
-          600: "#b15a29",
-          700: "#934524",
-          800: "#773923",
-          900: "#62301f",
+          50: "#fff7f0",
+          100: "#ffead9",
+          200: "#ffd0ad",
+          300: "#ffad75",
+          400: "#ff8a3d",
+          500: "#f26419",
+          600: "#c4470b",
+          700: "#a33a0b",
+          800: "#82300e",
+          900: "#6b2a10",
         },
+        // Playful accents: stars/points, success, info, treats.
+        sun: { 100: "#fff4cc", 300: "#ffdf6b", 500: "#ffc21a", 700: "#8a5a00" },
+        mint: { 100: "#dcf7ec", 500: "#22b07d", 700: "#0f6b4a" },
+        sky: { 100: "#dff0fd", 500: "#2f9be8", 700: "#145f99" },
+        berry: { 100: "#ffe1ea", 500: "#f2477a", 700: "#a3184a" },
       },
       boxShadow: {
         sm: `0 1px 2px 0 rgb(${tint} / 0.06), 0 1px 3px 0 rgb(${tint} / 0.05)`,

@@ -1,22 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Figtree, Fraunces } from "next/font/google";
+import { Fredoka, Nunito } from "next/font/google";
 import MotionProvider from "@/components/MotionProvider";
 import "./globals.css";
 
-const body = Figtree({ subsets: ["latin"], variable: "--font-body" });
-const display = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-display",
-  axes: ["SOFT", "opsz"],
-});
+const body = Nunito({ subsets: ["latin"], variable: "--font-body" });
+const display = Fredoka({ subsets: ["latin"], variable: "--font-display" });
 
 export const metadata: Metadata = {
-  title: { default: "BizCafé", template: "%s · BizCafé" },
-  description: "Order from your table, pay at the counter, earn points on every cup.",
+  title: { default: "BizWallet", template: "%s · BizWallet" },
+  description: "Order from your table, pay at the counter, earn points every visit.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#fdf8f3",
+  themeColor: "#fff7f0",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

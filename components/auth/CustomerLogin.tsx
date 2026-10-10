@@ -122,14 +122,14 @@ export default function CustomerLogin() {
   }
 
   return (
-    <div className="rounded-[28px] border border-white/70 bg-white/80 p-8 shadow-glass backdrop-blur-xl">
+    <div className="rounded-[2rem] bg-white p-7 shadow-xl sm:p-8">
       {/* Brand */}
       <div className="mb-7 text-center">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-lg shadow-brand-700/30">
           <BrandMark className="h-8 w-8" />
         </div>
-        <h1 className="mt-5 text-3xl font-semibold text-slate-900">
-          Welcome to BizCafé
+        <h1 className="mt-5 text-3xl text-slate-900">
+          Welcome to BizWallet
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           {mode === "signup"
@@ -142,7 +142,7 @@ export default function CustomerLogin() {
       <button
         type="button"
         onClick={handleGoogle}
-        className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+        className="flex w-full items-center justify-center gap-3 rounded-full border-2 border-slate-100 bg-white px-4 py-3 text-[15px] font-bold text-slate-800 transition hover:bg-slate-50 active:scale-[0.98]"
       >
         <GoogleIcon />
         Continue with Google
@@ -239,7 +239,7 @@ export default function CustomerLogin() {
           </PrimaryButton>
 
           <p className="pt-1 text-center text-sm text-slate-500">
-            {mode === "signup" ? "Already have an account? " : "New to BizCafé? "}
+            {mode === "signup" ? "Already have an account? " : "New to BizWallet? "}
             <button
               type="button"
               onClick={() => {
@@ -330,7 +330,7 @@ function Field({
         {...props}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30 disabled:bg-slate-50 disabled:text-slate-400"
+        className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-brand-400 focus:bg-white disabled:text-slate-400"
       />
     </label>
   );
@@ -347,7 +347,7 @@ function PrimaryButton({
     <button
       type="submit"
       disabled={loading}
-      className="mt-1 flex w-full items-center justify-center rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+      className="mt-1 flex w-full items-center justify-center rounded-full bg-brand-600 px-4 py-3.5 text-base font-extrabold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {loading ? <Spinner /> : children}
     </button>

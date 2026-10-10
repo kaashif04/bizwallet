@@ -45,7 +45,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
     }
   }
 
-  const outletName = outletNameMap.get(tx.outlet_id) ?? "BizCafé";
+  const outletName = outletNameMap.get(tx.outlet_id) ?? "Restaurant";
   const sym = currencySymbol("MYR");
   const money = (n: unknown) => `${sym}${Number(n ?? 0).toFixed(2)}`;
 

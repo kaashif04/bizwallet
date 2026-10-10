@@ -49,7 +49,7 @@ export default function ResetPasswordPage() {
         {!ready ? (
           <p className="mt-3 text-sm text-slate-500">Loading…</p>
         ) : done ? (
-          <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <p className="mt-4 rounded-xl border border-mint-100 bg-mint-100 px-4 py-3 text-sm text-mint-700">
             ✓ Password updated — taking you to your dashboard…
           </p>
         ) : !hasSession ? (

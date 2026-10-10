@@ -16,7 +16,7 @@ const actions = [
     label: "History",
     aria: "Transaction history",
     icon: ReceiptIcon,
-    tint: "bg-emerald-100 text-emerald-700",
+    tint: "bg-mint-100 text-mint-700",
   },
   {
     key: "vouchers",

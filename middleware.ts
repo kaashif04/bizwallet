@@ -3,7 +3,8 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 // Route protection + session refresh.
 //
-//  - Signed out on /customer/*                       -> /login
+//  - Signed out on /customer/* or /                  -> /login
+//  - Signed-in member on / or /login                 -> dashboard (or ?redirect)
 //  - Signed in without a member row (BizPos staff)   -> /login?account=staff
 //
 // BizWallet is customer-only; managers use the BizPos dashboard.
@@ -44,22 +45,35 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isCustomerArea = path.startsWith("/customer");
 
+  // A redirect is a new response: carry over any cookies getUser() just
+  // refreshed, or the browser keeps a spent refresh token and gets signed out.
+  const redirectTo = (to: string) => {
+    const res = NextResponse.redirect(new URL(to, request.url));
+    response.cookies.getAll().forEach((c) => res.cookies.set(c));
+    return res;
+  };
+
   // Not signed in -> bounce to login (remembering where they wanted to go).
-  if (isCustomerArea && !user) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", path);
-    return NextResponse.redirect(loginUrl);
+  if (!user) {
+    if (isCustomerArea) return redirectTo(`/login?redirect=${encodeURIComponent(path)}`);
+    if (path === "/") return redirectTo("/login");
+    return response;
   }
 
-  // One login for every Biz app: a staff account has no member row here.
-  if (user && isCustomerArea) {
+  // Signed in: skip the login screen. One login serves every Biz app, so a
+  // BizPos staff account (no member row) gets an explanation instead.
+  if (isCustomerArea || path === "/" || path === "/login") {
     const { data: member } = await supabase
       .from("members")
       .select("id")
       .eq("id", user.id)
       .maybeSingle();
     if (!member) {
-      return NextResponse.redirect(new URL("/login?account=staff", request.url));
+      return path === "/login" ? response : redirectTo("/login?account=staff");
+    }
+    if (path === "/" || path === "/login") {
+      const next = request.nextUrl.searchParams.get("redirect");
+      return redirectTo(next?.startsWith("/") && !next.startsWith("//") ? next : "/customer/dashboard");
     }
   }
 

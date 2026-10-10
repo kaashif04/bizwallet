@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import type { MenuItem, VariantSelection } from "@/lib/order-types";
 import type { VariantGroup } from "@/lib/menu-variants";
 import { currencySymbol } from "@/lib/format";
 import { useCart } from "./cart-context";
 import ItemMark from "./ItemMark";
+import { useSheet } from "./useSheet";
 
 function defaultSelection(groups: VariantGroup[]): Record<string, string[]> {
   return Object.fromEntries(
@@ -31,6 +32,8 @@ export default function AddToCartSheet({
 }) {
   const cart = useCart();
   const sym = currencySymbol(currency);
+  const drag = useDragControls();
+  useSheet(onClose);
   const [sel, setSel] = useState<Record<string, string[]>>(() =>
     defaultSelection(groups)
   );
@@ -94,7 +97,7 @@ export default function AddToCartSheet({
   return (
     <>
       <motion.div
-        className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm"
+        className="fixed inset-0 z-40 bg-slate-900/45 backdrop-blur-[2px]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -104,40 +107,58 @@ export default function AddToCartSheet({
       <motion.div
         role="dialog"
         aria-modal="true"
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md rounded-t-3xl bg-white shadow-2xl"
+        aria-labelledby="dish-title"
+        className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92dvh] max-w-md flex-col rounded-t-[2rem] bg-white shadow-2xl"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 32, stiffness: 340 }}
+        transition={{ type: "spring", damping: 34, stiffness: 380 }}
         drag="y"
+        dragListener={false}
+        dragControls={drag}
         dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={{ top: 0, bottom: 0.5 }}
+        dragElastic={{ top: 0, bottom: 0.6 }}
         onDragEnd={(_, info) => {
-          if (info.offset.y > 120) onClose();
+          if (info.offset.y > 100 || info.velocity.y > 500) onClose();
         }}
       >
-        <div className="flex justify-center pt-3">
-          <span className="h-1.5 w-10 rounded-full bg-slate-200" />
+        {/* Drag handle + close: the only drag target, so option lists scroll freely. */}
+        <div
+          className="relative flex touch-none justify-center pb-2 pt-3"
+          onPointerDown={(e) => drag.start(e)}
+        >
+          <span className="h-1.5 w-12 rounded-full bg-slate-200" />
+          <button
+            type="button"
+            onClick={onClose}
+            onPointerDown={(e) => e.stopPropagation()}
+            aria-label="Close"
+            className="absolute right-3 top-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200 active:scale-90"
+          >
+            <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true">
+              <path d="M4 4l8 8M12 4l-8 8" />
+            </svg>
+          </button>
         </div>
 
-        <div className="max-h-[80vh] overflow-y-auto px-5 pb-6">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
           {item.imageUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={item.imageUrl}
               alt={item.name}
               decoding="async"
-              className="mt-3 aspect-[4/3] w-full rounded-3xl bg-slate-100 object-cover"
+              className="mt-1 aspect-[4/3] w-full rounded-3xl bg-slate-100 object-cover"
             />
           )}
-          <div className="flex items-start gap-4 pt-3">
-            {!item.imageUrl && <ItemMark name={item.name} className="h-20 w-20 rounded-3xl text-4xl" />}
+          <div className="flex items-start gap-4 pr-10 pt-3">
+            {!item.imageUrl && <ItemMark name={item.name} className="h-16 w-16 rounded-2xl text-3xl" />}
             <div className="min-w-0 flex-1">
-              <h2 className="text-2xl font-semibold leading-tight text-slate-900">{item.name}</h2>
+              <h2 id="dish-title" className="text-2xl leading-tight text-slate-900">{item.name}</h2>
               {item.description && (
-                <p className="mt-0.5 text-sm text-slate-500">{item.description}</p>
+                <p className="mt-1 text-sm text-slate-600">{item.description}</p>
               )}
-              <p className="mt-1 text-sm font-semibold text-brand-700">
+              <p className="mt-1.5 text-base font-extrabold text-slate-900">
                 {sym}
                 {item.price.toFixed(2)}
               </p>
@@ -150,21 +171,25 @@ export default function AddToCartSheet({
                 ref={(el) => {
                   groupRefs.current[g.id] = el;
                 }}
-                className="mt-5"
+                className="mt-6"
                 animate={shakeId === g.id ? { x: [0, -6, 6, -4, 4, 0] } : { x: 0 }}
                 transition={{ duration: 0.4 }}
               >
                 <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-900">{g.label}</h3>
-                  {g.required && (
-                    <span
-                      className={`text-[11px] font-medium uppercase tracking-wide transition-colors ${
-                        shakeId === g.id ? "text-red-500" : "text-slate-400"
-                      }`}
-                    >
-                      {g.selectionType === "multiple" ? "Select at least 1" : "Required"}
-                    </span>
-                  )}
+                  <h3 className="font-display text-lg font-semibold text-slate-900">{g.label}</h3>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
+                      shakeId === g.id
+                        ? "bg-berry-100 text-berry-700"
+                        : g.required
+                          ? "bg-brand-100 text-brand-800"
+                          : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {g.required
+                      ? g.selectionType === "multiple" ? "Pick at least 1" : "Required"
+                      : g.maxSelect && g.maxSelect > 1 ? `Up to ${g.maxSelect}` : "Optional"}
+                  </span>
                 </div>
                 <div className="space-y-2">
                   {g.options.map((o) => {
@@ -172,10 +197,10 @@ export default function AddToCartSheet({
                     return (
                       <label
                         key={o.id}
-                        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-2.5 transition active:scale-[0.99] ${
+                        className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-3 transition active:scale-[0.98] ${
                           isSelected
-                            ? "border-brand-600 bg-brand-50"
-                            : "border-slate-200 bg-white"
+                            ? "border-brand-500 bg-brand-50"
+                            : "border-slate-100 bg-white hover:border-slate-200"
                         }`}
                       >
                         <input
@@ -186,9 +211,9 @@ export default function AddToCartSheet({
                           className="sr-only"
                         />
                         <span
-                          className={`relative flex h-5 w-5 shrink-0 items-center justify-center border-2 transition-colors ${
-                            g.selectionType === "single" ? "rounded-full" : "rounded-md"
-                          } ${isSelected ? "border-brand-600" : "border-slate-300"}`}
+                          className={`relative flex h-6 w-6 shrink-0 items-center justify-center border-2 transition-colors ${
+                            g.selectionType === "single" ? "rounded-full" : "rounded-lg"
+                          } ${isSelected ? "border-brand-500 bg-brand-500" : "border-slate-300"}`}
                         >
                           <AnimatePresence>
                             {isSelected &&
@@ -199,7 +224,7 @@ export default function AddToCartSheet({
                                   animate={{ scale: 1 }}
                                   exit={{ scale: 0 }}
                                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                  className="h-2.5 w-2.5 rounded-full bg-brand-600"
+                                  className="h-2.5 w-2.5 rounded-full bg-white"
                                 />
                               ) : (
                                 <motion.svg
@@ -209,7 +234,7 @@ export default function AddToCartSheet({
                                   exit={{ scale: 0, opacity: 0 }}
                                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                                   viewBox="0 0 12 10"
-                                  className="h-2.5 w-3 fill-none stroke-brand-600"
+                                  className="h-2.5 w-3 fill-none stroke-white"
                                   strokeWidth={2}
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
@@ -219,11 +244,11 @@ export default function AddToCartSheet({
                               ))}
                           </AnimatePresence>
                         </span>
-                        <span className="min-w-0 flex-1 text-sm font-medium text-slate-800">
+                        <span className="min-w-0 flex-1 text-[15px] font-semibold text-slate-800">
                           {o.label}
                         </span>
                         {!!o.priceDelta && (
-                          <span className="shrink-0 text-sm font-semibold text-brand-700">
+                          <span className="shrink-0 text-sm font-bold text-slate-600">
                             +{sym}
                             {o.priceDelta.toFixed(2)}
                           </span>
@@ -235,40 +260,40 @@ export default function AddToCartSheet({
               </motion.div>
             ))}
 
-          <div className="mt-6 flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-900">Quantity</span>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setQty((q) => Math.max(1, q - 1))}
-                disabled={qty <= 1}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-lg text-slate-700 disabled:opacity-40"
-                aria-label="Decrease quantity"
-              >
-                −
-              </button>
-              <span className="w-6 text-center text-base font-semibold">{qty}</span>
-              <button
-                type="button"
-                onClick={() => setQty((q) => q + 1)}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-lg text-slate-700"
-                aria-label="Increase quantity"
-              >
-                +
-              </button>
-            </div>
+        </div>
+
+        <div className="flex items-center gap-3 border-t border-slate-100 bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+          <div className="flex items-center gap-1 rounded-full bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setQty((q) => Math.max(1, q - 1))}
+              disabled={qty <= 1}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl font-bold text-slate-800 shadow-sm transition active:scale-90 disabled:opacity-40"
+              aria-label="Decrease quantity"
+            >
+              −
+            </button>
+            <span className="w-7 text-center text-base font-extrabold" aria-live="polite">{qty}</span>
+            <button
+              type="button"
+              onClick={() => setQty((q) => Math.min(50, q + 1))}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl font-bold text-slate-800 shadow-sm transition active:scale-90"
+              aria-label="Increase quantity"
+            >
+              +
+            </button>
           </div>
 
           <button
             type="button"
             onClick={handleAddClick}
-            className={`mt-6 flex w-full items-center justify-between rounded-2xl px-5 py-3.5 text-sm font-semibold transition active:scale-[0.99] ${
+            className={`flex h-12 flex-1 items-center justify-between rounded-full px-5 text-[15px] font-extrabold transition active:scale-[0.97] ${
               unmetGroup
-                ? "bg-slate-100 text-slate-500"
-                : "bg-brand-600 text-white shadow-lg shadow-brand-700/30 hover:bg-brand-700"
+                ? "bg-slate-100 text-slate-600"
+                : "bg-brand-600 text-white shadow-lg shadow-brand-600/30 hover:bg-brand-700"
             }`}
           >
-            <span>{unmetGroup ? `Select ${unmetGroup.label}` : "Add to cart"}</span>
+            <span className="truncate">{unmetGroup ? `Choose ${unmetGroup.label}` : "Add"}</span>
             <motion.span
               key={total.toFixed(2)}
               initial={{ opacity: 0, y: -6 }}

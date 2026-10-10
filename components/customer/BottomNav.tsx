@@ -18,7 +18,7 @@ export default function BottomNav() {
   return (
     <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
       <div className="mx-auto max-w-md px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="pointer-events-auto flex items-center justify-around rounded-2xl border border-slate-200/70 bg-white/95 px-2 py-2 shadow-lg backdrop-blur-xl">
+        <div className="pointer-events-auto flex items-center justify-around rounded-[1.75rem] bg-white/95 px-2 py-2 shadow-xl backdrop-blur-xl">
           {items.map((it) => {
             const active = pathname === it.href || pathname.startsWith(it.href + "/");
             const Icon = it.icon;
@@ -29,20 +29,22 @@ export default function BottomNav() {
                 aria-current={active ? "page" : undefined}
                 className="relative flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 transition-transform active:scale-90"
               >
-                {active && (
-                  <motion.span
-                    layoutId="bottom-nav-active"
-                    className="absolute -top-1 h-1 w-7 rounded-full bg-brand-600"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                <span className="relative flex h-8 w-14 items-center justify-center">
+                  {active && (
+                    <motion.span
+                      layoutId="bottom-nav-active"
+                      className="absolute inset-0 rounded-full bg-brand-100"
+                      transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                    />
+                  )}
+                  <Icon
+                    className={`relative h-6 w-6 transition-colors ${
+                      active ? "text-brand-700" : "text-slate-500"
+                    }`}
                   />
-                )}
-                <Icon
-                  className={`h-6 w-6 transition-colors ${
-                    active ? "text-brand-600" : "text-slate-500"
-                  }`}
-                />
+                </span>
                 <span
-                  className={`text-[11px] font-semibold transition-colors ${
+                  className={`text-xs font-bold transition-colors ${
                     active ? "text-brand-700" : "text-slate-500"
                   }`}
                 >

@@ -59,12 +59,12 @@ export default function MenuView({
       {/* Sticky header + category chips */}
       <div className="sticky top-0 z-20 border-b border-slate-200/60 bg-brand-50/90 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3 px-5 pt-[max(1rem,env(safe-area-inset-top))]">
-          <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-brand-50">
+          <span className="rounded-full bg-sun-300 px-3 py-1 text-xs font-extrabold text-slate-900">
             {subtitle}
           </span>
           <AccountChip />
         </div>
-        <h1 className="truncate px-5 pb-3 pt-2 text-[1.65rem] font-semibold leading-tight text-slate-900">
+        <h1 className="truncate px-5 pb-3 pt-2 text-[1.75rem] leading-tight text-slate-900">
           {title}
         </h1>
 
@@ -105,7 +105,7 @@ export default function MenuView({
             }}
             className="scroll-mt-32"
           >
-            <h2 className="mb-3 px-1 text-xl font-semibold text-slate-900">{cat}</h2>
+            <h2 className="mb-3 px-1 text-xl text-slate-900">{cat}</h2>
             <div className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm">
               {items
                 .filter((i) => i.category === cat)
@@ -168,18 +168,18 @@ function MenuItemCard({
       )}
 
       <span className="min-w-0 flex-1">
-        <span className="block text-[15px] font-semibold leading-snug text-slate-900">{item.name}</span>
+        <span className="block text-[15px] font-bold leading-snug text-slate-900">{item.name}</span>
         {item.description && (
           <span className="mt-0.5 line-clamp-2 block text-[13px] leading-snug text-slate-500">
             {item.description}
           </span>
         )}
-        <span className="mt-1.5 block text-sm font-bold text-slate-900">
+        <span className="mt-1.5 block text-[15px] font-extrabold text-slate-900">
           {currencySymbol(currency)}
           {item.price.toFixed(2)}
         </span>
         {item.freeHint && (
-          <span className="mt-1.5 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+          <span className="mt-1.5 inline-block rounded-full bg-mint-100 px-2 py-0.5 text-xs font-semibold text-mint-700">
             {item.freeHint}
           </span>
         )}
@@ -194,7 +194,7 @@ function MenuItemCard({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.4, opacity: 0 }}
               transition={{ type: "spring", stiffness: 600, damping: 26 }}
-              className="flex h-9 min-w-[2.25rem] items-center justify-center rounded-full bg-brand-600 px-2 text-sm font-bold text-white shadow-md shadow-brand-700/25"
+              className="flex h-9 min-w-[2.25rem] items-center justify-center rounded-full bg-mint-500 px-2 text-sm font-extrabold text-white shadow-md shadow-mint-500/30"
               aria-label={`${count} in cart`}
             >
               {count}
@@ -205,7 +205,7 @@ function MenuItemCard({
               initial={{ scale: 0.4, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.4, opacity: 0 }}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-white transition-colors group-hover:bg-brand-600"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white shadow-md shadow-brand-600/25 transition-colors group-hover:bg-brand-700"
             >
               <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
                 <path d="M8 3v10M3 8h10" />

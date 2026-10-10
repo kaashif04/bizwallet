@@ -35,9 +35,8 @@ textarea {
 
 h1,
 h2 {
-  @apply font-display;
-  font-optical-sizing: auto;
-  letter-spacing: -0.02em;
+  @apply font-display font-semibold;
+  letter-spacing: -0.01em;
   text-wrap: balance;
 }
 

@@ -50,7 +50,7 @@ export default function TransactionList({
                   <span
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
                       credit
-                        ? "bg-emerald-100 text-emerald-600"
+                        ? "bg-mint-100 text-mint-700"
                         : "bg-rose-100 text-rose-600"
                     }`}
                   >
@@ -86,7 +86,7 @@ export default function TransactionList({
                   <div className="text-right">
                     <p
                       className={`text-sm font-bold ${
-                        credit ? "text-emerald-600" : "text-slate-900"
+                        credit ? "text-mint-700" : "text-slate-900"
                       }`}
                     >
                       {credit ? "+" : "−"}

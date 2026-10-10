@@ -228,7 +228,7 @@ export default function ProfileCompletionSheet({
                 animate={{ opacity: 1, y: -30, scale: 1.15 }}
                 exit={{ opacity: 0, y: -46 }}
                 transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-                className="pointer-events-none absolute right-5 top-2 text-base font-bold text-emerald-500"
+                className="pointer-events-none absolute right-5 top-2 text-base font-bold text-mint-500"
               >
                 +{BONUS_POINTS} pts
               </motion.div>
