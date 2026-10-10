@@ -1,0 +1,109 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
+import ItemMark from "./ItemMark";
+import type { PickupOutlet } from "@/lib/guest-order";
+
+// Pick a store, then dine in (scan the table QR) or order ahead for pickup.
+export default function StorePicker({ branches }: { branches: PickupOutlet[] }) {
+  const [open, setOpen] = useState<string | null>(branches.length === 1 ? branches[0].id : null);
+  const showCompany = new Set(branches.map((b) => b.company_id)).size > 1;
+
+  return (
+    <ul className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm">
+      {branches.map((b) => {
+        const isOpen = open === b.id;
+        return (
+          <li key={b.id}>
+            <button
+              type="button"
+              onClick={() => setOpen(isOpen ? null : b.id)}
+              aria-expanded={isOpen}
+              className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-brand-50/60"
+            >
+              <ItemMark name={b.name} className="h-11 w-11 rounded-xl text-lg" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold text-slate-900">{b.name}</span>
+                <span className="block truncate text-[13px] text-slate-500">
+                  {showCompany ? `${b.company} · ` : ""}
+                  {b.pickup ? "Dine in or pickup" : "Dine in"}
+                </span>
+              </span>
+              <motion.svg
+                animate={{ rotate: isOpen ? 90 : 0 }}
+                viewBox="0 0 16 16"
+                className="h-4 w-4 shrink-0 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M6 3l5 5-5 5" />
+              </motion.svg>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {isOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="grid grid-cols-2 gap-2 px-4 pb-4">
+                    <Link
+                      href={`/scan?at=${encodeURIComponent(b.name)}`}
+                      className="flex flex-col gap-1 rounded-2xl bg-slate-900 p-4 text-white transition hover:bg-brand-700 active:scale-[0.98]"
+                    >
+                      <ScanIcon />
+                      <span className="mt-1 text-[15px] font-semibold">Dine in</span>
+                      <span className="text-xs text-slate-300">Scan your table QR</span>
+                    </Link>
+                    {b.pickup ? (
+                      <Link
+                        href={`/order/p/${b.id}`}
+                        className="flex flex-col gap-1 rounded-2xl bg-brand-100 p-4 text-brand-900 transition hover:bg-brand-200 active:scale-[0.98]"
+                      >
+                        <BagIcon />
+                        <span className="mt-1 text-[15px] font-semibold">Pickup</span>
+                        <span className="text-xs text-brand-800">Order ahead, collect</span>
+                      </Link>
+                    ) : (
+                      <div className="flex flex-col gap-1 rounded-2xl bg-slate-100 p-4 text-slate-500">
+                        <BagIcon />
+                        <span className="mt-1 text-[15px] font-semibold">Pickup</span>
+                        <span className="text-xs">Not offered here yet</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function ScanIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" />
+      <path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 16h3" />
+    </svg>
+  );
+}
+
+function BagIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 8h14l-1 12H6L5 8Z" />
+      <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+    </svg>
+  );
+}

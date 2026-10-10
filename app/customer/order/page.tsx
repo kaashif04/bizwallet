@@ -1,56 +1,46 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import BottomNav from "@/components/customer/BottomNav";
+import StorePicker from "@/components/order/StorePicker";
 import type { PickupOutlet } from "@/lib/guest-order";
 
-// Pickup pre-orders. BizPos's outlets table is company-private, so the list
-// comes from guest_list_outlets, narrowed to branches that accept pickup.
+// Order tab: pick a store, then dine in (scan the table QR) or pickup.
 export default async function OrderPage() {
   const { data } = await createClient().rpc("guest_list_outlets");
-  const outlets = ((data ?? []) as PickupOutlet[]).filter((o) => o.pickup);
-
-  // Already sorted by company, then branch.
-  const byCompany = new Map<string, PickupOutlet[]>();
-  for (const o of outlets) byCompany.set(o.company, [...(byCompany.get(o.company) ?? []), o]);
-  const showCompany = byCompany.size > 1;
+  const branches = (data ?? []) as PickupOutlet[];
 
   return (
     <main className="min-h-dvh bg-brand-50">
-      <div className="mx-auto max-w-md px-5 pb-16 pt-[max(2rem,env(safe-area-inset-top))]">
-        <h1 className="text-[2rem] font-semibold leading-tight text-slate-900">Order for pickup</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Pick a branch. At a table? Scan the QR code on it instead.
-        </p>
+      <div className="mx-auto max-w-md px-5 pb-32 pt-[max(1.5rem,env(safe-area-inset-top))]">
+        <h1 className="text-[2rem] font-semibold leading-tight text-slate-900">Order</h1>
+        <p className="mt-2 text-sm text-slate-600">Every order earns points. Pay at the counter.</p>
 
-        {Array.from(byCompany, ([company, branches]) => (
-          <section key={company} className="mt-8">
-            {showCompany && <h2 className="mb-3 px-1 text-xl font-semibold text-slate-900">{company}</h2>}
-            <ul className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm">
-              {branches.map((o) => (
-                <li key={o.id}>
-                  <Link
-                    href={`/order/p/${o.id}`}
-                    className="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-brand-50/60 active:bg-brand-50"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[15px] font-semibold text-slate-900">{o.name}</span>
-                      {o.address && <span className="mt-0.5 block text-[13px] text-slate-500">{o.address}</span>}
-                    </span>
-                    <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-                      <path d="M6 3l5 5-5 5" />
-                    </svg>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
+        <Link
+          href="/scan"
+          className="mt-6 flex items-center gap-4 rounded-3xl bg-slate-900 p-5 text-white shadow-lg transition hover:bg-brand-800 active:scale-[0.99]"
+        >
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-brand-300">
+            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" />
+              <path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 16h3" />
+            </svg>
+          </span>
+          <span className="flex-1">
+            <span className="block text-lg font-semibold">At a table?</span>
+            <span className="block text-sm text-slate-300">Scan its QR and order from your phone</span>
+          </span>
+        </Link>
 
-        {outlets.length === 0 && (
-          <p className="mt-10 rounded-3xl bg-white px-6 py-10 text-center text-sm text-slate-500 shadow-sm">
-            No branches are taking pickup orders right now.
+        <h2 className="mb-3 mt-9 px-1 text-xl font-semibold text-slate-900">Choose a store</h2>
+        {branches.length ? (
+          <StorePicker branches={branches} />
+        ) : (
+          <p className="rounded-3xl bg-white px-6 py-10 text-center text-sm text-slate-500 shadow-sm">
+            No store is taking online orders right now.
           </p>
         )}
       </div>
+      <BottomNav />
     </main>
   );
 }

@@ -3,9 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import DashboardHeader from "@/components/customer/DashboardHeader";
 import WalletLoyaltyCard from "@/components/customer/WalletLoyaltyCard";
 import OrderAgain, { type RecentOrder } from "@/components/customer/OrderAgain";
-import OrderNowFab from "@/components/customer/OrderNowFab";
 import BottomNav from "@/components/customer/BottomNav";
-import ItemMark from "@/components/order/ItemMark";
+import StorePicker from "@/components/order/StorePicker";
 import { DEMO_TIERS, type Reward } from "@/lib/dashboard-demo";
 import type { LoyaltyTier } from "@/lib/loyalty";
 import { type PickupOutlet } from "@/lib/guest-order";
@@ -90,6 +89,24 @@ export default async function CustomerDashboardPage() {
             userId={uid}
           />
 
+          <Link
+            href="/scan"
+            className="flex items-center gap-4 rounded-3xl bg-brand-600 p-5 text-white shadow-lg shadow-brand-700/25 transition hover:bg-brand-700 active:scale-[0.99]"
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+              <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" />
+                <path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 16h3" />
+              </svg>
+            </span>
+            <span className="flex-1">
+              <span className="block text-lg font-semibold">Scan to order</span>
+              <span className="block text-sm text-brand-100">At a table? Order from your phone, earn points</span>
+            </span>
+          </Link>
+
+          <NextReward points={loyalty?.points_balance ?? 0} rewards={(rewardRows ?? []) as Reward[]} />
+
           <section>
             <SectionHeader title="Recent orders" actionHref={recent.length ? "/customer/orders" : undefined} />
             {recent.length ? (
@@ -102,50 +119,18 @@ export default async function CustomerDashboardPage() {
           </section>
 
           <section>
-            <SectionHeader title="Branches" />
+            <SectionHeader title="Stores" />
             {branches.length ? (
-              <ul className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm">
-                {branches.map((b) => {
-                  const row = (
-                    <>
-                      <ItemMark name={b.name} className="h-11 w-11 rounded-xl text-lg" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[15px] font-semibold text-slate-900">{b.name}</span>
-                        <span className="block truncate text-[13px] text-slate-500">
-                          {b.pickup ? "Order ahead for pickup" : "Scan the QR on your table to order"}
-                        </span>
-                      </span>
-                    </>
-                  );
-                  return (
-                    <li key={b.id}>
-                      {b.pickup ? (
-                        <Link
-                          href={`/order/p/${b.id}`}
-                          className="group flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-brand-50/60 active:bg-brand-50"
-                        >
-                          {row}
-                          <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-                            <path d="M6 3l5 5-5 5" />
-                          </svg>
-                        </Link>
-                      ) : (
-                        <div className="flex items-center gap-4 px-4 py-3.5">{row}</div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+              <StorePicker branches={branches} />
             ) : (
               <p className="rounded-3xl bg-white px-5 py-6 text-sm text-slate-600 shadow-sm">
-                No branch is taking online orders right now. Order with our staff at the restaurant.
+                No store is taking online orders right now. Order with our staff at the restaurant.
               </p>
             )}
           </section>
         </div>
       </div>
 
-      {branches.some((b) => b.pickup) && <OrderNowFab />}
       <BottomNav />
     </div>
   );
@@ -160,6 +145,36 @@ function SectionHeader({ title, actionHref }: { title: string; actionHref?: stri
           See all
         </Link>
       )}
+    </div>
+  );
+}
+
+// The nearest reward: ready to redeem, or how far there is to go.
+function NextReward({ points, rewards }: { points: number; rewards: Reward[] }) {
+  const ready = [...rewards].reverse().find((r) => r.points_cost <= points);
+  const next = rewards.find((r) => r.points_cost > points);
+  const target = ready ?? next;
+  if (!target) return null;
+  const pct = Math.min(100, Math.round((points / target.points_cost) * 100));
+
+  return (
+    <div className="rounded-3xl bg-white p-5 shadow-sm">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-xl font-semibold text-slate-900">
+          {ready ? `${target.name} is yours` : `Next: ${target.name}`}
+        </h2>
+        <span className="shrink-0 text-sm font-semibold text-brand-700">
+          {ready ? "Ready" : `${(target.points_cost - points).toLocaleString()} pts to go`}
+        </span>
+      </div>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+        <div className="h-full rounded-full bg-brand-500 transition-[width] duration-700" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="mt-2 text-sm text-slate-600">
+        {ready
+          ? "Tap your points card above to redeem it."
+          : `${points.toLocaleString()} of ${target.points_cost.toLocaleString()} points. 1 point for every RM1.`}
+      </p>
     </div>
   );
 }
