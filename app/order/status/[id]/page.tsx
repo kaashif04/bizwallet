@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
 import Confetti from "@/components/order/Confetti";
+import HomeButton from "@/components/order/HomeButton";
 import { loadClaimToken, loadMenuPath, type GuestOrderStatus } from "@/lib/guest-order";
 
 const STEPS: Record<string, string> = {
@@ -90,7 +91,8 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
   if (claimToken === null) {
     return (
       <Shell>
-        <h1 className="text-lg font-bold text-slate-900">Order not found on this device</h1>
+        <HomeButton />
+        <h1 className="mt-5 text-2xl text-slate-900">Order not found on this device</h1>
         <p className="mt-2 text-sm text-slate-600">
           Order status can only be viewed on the phone that placed it. Ask our staff if you need help.
         </p>
@@ -120,8 +122,11 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
 
   return (
     <Shell>
-      <span className="inline-block rounded-full bg-sun-300 px-3 py-1 text-xs font-extrabold text-slate-900">
-        {order.table_label ? `Table ${order.table_label}` : "Pickup order"}
+      <span className="flex items-center gap-2">
+        <HomeButton />
+        <span className="rounded-full bg-sun-300 px-3 py-1 text-xs font-extrabold text-slate-900">
+          {order.table_label ? `Table ${order.table_label}` : "Pickup order"}
+        </span>
       </span>
       <motion.h1
         key={headline}

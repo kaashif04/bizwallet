@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
@@ -52,6 +53,12 @@ export default function GuestOrder(
         </span>
         <h1 className="mt-5 text-2xl font-semibold text-slate-900">Can&apos;t order here right now</h1>
         <p className="mt-2 max-w-xs text-sm text-slate-600">{loadError}</p>
+        <Link
+          href="/customer/dashboard"
+          className="mt-6 rounded-full bg-brand-600 px-6 py-3 text-[15px] font-extrabold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.97]"
+        >
+          Go to my wallet
+        </Link>
       </main>
     );
   }

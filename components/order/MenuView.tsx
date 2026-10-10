@@ -7,6 +7,7 @@ import { currencySymbol } from "@/lib/format";
 import { useCart } from "./cart-context";
 import ItemMark from "./ItemMark";
 import AccountChip from "./AccountChip";
+import HomeButton from "./HomeButton";
 
 export default function MenuView({
   title,
@@ -59,8 +60,11 @@ export default function MenuView({
       {/* Sticky header + category chips */}
       <div className="sticky top-0 z-20 border-b border-slate-200/60 bg-brand-50/90 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3 px-5 pt-[max(1rem,env(safe-area-inset-top))]">
-          <span className="rounded-full bg-sun-300 px-3 py-1 text-xs font-extrabold text-slate-900">
-            {subtitle}
+          <span className="flex items-center gap-2">
+            <HomeButton />
+            <span className="rounded-full bg-sun-300 px-3 py-1 text-xs font-extrabold text-slate-900">
+              {subtitle}
+            </span>
           </span>
           <AccountChip />
         </div>
