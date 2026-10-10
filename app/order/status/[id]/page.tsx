@@ -216,9 +216,17 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         </motion.div>
       )}
       {order.member_linked && (
-        <p className="mt-6 text-sm text-slate-600">
-          Linked to your BizCafé account. Points are added once the bill is paid.
-        </p>
+        <div className="mt-8 flex items-center justify-between gap-4 rounded-3xl bg-white p-5 shadow-sm">
+          <p className="text-sm text-slate-600">
+            Linked to your account. Points are added once the bill is paid.
+          </p>
+          <Link
+            href="/customer/dashboard"
+            className="shrink-0 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 active:scale-[0.98]"
+          >
+            My account
+          </Link>
+        </div>
       )}
       {error && (
         <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>

@@ -6,6 +6,7 @@ import type { MenuItem } from "@/lib/order-types";
 import { currencySymbol } from "@/lib/format";
 import { useCart } from "./cart-context";
 import ItemMark from "./ItemMark";
+import AccountChip from "./AccountChip";
 
 export default function MenuView({
   title,
@@ -57,14 +58,15 @@ export default function MenuView({
     <div className="mx-auto max-w-md">
       {/* Sticky header + category chips */}
       <div className="sticky top-0 z-20 border-b border-slate-200/60 bg-brand-50/90 backdrop-blur-xl">
-        <div className="flex items-end justify-between gap-3 px-5 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))]">
-          <h1 className="min-w-0 truncate text-[1.65rem] font-semibold leading-tight text-slate-900">
-            {title}
-          </h1>
-          <span className="mb-1 shrink-0 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-brand-50">
+        <div className="flex items-center justify-between gap-3 px-5 pt-[max(1rem,env(safe-area-inset-top))]">
+          <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-brand-50">
             {subtitle}
           </span>
+          <AccountChip />
         </div>
+        <h1 className="truncate px-5 pb-3 pt-2 text-[1.65rem] font-semibold leading-tight text-slate-900">
+          {title}
+        </h1>
 
         <div className="flex gap-2 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {categories.map((c) => (

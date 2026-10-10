@@ -1,66 +1,46 @@
 import { createClient } from "@/lib/supabase/server";
 import WalletExperience from "@/components/wallet/WalletExperience";
 import BottomNav from "@/components/customer/BottomNav";
-import { DEMO_TXNS } from "@/lib/wallet-demo";
-import type { WalletTxn } from "@/lib/wallet-types";
+import { topUpEnabled, type WalletTxn } from "@/lib/wallet-types";
 
 export default async function WalletPage() {
-  let balance = 128.5;
-  let currency = "MYR";
-  let txns: WalletTxn[] = DEMO_TXNS;
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  try {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const [{ data: wallet }, { data: rows }] = await Promise.all([
+    supabase.from("wallets").select("balance,currency").eq("user_id", user!.id).maybeSingle(),
+    supabase
+      .from("wallet_transactions")
+      .select("id,type,amount,balance_after,description,created_at")
+      .eq("user_id", user!.id)
+      .order("created_at", { ascending: false })
+      .limit(50),
+  ]);
 
-    if (user) {
-      const [{ data: wallet }, { data: rows }] = await Promise.all([
-        supabase
-          .from("wallets")
-          .select("balance,currency")
-          .eq("user_id", user.id)
-          .single(),
-        supabase
-          .from("wallet_transactions")
-          .select("id,type,amount,balance_after,description,created_at")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(50),
-      ]);
-
-      if (wallet) {
-        balance = Number(wallet.balance);
-        currency = wallet.currency;
-      }
-      if (rows) {
-        txns = rows.map((r) => ({
-          id: r.id,
-          type: r.type,
-          amount: Number(r.amount),
-          balanceAfter: Number(r.balance_after),
-          description: r.description,
-          createdAt: r.created_at,
-        }));
-      }
-    }
-  } catch {
-    // Supabase not configured / unreachable -> demo data.
-  }
+  const txns: WalletTxn[] = (rows ?? []).map((r) => ({
+    id: r.id,
+    type: r.type,
+    amount: Number(r.amount),
+    balanceAfter: Number(r.balance_after),
+    description: r.description,
+    createdAt: r.created_at,
+  }));
 
   return (
     <div className="min-h-dvh bg-brand-50">
-      <div className="mx-auto max-w-md px-5 pb-28 pt-6">
+      <div className="mx-auto max-w-md px-5 pb-28 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <header className="mb-5">
-          <h1 className="text-2xl font-bold text-slate-900">My Wallet</h1>
-          <p className="text-sm text-slate-500">Manage your store credit</p>
+          <h1 className="text-[2rem] font-semibold text-slate-900">Wallet</h1>
+          <p className="text-sm text-slate-500">Your store credit and history</p>
         </header>
 
         <WalletExperience
-          initialBalance={balance}
-          currency={currency}
+          initialBalance={Number(wallet?.balance ?? 0)}
+          currency={wallet?.currency ?? "MYR"}
           initialTxns={txns}
+          topUpEnabled={topUpEnabled()}
         />
       </div>
 

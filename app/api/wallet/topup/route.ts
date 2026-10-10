@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { topUpEnabled } from "@/lib/wallet-types";
 
 const MAX_TOPUP = 1000;
 
 export async function POST(request: Request) {
+  if (!topUpEnabled()) {
+    return NextResponse.json({ error: "Top-ups aren't available yet." }, { status: 503 });
+  }
+
   // 1. Identify the caller from their session cookies (anon/authenticated).
   const supabase = createClient();
   const {

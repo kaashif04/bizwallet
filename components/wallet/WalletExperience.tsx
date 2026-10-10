@@ -17,10 +17,12 @@ export default function WalletExperience({
   initialBalance,
   currency,
   initialTxns,
+  topUpEnabled,
 }: {
   initialBalance: number;
   currency: string;
   initialTxns: WalletTxn[];
+  topUpEnabled: boolean;
 }) {
   const router = useRouter();
   const [balance, setBalance] = useState(initialBalance);
@@ -60,25 +62,26 @@ export default function WalletExperience({
         return { ok: true };
       }
 
-      // 401 (no session) or 5xx (Supabase not configured) => demo fallback so
-      // the flow still works in local preview. Real 400 validation errors show.
-      if (res.status === 401 || res.status >= 500) {
-        applyCredit(amount, balance + amount);
-        return { ok: true };
-      }
       const err = await res.json().catch(() => ({}));
-      return { ok: false, error: err.error ?? "Top-up failed" };
+      return { ok: false, error: err.error ?? "Top-up failed. Please try again." };
     } catch {
-      // Network error (no backend in local preview) => demo fallback.
-      applyCredit(amount, balance + amount);
-      return { ok: true };
+      return { ok: false, error: "Couldn't reach the server. Check your connection and try again." };
     }
   }
 
   return (
     <div className="space-y-5">
       <WalletBalanceCard balance={balance} currency={currency} />
-      <TopUpPanel currency={currency} onTopUp={handleTopUp} />
+      {topUpEnabled ? (
+        <TopUpPanel currency={currency} onTopUp={handleTopUp} />
+      ) : (
+        <div className="rounded-3xl bg-white p-5 shadow-sm">
+          <h2 className="text-xl font-semibold text-slate-900">Top-ups are coming soon</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            For now, pay at the counter. Every RM1 you spend still earns a point.
+          </p>
+        </div>
+      )}
       <TransactionList txns={txns} currency={currency} />
     </div>
   );
