@@ -6,7 +6,12 @@ export type MenuItem = {
   name: string;
   description?: string | null;
   category: string;
+  categoryId?: string | null;
   price: number;
+  // BizPos "free with spend" rule, see lib/free-items.ts.
+  freeFromSpend?: number | null;
+  freeSpendCategoryIds?: string[];
+  freeHint?: string; // e.g. "Free with RM20 of Steamboat"
   imageUrl?: string | null;
   emoji?: string;
   isAvailable?: boolean;

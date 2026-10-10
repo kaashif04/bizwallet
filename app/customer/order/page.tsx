@@ -3,10 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import type { PickupOutlet } from "@/lib/guest-order";
 
 // Pickup pre-orders. BizPos's outlets table is company-private, so the list
-// comes from guest_list_outlets (only branches that accept pickup).
+// comes from guest_list_outlets, narrowed to branches that accept pickup.
 export default async function OrderPage() {
   const { data } = await createClient().rpc("guest_list_outlets");
-  const outlets = (data ?? []) as PickupOutlet[];
+  const outlets = ((data ?? []) as PickupOutlet[]).filter((o) => o.pickup);
 
   // Already sorted by company, then branch.
   const byCompany = new Map<string, PickupOutlet[]>();

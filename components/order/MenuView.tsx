@@ -167,6 +167,11 @@ function MenuItemCard({
           {currencySymbol(currency)}
           {item.price.toFixed(2)}
         </span>
+        {item.freeHint && (
+          <span className="mt-1.5 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+            {item.freeHint}
+          </span>
+        )}
       </span>
 
       <span className="relative flex h-9 min-w-[2.25rem] shrink-0 items-center justify-center">

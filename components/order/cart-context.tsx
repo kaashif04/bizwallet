@@ -8,6 +8,7 @@ import {
   useReducer,
 } from "react";
 import type { CartLine, MenuItem, VariantSelection } from "@/lib/order-types";
+import { lineTotals } from "@/lib/free-items";
 
 type State = { lines: CartLine[] };
 
@@ -90,6 +91,7 @@ type CartValue = {
   lines: CartLine[];
   totalItems: number;
   totalPrice: number;
+  lineTotal: (lineId: string) => number; // after free-with-spend items
   add: (item: MenuItem, quantity: number, selections: VariantSelection[]) => void;
   inc: (lineId: string) => void;
   dec: (lineId: string) => void;
@@ -116,12 +118,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clear = useCallback(() => dispatch({ type: "clear" }), []);
 
   const totalItems = state.lines.reduce((n, l) => n + l.quantity, 0);
-  const totalPrice = state.lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
-
-  const value = useMemo<CartValue>(
-    () => ({ lines: state.lines, totalItems, totalPrice, add, inc, dec, remove, clear }),
-    [state.lines, totalItems, totalPrice, add, inc, dec, remove, clear]
-  );
+  const value = useMemo<CartValue>(() => {
+    const totals = lineTotals(state.lines);
+    return {
+      lines: state.lines,
+      totalItems,
+      totalPrice: Array.from(totals.values()).reduce((s, n) => s + n, 0),
+      lineTotal: (lineId: string) => totals.get(lineId) ?? 0,
+      add,
+      inc,
+      dec,
+      remove,
+      clear,
+    };
+  }, [state.lines, totalItems, add, inc, dec, remove, clear]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

@@ -105,36 +105,47 @@ export default async function CustomerDashboardPage() {
             <SectionHeader title="Branches" />
             {branches.length ? (
               <ul className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm">
-                {branches.map((b) => (
-                  <li key={b.id}>
-                    <Link
-                      href={`/order/p/${b.id}`}
-                      className="group flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-brand-50/60 active:bg-brand-50"
-                    >
+                {branches.map((b) => {
+                  const row = (
+                    <>
                       <ItemMark name={b.name} className="h-11 w-11 rounded-xl text-lg" />
                       <span className="min-w-0 flex-1">
                         <span className="block text-[15px] font-semibold text-slate-900">{b.name}</span>
                         <span className="block truncate text-[13px] text-slate-500">
-                          {b.address ?? b.company} · Order ahead for pickup
+                          {b.pickup ? "Order ahead for pickup" : "Scan the QR on your table to order"}
                         </span>
                       </span>
-                      <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-                        <path d="M6 3l5 5-5 5" />
-                      </svg>
-                    </Link>
-                  </li>
-                ))}
+                    </>
+                  );
+                  return (
+                    <li key={b.id}>
+                      {b.pickup ? (
+                        <Link
+                          href={`/order/p/${b.id}`}
+                          className="group flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-brand-50/60 active:bg-brand-50"
+                        >
+                          {row}
+                          <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+                            <path d="M6 3l5 5-5 5" />
+                          </svg>
+                        </Link>
+                      ) : (
+                        <div className="flex items-center gap-4 px-4 py-3.5">{row}</div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="rounded-3xl bg-white px-5 py-6 text-sm text-slate-600 shadow-sm">
-                No branch is taking pickup orders right now. At the restaurant, scan the QR code on your table.
+                No branch is taking online orders right now. Order with our staff at the restaurant.
               </p>
             )}
           </section>
         </div>
       </div>
 
-      {branches.length > 0 && <OrderNowFab />}
+      {branches.some((b) => b.pickup) && <OrderNowFab />}
       <BottomNav />
     </div>
   );

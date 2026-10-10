@@ -214,10 +214,16 @@ function CartReview({
                     {l.selections.map((s) => s.option).join(", ")}
                   </p>
                 )}
-                <p className="mt-1 text-sm tabular-nums text-slate-700">
-                  {sym}
-                  {(l.unitPrice * l.quantity).toFixed(2)}
-                </p>
+                {cart.lineTotal(l.lineId) === 0 && l.unitPrice > 0 ? (
+                  <p className="mt-1 text-sm font-semibold text-emerald-700">
+                    Free <span className="font-normal text-slate-400 line-through">{sym}{(l.unitPrice * l.quantity).toFixed(2)}</span>
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm tabular-nums text-slate-700">
+                    {sym}
+                    {cart.lineTotal(l.lineId).toFixed(2)}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <button

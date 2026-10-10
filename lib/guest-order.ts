@@ -19,6 +19,8 @@ export type GuestMenu = {
     description: string | null;
     price: number;
     category_id: string | null;
+    free_from_spend: number | null;
+    free_spend_category_ids: string[] | null;
     modifier_groups: {
       id: string;
       name: string;
@@ -62,7 +64,23 @@ export function toMenu(menu: GuestMenu): {
     name: i.name,
     description: i.description,
     category: (i.category_id && catName.get(i.category_id)?.name) || "Other",
+    categoryId: i.category_id,
     price: Number(i.price),
+    freeFromSpend: i.free_from_spend == null ? null : Number(i.free_from_spend),
+    freeSpendCategoryIds: i.free_spend_category_ids ?? [],
+    freeHint:
+      i.free_from_spend == null
+        ? undefined
+        : `Free with RM${Number(i.free_from_spend).toFixed(0)} of ${
+            // "Steamboat · Meat & Seafood", "Steamboat · Vegetable" -> "Steamboat"
+            Array.from(
+              new Set(
+                (i.free_spend_category_ids ?? [])
+                  .map((id) => catName.get(id)?.name.split(" · ")[0])
+                  .filter(Boolean)
+              )
+            ).join(" or ") || "selected items"
+          }`,
   }));
 
   const groupsByItem = Object.fromEntries(
@@ -118,11 +136,17 @@ export function loadClaimToken(id: string): string | null {
   }
 }
 
-export type PickupOutlet = { id: string; name: string; address: string | null; company_id: string; company: string };
+export type PickupOutlet = {
+  id: string;
+  name: string;
+  address: string | null;
+  company_id: string;
+  company: string;
+  pickup: boolean; // false = table QR ordering only
+};
 
 // `outlets` is company-private in BizPos, so members can't read it directly.
-// guest_list_outlets lists branches that accept pickup.
-// ponytail: names for branches without pickup stay unknown until BizPos exposes them to members.
+// guest_list_outlets lists every branch with online ordering on.
 export async function outletNames(
   supabase: { rpc: (fn: "guest_list_outlets") => PromiseLike<{ data: unknown }> }
 ): Promise<Map<string, string>> {
