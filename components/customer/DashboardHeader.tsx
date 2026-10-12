@@ -22,19 +22,19 @@ export default function DashboardHeader({
 
   return (
     <motion.header
-      initial={{ opacity: 0, y: -12 }}
+      initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.2 }}
       className="flex items-center justify-between"
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sun-300 font-display text-xl font-semibold text-slate-900">
+        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-base font-bold text-ink-700 shadow-sm">
           {initial}
         </div>
         <div>
-          <p className="text-sm font-semibold text-slate-500">{greeting}</p>
-          <h1 className="text-2xl leading-tight text-slate-900">
-            Hi, {name}
+          <p className="text-xs text-ink-500">{greeting}</p>
+          <h1 className="text-xl leading-tight text-ink-900">
+            {name}
           </h1>
         </div>
       </div>

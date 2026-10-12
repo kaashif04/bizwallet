@@ -17,7 +17,8 @@ html {
 }
 
 body {
-  @apply bg-brand-50 text-slate-900 antialiased;
+  @apply bg-ink-50 text-ink-900 antialiased;
+  letter-spacing: -0.011em;
   /* Money everywhere: digits line up in balances, prices and ledgers. */
   font-variant-numeric: tabular-nums;
   caret-color: theme("colors.brand.600");
@@ -35,9 +36,18 @@ textarea {
 
 h1,
 h2 {
-  @apply font-display font-semibold;
-  letter-spacing: -0.01em;
+  @apply font-bold;
+  letter-spacing: -0.025em;
   text-wrap: balance;
+}
+
+/* Soft System relief (BizEazy Hub): cards are raised off the paper, fields
+   are pressed into it. Base layer, so any shadow utility still wins. */
+:where(.bg-white.rounded-2xl, .bg-white.rounded-3xl) {
+  box-shadow: theme("boxShadow.sm");
+}
+:where(select, textarea, input:not([type="checkbox"]):not([type="radio"]):not([type="range"])) {
+  box-shadow: theme("boxShadow.pressed");
 }
 
 p {
@@ -45,12 +55,12 @@ p {
 }
 
 ::selection {
-  background: theme("colors.brand.200");
-  color: theme("colors.brand.900");
+  background: rgb(47 100 240 / 0.26);
+  color: theme("colors.ink.950");
 }
 
 :focus-visible {
-  outline: 2px solid theme("colors.brand.600");
+  outline: 2px solid theme("colors.brand.500");
   outline-offset: 2px;
 }
 

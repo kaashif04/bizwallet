@@ -47,17 +47,16 @@ const STEP_ORDER: FieldKey[] = [
   "marketingConsent",
 ];
 
-const STEP_COPY: Record<FieldKey, { emoji: string; question: string; hint?: string }> = {
-  phone: { emoji: "📱", question: "What's your phone number?", hint: "For order updates and receipts." },
-  dateOfBirth: { emoji: "🎂", question: "When's your birthday?", hint: "We'll send you a treat." },
-  gender: { emoji: "🧑", question: "How do you identify?" },
+const STEP_COPY: Record<FieldKey, { question: string; hint?: string }> = {
+  phone: { question: "What's your phone number?", hint: "For order updates and receipts." },
+  dateOfBirth: { question: "When's your birthday?", hint: "We'll send you a treat." },
+  gender: { question: "How do you identify?" },
   dietaryPreferences: {
-    emoji: "🥗",
     question: "Any dietary preferences or allergies?",
     hint: "Pick as many as apply.",
   },
-  address: { emoji: "📍", question: "What's your delivery address?" },
-  marketingConsent: { emoji: "💌", question: "Want promos, news and offers?", hint: "You can change this anytime." },
+  address: { question: "What's your delivery address?" },
+  marketingConsent: { question: "Want promos, news and offers?", hint: "You can change this anytime." },
 };
 
 const DB_COLUMN: Record<FieldKey, string> = {
@@ -202,14 +201,14 @@ export default function ProfileCompletionSheet({
   return (
     <>
       <motion.div
-        className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm"
+        className="fixed inset-0 z-50 bg-ink-950/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
       />
       <motion.div
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[88vh] max-w-md overflow-y-auto rounded-t-3xl bg-white shadow-2xl"
+        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[88vh] max-w-md overflow-y-auto rounded-t-sheet bg-white shadow-sheet"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
@@ -228,7 +227,7 @@ export default function ProfileCompletionSheet({
                 animate={{ opacity: 1, y: -30, scale: 1.15 }}
                 exit={{ opacity: 0, y: -46 }}
                 transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-                className="pointer-events-none absolute right-5 top-2 text-base font-bold text-mint-500"
+                className="pointer-events-none absolute right-5 top-2 text-sm font-bold text-emerald-600"
               >
                 +{BONUS_POINTS} pts
               </motion.div>
@@ -263,8 +262,7 @@ export default function ProfileCompletionSheet({
                   transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                   className="mt-5"
                 >
-                  <div className="text-3xl">{STEP_COPY[currentField].emoji}</div>
-                  <h2 className="mt-2 text-lg font-bold text-slate-900">
+                  <h2 className="text-lg font-bold text-slate-900">
                     {STEP_COPY[currentField].question}
                   </h2>
                   {STEP_COPY[currentField].hint && (
@@ -386,7 +384,7 @@ export default function ProfileCompletionSheet({
                     type="button"
                     onClick={continueCurrent}
                     disabled={saving || !isContinueEnabled}
-                    className="flex-1 rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 disabled:opacity-60"
+                    className="flex-1 rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60"
                   >
                     {saving ? "Saving…" : "Continue"}
                   </button>
@@ -400,8 +398,10 @@ export default function ProfileCompletionSheet({
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="py-4 text-center"
             >
-              <div className="text-5xl">🎉</div>
-              <h2 className="mt-3 text-lg font-bold text-slate-900">All done!</h2>
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 shadow-well">
+                <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+              </span>
+              <h2 className="mt-3 text-lg font-bold text-slate-900">All done</h2>
               <p className="mt-1 text-sm text-slate-500">
                 {earned > 0
                   ? `You just earned ${earned} points.`
@@ -410,7 +410,7 @@ export default function ProfileCompletionSheet({
               <button
                 type="button"
                 onClick={finish}
-                className="mt-6 w-full rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-600/25"
+                className="mt-6 w-full rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-white shadow-sm"
               >
                 {earned > 0 ? `Nice — +${earned} pts banked` : "Done"}
               </button>

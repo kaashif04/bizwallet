@@ -12,7 +12,7 @@ export default function ScanPage() {
   const onToken = useCallback((token: string) => router.replace(`/order/t/${encodeURIComponent(token)}`), [router]);
 
   return (
-    <main className="min-h-dvh bg-brand-50">
+    <main className="min-h-dvh bg-ink-50">
       <div className="mx-auto max-w-md px-5 pb-12 pt-[max(1.25rem,env(safe-area-inset-top))]">
         <button
           type="button"

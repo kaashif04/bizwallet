@@ -38,89 +38,76 @@ export default function WalletLoyaltyCard({
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
         onClick={() => setShowRewards(true)}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setShowRewards(true)}
         role="button"
         tabIndex={0}
         aria-label={`${points} points. Open rewards`}
-        className="relative cursor-pointer overflow-hidden rounded-[2rem] bg-brand-600 p-6 text-white shadow-xl shadow-brand-600/30 transition active:scale-[0.99]"
+        className="cursor-pointer rounded-2xl bg-white p-5 transition hover:shadow-md active:scale-[0.99]"
       >
-        {/* Playful shapes */}
-        <span className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-sun-500/35" />
-        <span className="pointer-events-none absolute -bottom-16 right-16 h-36 w-36 rounded-full bg-berry-500/30" />
-        <span className="pointer-events-none absolute left-1/2 top-6 h-3 w-3 rounded-full bg-sun-300" />
-        <span className="pointer-events-none absolute right-24 top-16 h-2 w-2 rounded-full bg-white/70" />
-
-        <div className="relative flex items-center justify-between">
-          <span className="text-sm font-bold text-brand-100">Your points</span>
+        <div className="flex items-center justify-between">
+          <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Your points</p>
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               setShowPerks(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-extrabold text-brand-800 shadow-md transition active:scale-95"
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-bold text-brand-700 transition hover:bg-brand-100 active:scale-95"
           >
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: tier.currentTier.theme_color }}
-            />
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tier.currentTier.theme_color }} />
             {tier.current}
             <span aria-hidden="true">›</span>
           </button>
         </div>
 
-        <div className="relative mt-3 flex items-center gap-3">
-          <motion.svg
-            viewBox="0 0 20 20"
-            className="h-11 w-11 text-sun-300 drop-shadow"
-            fill="currentColor"
-            aria-hidden="true"
-            initial={{ rotate: -30, scale: 0.4 }}
-            animate={{ rotate: 0, scale: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 12, delay: 0.2 }}
-          >
-            <path d="M10 1.5l2.5 5.2 5.7.8-4.1 4 1 5.6L10 14.4l-5.1 2.7 1-5.6-4.1-4 5.7-.8L10 1.5Z" />
-          </motion.svg>
-          <AnimatedNumber value={points} decimals={0} className="font-display text-6xl font-semibold leading-none" />
-        </div>
+        <AnimatedNumber
+          value={points}
+          decimals={0}
+          className="mt-2 block text-5xl font-semibold leading-none tracking-[-0.03em] text-ink-900"
+        />
 
-        <div className="relative mt-5">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-semibold text-brand-50">
+        <div className="mt-5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-ink-500">
               {tier.nextTier ? (
                 <>
-                  <span className="font-extrabold text-white">{tier.pointsToNext.toLocaleString()} pts</span> to {tier.next}
+                  <span className="font-bold text-ink-900">{tier.pointsToNext.toLocaleString()} pts</span> to {tier.next}
                 </>
               ) : (
                 "Top tier. Every perk is yours."
               )}
             </span>
-            <span className="font-extrabold">{progressPct}%</span>
+            <span className="font-bold text-ink-700">{progressPct}%</span>
           </div>
-          <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-white/25">
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-ink-100 shadow-well">
             <motion.div
-              className="h-full rounded-full bg-sun-300"
+              className="h-full rounded-full bg-brand-600"
               initial={{ width: 0 }}
               animate={{ width: `${Math.max(progressPct, 3)}%` }}
-              transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
             />
           </div>
         </div>
 
-        <div className="relative mt-5 flex items-center justify-between">
+        <div className="mt-5 grid grid-cols-2 gap-3">
           <Link
             href="/customer/wallet"
             onClick={(e) => e.stopPropagation()}
-            className="text-sm font-semibold text-brand-50 underline-offset-4 hover:underline"
+            className="rounded-xl bg-ink-50 px-3 py-2.5 shadow-well transition hover:bg-ink-100"
           >
-            {sym}
-            {balance.toFixed(2)} credit
+            <span className="block text-lg font-semibold tracking-[-0.025em] text-ink-900">
+              {sym}
+              {balance.toFixed(2)}
+            </span>
+            <span className="block text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Credit</span>
           </Link>
-          <span className="rounded-full bg-white/20 px-4 py-2 text-sm font-extrabold">Rewards →</span>
+          <span className="flex items-center justify-center gap-1 rounded-full bg-brand-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-brand-700">
+            Rewards <span aria-hidden="true">›</span>
+          </span>
         </div>
       </motion.div>
 

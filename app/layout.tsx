@@ -1,10 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Fredoka, Nunito } from "next/font/google";
+import { Inter } from "next/font/google";
 import MotionProvider from "@/components/MotionProvider";
 import "./globals.css";
 
-const body = Nunito({ subsets: ["latin"], variable: "--font-body" });
-const display = Fredoka({ subsets: ["latin"], variable: "--font-display" });
+const body = Inter({ subsets: ["latin"], variable: "--font-body" });
 
 export const metadata: Metadata = {
   title: { default: "BizWallet", template: "%s · BizWallet" },
@@ -13,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#fff7f0",
+  themeColor: "#F2EFE9",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -25,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${body.variable} ${display.variable}`}>
+    <html lang="en" className={body.variable}>
       <body className="font-sans">
         <MotionProvider>{children}</MotionProvider>
       </body>

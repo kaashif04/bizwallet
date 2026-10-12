@@ -58,7 +58,7 @@ export default function GuestOrder(
         <p className="mt-2 max-w-xs text-sm text-slate-600">{loadError}</p>
         <Link
           href="/customer/dashboard"
-          className="mt-6 rounded-full bg-brand-600 px-6 py-3 text-[15px] font-extrabold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.97]"
+          className="mt-6 rounded-full bg-brand-600 px-6 py-3 text-[15px] font-bold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
         >
           Go to my wallet
         </Link>
@@ -91,7 +91,7 @@ export default function GuestOrder(
   }
 
   return (
-    <div className="min-h-dvh bg-brand-50">
+    <div className="min-h-dvh bg-ink-50">
       <MenuView
         title={menu.outlet.name}
         subtitle={menu.table ? `Table ${menu.table.label}` : "Pickup order"}
@@ -188,7 +188,7 @@ function CartReview({
   return (
     <>
       <motion.div
-        className="fixed inset-0 z-40 bg-slate-900/45 backdrop-blur-[2px]"
+        className="fixed inset-0 z-40 bg-ink-950/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -198,7 +198,7 @@ function CartReview({
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-title"
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[90dvh] max-w-md overflow-y-auto overscroll-contain rounded-t-[2rem] bg-white px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 shadow-2xl"
+        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[90dvh] max-w-md overflow-y-auto overscroll-contain rounded-t-sheet bg-white px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 shadow-sheet"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
@@ -250,7 +250,7 @@ function CartReview({
                 >
                   −
                 </button>
-                <span className="w-6 text-center text-base font-extrabold">{l.quantity}</span>
+                <span className="w-6 text-center text-base font-bold">{l.quantity}</span>
                 <button
                   type="button"
                   onClick={() => cart.inc(l.lineId)}
@@ -292,7 +292,7 @@ function CartReview({
 
         <div className="mt-5 flex items-baseline justify-between">
           <span className="text-sm text-slate-600">Subtotal</span>
-          <span className="text-2xl font-extrabold text-slate-900">
+          <span className="text-2xl font-bold text-slate-900">
             {sym}
             {cart.totalPrice.toFixed(2)}
           </span>
@@ -303,8 +303,8 @@ function CartReview({
         </p>
 
         {Math.floor(cart.totalPrice) > 0 && (
-          <p className="mt-4 flex items-center gap-3 rounded-2xl bg-sun-100 px-4 py-3 text-sm text-slate-800">
-            <svg viewBox="0 0 20 20" className="h-7 w-7 shrink-0 text-sun-500" fill="currentColor" aria-hidden="true">
+          <p className="mt-4 flex items-center gap-3 rounded-xl bg-ink-50 px-4 py-3 text-sm text-ink-700 shadow-well">
+            <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0 text-brand-600" fill="currentColor" aria-hidden="true">
               <path d="M10 1.5l2.5 5.2 5.7.8-4.1 4 1 5.6L10 14.4l-5.1 2.7 1-5.6-4.1-4 5.7-.8L10 1.5Z" />
             </svg>
             <span>
@@ -324,7 +324,7 @@ function CartReview({
           type="button"
           onClick={place}
           disabled={placing}
-          className="mt-5 h-14 w-full rounded-full bg-brand-600 px-5 text-base font-extrabold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
+          className="mt-5 h-14 w-full rounded-full bg-brand-600 px-5 text-base font-bold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
         >
           {placing ? "Sending…" : error ? "Try again" : "Place order"}
         </button>

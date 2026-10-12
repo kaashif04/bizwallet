@@ -1,23 +1,45 @@
 import type { Config } from "tailwindcss";
 
-// Soft neutral grays with a touch of warmth. Replaces Tailwind's cool slate
-// everywhere (the app uses slate-* ~600 times).
-const neutral = {
-  50: "#fafaf9",
-  100: "#f4f3f1",
-  200: "#e7e5e2",
-  300: "#d4d1cc",
-  400: "#a29d96",
-  500: "#736d66",
-  600: "#5a544e",
-  700: "#45403b",
-  800: "#2e2a27",
-  900: "#1f1c1a",
-  950: "#141210",
+// "Soft System", shared with BizEazy Hub and BizEazy Staff (~/BizEazy/DESIGN.md).
+// Ivory paper, charcoal ink, one cobalt accent, mint/amber/coral for status,
+// depth from paired light/shade shadows. Change the Hub first, then copy here.
+
+// Ink: ivory paper to charcoal. Text is charcoal, never black.
+const ink = {
+  50: "#F2EFE9",
+  100: "#E9E5DD",
+  200: "#DCD6CB",
+  300: "#C4BDB0",
+  400: "#9C958A",
+  500: "#6A645B",
+  600: "#544F48",
+  700: "#3E3A35",
+  800: "#2A2825",
+  900: "#1C1B19",
+  950: "#121110",
 };
 
-// Shadows tinted warm brown instead of pure black, one light source (above).
-const tint = "60 30 10";
+// Cobalt: primary actions, progress, the active place.
+const cobalt = {
+  50: "#EEF3FF",
+  100: "#DCE6FF",
+  200: "#BACDFF",
+  300: "#8DADFF",
+  400: "#5A86F7",
+  500: "#2F64F0",
+  600: "#1450E6",
+  700: "#0E40C2",
+  800: "#10369A",
+  900: "#132F78",
+  950: "#0C1C4A",
+};
+
+const emerald = { 50: "#E6FAF3", 100: "#C2F2E1", 500: "#00A877", 600: "#008A62", 700: "#006E4F" };
+const amber = { 50: "#FFF7E6", 100: "#FFEBC2", 200: "#FFD98A", 300: "#FFC24D", 500: "#F09A00", 700: "#9A5C00", 800: "#7A4800" };
+const rose = { 50: "#FFF1F0", 100: "#FFDEDB", 200: "#FFBCB6", 400: "#FF6257", 500: "#F04438", 600: "#D92D20", 700: "#B42318" };
+
+const hl = "rgb(255 255 255 / 0.85)";
+const sh = "rgb(122 104 78 / 0.2)";
 
 const config: Config = {
   content: [
@@ -28,54 +50,52 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-body)", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "var(--font-body)", "system-ui", "sans-serif"],
+        sans: ["var(--font-body)", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+        // One family carries everything; display is kept as an alias.
+        display: ["var(--font-body)", "ui-sans-serif", "system-ui", "sans-serif"],
       },
+      fontSize: { "2xs": ["0.6875rem", "1.09rem"] },
       colors: {
-        slate: neutral,
-        // Juicy tangerine. 600 is the button colour: white text on it is 4.9:1.
-        brand: {
-          50: "#fff7f0",
-          100: "#ffead9",
-          200: "#ffd0ad",
-          300: "#ffad75",
-          400: "#ff8a3d",
-          500: "#f26419",
-          600: "#c4470b",
-          700: "#a33a0b",
-          800: "#82300e",
-          900: "#6b2a10",
-        },
-        // Playful accents: stars/points, success, info, treats.
-        sun: { 100: "#fff4cc", 300: "#ffdf6b", 500: "#ffc21a", 700: "#8a5a00" },
-        mint: { 100: "#dcf7ec", 500: "#22b07d", 700: "#0f6b4a" },
-        sky: { 100: "#dff0fd", 500: "#2f9be8", 700: "#145f99" },
-        berry: { 100: "#ffe1ea", 500: "#f2477a", 700: "#a3184a" },
+        white: "#FBFAF7",
+        ink,
+        slate: ink,
+        gray: ink,
+        brand: cobalt,
+        emerald,
+        amber,
+        rose,
+        red: rose,
+        // Old playful accents fold into the status trio and cobalt.
+        sun: amber,
+        mint: emerald,
+        sky: cobalt,
+        berry: rose,
+      },
+      borderRadius: {
+        lg: "0.75rem",
+        xl: "1rem",
+        "2xl": "1.5rem",
+        "3xl": "1.5rem",
+        sheet: "1.25rem",
       },
       boxShadow: {
-        sm: `0 1px 2px 0 rgb(${tint} / 0.06), 0 1px 3px 0 rgb(${tint} / 0.05)`,
-        DEFAULT: `0 2px 4px -1px rgb(${tint} / 0.07), 0 1px 3px 0 rgb(${tint} / 0.06)`,
-        md: `0 6px 14px -4px rgb(${tint} / 0.10), 0 2px 4px -2px rgb(${tint} / 0.06)`,
-        lg: `0 14px 28px -8px rgb(${tint} / 0.16), 0 4px 8px -4px rgb(${tint} / 0.06)`,
-        xl: `0 22px 44px -12px rgb(${tint} / 0.22), 0 8px 16px -8px rgb(${tint} / 0.08)`,
-        "2xl": `0 32px 64px -16px rgb(${tint} / 0.30)`,
-        glass: "0 20px 60px -20px rgba(98, 48, 31, 0.35)",
+        xs: `-1px -1px 2px ${hl}, 1px 1px 3px ${sh}`,
+        sm: `-3px -3px 8px ${hl}, 4px 4px 10px ${sh}`,
+        DEFAULT: `-3px -3px 8px ${hl}, 4px 4px 10px ${sh}`,
+        md: `-5px -5px 12px ${hl}, 6px 6px 16px ${sh}`,
+        lg: `-8px -8px 20px ${hl}, 10px 10px 26px ${sh}`,
+        xl: `-10px -10px 28px ${hl}, 16px 16px 40px ${sh}`,
+        "2xl": `-10px -10px 28px ${hl}, 16px 16px 40px ${sh}`,
+        glass: `-10px -10px 28px ${hl}, 16px 16px 40px ${sh}`,
+        pressed: `inset 2px 2px 5px ${sh}, inset -2px -2px 5px ${hl}`,
+        well: `inset 1px 1px 3px ${sh}, inset -1px -1px 3px ${hl}`,
+        sheet: "0 -10px 40px -12px rgb(42 32 22 / 0.22)",
       },
       transitionTimingFunction: {
         DEFAULT: "cubic-bezier(0.22, 1, 0.36, 1)",
       },
       transitionDuration: {
         DEFAULT: "180ms",
-      },
-      keyframes: {
-        blob: {
-          "0%, 100%": { transform: "translate(0px, 0px) scale(1)" },
-          "33%": { transform: "translate(24px, -32px) scale(1.1)" },
-          "66%": { transform: "translate(-20px, 20px) scale(0.95)" },
-        },
-      },
-      animation: {
-        blob: "blob 14s ease-in-out infinite",
       },
     },
   },

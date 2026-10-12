@@ -121,12 +121,12 @@ export default function CustomerLogin() {
   }
 
   return (
-    <div className="rounded-[2rem] bg-white p-7 shadow-xl sm:p-8">
+    <div className="rounded-2xl bg-white p-6 shadow-md sm:p-8">
       {/* Brand */}
       <div className="mb-7 text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="BizWallet" className="mx-auto h-20 w-20 drop-shadow-lg" />
-        <h1 className="mt-5 text-3xl text-slate-900">
+        <img src="/logo.svg" alt="BizWallet" className="mx-auto h-14 w-14 rounded-2xl shadow-md" />
+        <h1 className="mt-5 text-2xl tracking-[-0.03em] text-ink-900">
           Welcome to BizWallet
         </h1>
         <p className="mt-1 text-sm text-slate-500">
@@ -345,7 +345,7 @@ function PrimaryButton({
     <button
       type="submit"
       disabled={loading}
-      className="mt-1 flex w-full items-center justify-center rounded-full bg-brand-600 px-4 py-3.5 text-base font-extrabold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+      className="mt-1 flex w-full items-center justify-center rounded-full bg-brand-600 px-4 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {loading ? <Spinner /> : children}
     </button>

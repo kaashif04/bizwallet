@@ -12,7 +12,7 @@ export default function StorePicker({ branches, logos = {} }: { branches: Pickup
   const showCompany = new Set(branches.map((b) => b.company_id)).size > 1;
 
   return (
-    <ul className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm">
+    <ul className="divide-y divide-ink-100 overflow-hidden rounded-2xl bg-white shadow-sm">
       {branches.map((b) => {
         const isOpen = open === b.id;
         return (
@@ -21,11 +21,11 @@ export default function StorePicker({ branches, logos = {} }: { branches: Pickup
               type="button"
               onClick={() => setOpen(isOpen ? null : b.id)}
               aria-expanded={isOpen}
-              className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-brand-50/60"
+              className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-ink-50"
             >
-              <BranchLogo name={b.name} logoUrl={logos[b.id]} className="h-12 w-12 rounded-2xl text-lg" />
+              <BranchLogo name={b.name} logoUrl={logos[b.id]} className="h-11 w-11 rounded-xl text-base" />
               <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-semibold text-slate-900">{b.name}</span>
+                <span className="block text-[15px] font-bold text-ink-900">{b.name}</span>
                 <span className="block truncate text-[13px] text-slate-500">
                   {showCompany ? `${b.company} · ` : ""}
                   {b.pickup ? "Dine in or pickup" : "Dine in"}
@@ -57,23 +57,23 @@ export default function StorePicker({ branches, logos = {} }: { branches: Pickup
                   <div className="grid grid-cols-2 gap-2 px-4 pb-4">
                     <Link
                       href={`/scan?at=${encodeURIComponent(b.name)}`}
-                      className="flex flex-col gap-1 rounded-2xl bg-slate-900 p-4 text-white transition hover:bg-brand-700 active:scale-[0.98]"
+                      className="flex flex-col gap-1 rounded-xl bg-brand-600 p-4 text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.98]"
                     >
                       <ScanIcon />
                       <span className="mt-1 text-[15px] font-semibold">Dine in</span>
-                      <span className="text-xs text-slate-300">Scan your table QR</span>
+                      <span className="text-xs text-brand-100">Scan your table QR</span>
                     </Link>
                     {b.pickup ? (
                       <Link
                         href={`/order/p/${b.id}`}
-                        className="flex flex-col gap-1 rounded-2xl bg-brand-100 p-4 text-brand-900 transition hover:bg-brand-200 active:scale-[0.98]"
+                        className="flex flex-col gap-1 rounded-xl bg-ink-50 p-4 text-ink-900 shadow-well transition hover:bg-ink-100 active:scale-[0.98]"
                       >
                         <BagIcon />
                         <span className="mt-1 text-[15px] font-semibold">Pickup</span>
-                        <span className="text-xs text-brand-800">Order ahead, collect</span>
+                        <span className="text-xs text-ink-500">Order ahead, collect</span>
                       </Link>
                     ) : (
-                      <div className="flex flex-col gap-1 rounded-2xl bg-slate-100 p-4 text-slate-500">
+                      <div className="flex flex-col gap-1 rounded-xl bg-ink-50 p-4 text-ink-400 shadow-well">
                         <BagIcon />
                         <span className="mt-1 text-[15px] font-semibold">Pickup</span>
                         <span className="text-xs">Not offered here yet</span>

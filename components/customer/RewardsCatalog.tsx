@@ -61,14 +61,14 @@ export default function RewardsCatalog({
   return (
     <>
       <motion.div
-        className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm"
+        className="fixed inset-0 z-50 bg-ink-950/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
       />
       <motion.div
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md rounded-t-3xl bg-white shadow-2xl"
+        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md rounded-t-sheet bg-white shadow-sheet"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
-import Confetti from "@/components/order/Confetti";
 import HomeButton from "@/components/order/HomeButton";
 import { loadClaimToken, loadMenuPath, type GuestOrderStatus } from "@/lib/guest-order";
 
@@ -124,29 +123,28 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
     <Shell>
       <span className="flex items-center gap-2">
         <HomeButton />
-        <span className="rounded-full bg-sun-300 px-3 py-1 text-xs font-extrabold text-slate-900">
+        <span className="rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-bold text-brand-700">
           {order.table_label ? `Table ${order.table_label}` : "Pickup order"}
         </span>
       </span>
       <motion.h1
         key={headline}
-        initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
-        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="mt-4 text-[2.1rem] leading-[1.1] text-slate-900"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        className="mt-4 text-[1.75rem] leading-tight tracking-[-0.03em] text-ink-900"
         aria-live="polite"
       >
         {headline}
       </motion.h1>
 
       {order.status !== "rejected" && <Track step={step} />}
-      {step === 2 && <Confetti />}
       {order.status === "rejected" && order.reject_reason && (
         <p className="mt-2 text-sm text-slate-600">{order.reject_reason}</p>
       )}
 
       {order.status !== "rejected" && (
-        <p className="mt-6 rounded-2xl bg-white px-4 py-3 text-sm font-medium text-slate-800 shadow-sm">
+        <p className="mt-6 rounded-2xl bg-white px-4 py-3 text-sm font-medium text-ink-800">
           {order.paid ? "Paid. Thank you." : "Pay at the counter when you're done."}
         </p>
       )}
@@ -160,7 +158,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           else if (window.history.length > 1) window.history.back();
           else window.location.assign("/customer/order");
         }}
-        className="mt-3 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-5 text-base font-extrabold text-white shadow-lg shadow-brand-600/30 transition hover:bg-brand-700 active:scale-[0.97]"
+        className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
       >
         <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
           <path d="M8 3v10M3 8h10" />
@@ -168,9 +166,9 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         {order.status === "rejected" ? "Back to the menu" : order.paid ? "Order again" : "Order more"}
       </button>
 
-      <ul className="mt-6 divide-y divide-slate-200/70">
+      <ul className="mt-6 divide-y divide-ink-100 rounded-2xl bg-white px-4">
         {order.items.map((i, n) => (
-          <li key={n} className="flex justify-between gap-4 py-2.5 text-sm">
+          <li key={n} className="flex justify-between gap-4 py-3 text-sm">
             <span className="min-w-0">
               <span className="font-medium text-slate-900">
                 {i.quantity} × {i.name}
@@ -186,7 +184,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           </li>
         ))}
       </ul>
-      <div className="mt-2 flex justify-between border-t border-slate-200 pt-3 text-sm font-semibold">
+      <div className="mt-3 flex justify-between px-4 text-sm font-bold">
         <span>Subtotal</span>
         <span className="tabular-nums">
           {sym}
@@ -198,22 +196,22 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="relative mt-8 overflow-hidden rounded-[2rem] bg-brand-600 p-6 text-white shadow-xl shadow-brand-600/30"
+          transition={{ delay: 0.2, duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-8 rounded-2xl bg-white p-5"
         >
-          <span className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-sun-500/35" />
-          <p className="relative font-display text-5xl font-semibold text-sun-300">
+          <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Points on this order</p>
+          <p className="mt-1 text-4xl font-semibold tracking-[-0.03em] text-ink-900">
             +{Math.floor(Number(order.subtotal))} pts
           </p>
-          <p className="relative mt-2 text-lg font-semibold">
+          <p className="mt-3 font-bold text-ink-900">
             {order.paid ? "You can still claim points for this order" : "Join to earn points on this order"}
           </p>
-          <p className="relative mt-1 text-sm text-brand-50">
+          <p className="mt-1 text-sm text-ink-500">
             1 point for every RM1. Redeem them for free drinks and vouchers.
           </p>
           <Link
             href={`/login?redirect=${encodeURIComponent(`/order/status/${params.id}`)}`}
-            className="relative mt-5 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-extrabold text-brand-800 transition hover:bg-brand-50 active:scale-[0.97]"
+            className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
           >
             Create a free account
             <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
@@ -223,13 +221,13 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         </motion.div>
       )}
       {order.member_linked && (
-        <div className="mt-8 flex items-center justify-between gap-4 rounded-3xl bg-white p-5 shadow-sm">
+        <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl bg-white p-5">
           <p className="text-sm text-slate-600">
             Linked to your account. Points are added once the bill is paid.
           </p>
           <Link
             href="/customer/dashboard"
-            className="shrink-0 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 active:scale-[0.98]"
+            className="shrink-0 rounded-full bg-brand-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.98]"
           >
             My account
           </Link>
@@ -250,12 +248,12 @@ function Track({ step }: { step: number }) {
         const current = i === step;
         return (
           <li key={t.key} aria-current={current ? "step" : undefined}>
-            <div className="relative h-2.5 overflow-hidden rounded-full bg-slate-200">
+            <div className="relative h-2 overflow-hidden rounded-full bg-ink-100 shadow-well">
               <motion.div
-                className="absolute inset-y-0 left-0 rounded-full bg-brand-500"
+                className="absolute inset-y-0 left-0 rounded-full bg-brand-600"
                 initial={false}
                 animate={{ width: done ? "100%" : "0%" }}
-                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: i * 0.08 }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: i * 0.04 }}
               />
               {current && i < TRACK.length - 1 && (
                 <motion.div
@@ -275,8 +273,8 @@ function Track({ step }: { step: number }) {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-dvh bg-brand-50">
-      <div className="mx-auto max-w-md px-5 pb-12 pt-[max(2rem,env(safe-area-inset-top))]">{children}</div>
+    <main className="min-h-dvh bg-ink-50">
+      <div className="mx-auto max-w-md px-4 pb-12 pt-[max(1.5rem,env(safe-area-inset-top))]">{children}</div>
     </main>
   );
 }

@@ -16,9 +16,9 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
-      <div className="mx-auto max-w-md px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="pointer-events-auto flex items-center justify-around rounded-[1.75rem] bg-white/95 px-2 py-2 shadow-xl backdrop-blur-xl">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-100 bg-white pb-[env(safe-area-inset-bottom)]">
+      <div className="mx-auto max-w-md">
+        <div className="flex h-16 items-center justify-around">
           {items.map((it) => {
             const active = pathname === it.href || pathname.startsWith(it.href + "/");
             const Icon = it.icon;
@@ -27,7 +27,7 @@ export default function BottomNav() {
                 key={it.href}
                 href={it.href}
                 aria-current={active ? "page" : undefined}
-                className="relative flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 transition-transform active:scale-90"
+                className="relative flex h-full flex-1 flex-col items-center justify-center gap-0.5 transition-transform active:scale-95"
               >
                 <span className="relative flex h-8 w-14 items-center justify-center">
                   {active && (
@@ -38,14 +38,14 @@ export default function BottomNav() {
                     />
                   )}
                   <Icon
-                    className={`relative h-6 w-6 transition-colors ${
-                      active ? "text-brand-700" : "text-slate-500"
+                    className={`relative h-5 w-5 transition-colors ${
+                      active ? "text-brand-700" : "text-ink-500"
                     }`}
                   />
                 </span>
                 <span
-                  className={`text-xs font-bold transition-colors ${
-                    active ? "text-brand-700" : "text-slate-500"
+                  className={`text-2xs font-bold transition-colors ${
+                    active ? "text-brand-700" : "text-ink-500"
                   }`}
                 >
                   {it.label}

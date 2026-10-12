@@ -96,7 +96,7 @@ export default function QrScanner({ onToken }: { onToken: (token: string) => voi
   }
 
   return (
-    <div className="relative aspect-square w-full overflow-hidden rounded-[2rem] bg-slate-900 shadow-xl">
+    <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-900 shadow-xl">
       <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
       {/* Viewfinder */}
       <div className="pointer-events-none absolute inset-[18%] rounded-3xl border-[3px] border-white/90 shadow-[0_0_0_100vmax_rgb(21_16_12/0.45)]">

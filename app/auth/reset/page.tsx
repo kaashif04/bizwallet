@@ -40,8 +40,8 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-brand-50 px-4">
-      <div className="w-full max-w-md rounded-[28px] border border-white/70 bg-white/80 p-8 shadow-glass backdrop-blur-xl">
+    <main className="flex min-h-dvh items-center justify-center bg-ink-50 px-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-md sm:p-8">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
           Set a new password
         </h1>
@@ -49,7 +49,7 @@ export default function ResetPasswordPage() {
         {!ready ? (
           <p className="mt-3 text-sm text-slate-500">Loading…</p>
         ) : done ? (
-          <p className="mt-4 rounded-xl border border-mint-100 bg-mint-100 px-4 py-3 text-sm text-mint-700">
+          <p className="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             ✓ Password updated — taking you to your dashboard…
           </p>
         ) : !hasSession ? (
@@ -102,7 +102,7 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-1 w-full rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 disabled:opacity-60"
+              className="mt-1 w-full rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-60"
             >
               {loading ? "Updating…" : "Update password"}
             </button>

@@ -50,7 +50,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
   const money = (n: unknown) => `${sym}${Number(n ?? 0).toFixed(2)}`;
 
   return (
-    <div className="min-h-dvh bg-brand-50">
+    <div className="min-h-dvh bg-ink-50">
       <div className="mx-auto max-w-md px-5 pb-12 pt-6">
         <div className="mb-4 flex items-center gap-3">
           <Link

@@ -97,7 +97,7 @@ export default function AddToCartSheet({
   return (
     <>
       <motion.div
-        className="fixed inset-0 z-40 bg-slate-900/45 backdrop-blur-[2px]"
+        className="fixed inset-0 z-40 bg-ink-950/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -108,7 +108,7 @@ export default function AddToCartSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby="dish-title"
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92dvh] max-w-md flex-col rounded-t-[2rem] bg-white shadow-2xl"
+        className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92dvh] max-w-md flex-col rounded-t-sheet bg-white shadow-sheet"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
@@ -158,7 +158,7 @@ export default function AddToCartSheet({
               {item.description && (
                 <p className="mt-1 text-sm text-slate-600">{item.description}</p>
               )}
-              <p className="mt-1.5 text-base font-extrabold text-slate-900">
+              <p className="mt-1.5 text-base font-bold text-slate-900">
                 {sym}
                 {item.price.toFixed(2)}
               </p>
@@ -176,13 +176,13 @@ export default function AddToCartSheet({
                 transition={{ duration: 0.4 }}
               >
                 <div className="mb-2 flex items-center justify-between">
-                  <h3 className="font-display text-lg font-semibold text-slate-900">{g.label}</h3>
+                  <h3 className="font-bold text-ink-900">{g.label}</h3>
                   <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
+                    className={`rounded-full px-2 py-0.5 text-2xs font-bold transition-colors ${
                       shakeId === g.id
-                        ? "bg-berry-100 text-berry-700"
+                        ? "bg-rose-50 text-rose-700"
                         : g.required
-                          ? "bg-brand-100 text-brand-800"
+                          ? "bg-brand-50 text-brand-700"
                           : "bg-slate-100 text-slate-600"
                     }`}
                   >
@@ -273,7 +273,7 @@ export default function AddToCartSheet({
             >
               −
             </button>
-            <span className="w-7 text-center text-base font-extrabold" aria-live="polite">{qty}</span>
+            <span className="w-7 text-center text-base font-bold" aria-live="polite">{qty}</span>
             <button
               type="button"
               onClick={() => setQty((q) => Math.min(50, q + 1))}
@@ -287,10 +287,10 @@ export default function AddToCartSheet({
           <button
             type="button"
             onClick={handleAddClick}
-            className={`flex h-12 flex-1 items-center justify-between rounded-full px-5 text-[15px] font-extrabold transition active:scale-[0.97] ${
+            className={`flex h-12 flex-1 items-center justify-between rounded-full px-5 text-[15px] font-bold transition active:scale-[0.97] ${
               unmetGroup
                 ? "bg-slate-100 text-slate-600"
-                : "bg-brand-600 text-white shadow-lg shadow-brand-600/30 hover:bg-brand-700"
+                : "bg-brand-600 text-white shadow-sm hover:bg-brand-700"
             }`}
           >
             <span className="truncate">{unmetGroup ? `Choose ${unmetGroup.label}` : "Add"}</span>

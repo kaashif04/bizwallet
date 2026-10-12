@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Order from your table, pay at the counter, earn points every visit.",
     start_url: "/customer/dashboard",
     display: "standalone",
-    background_color: "#fff7f0",
-    theme_color: "#f26419",
+    background_color: "#F2EFE9",
+    theme_color: "#F2EFE9",
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },

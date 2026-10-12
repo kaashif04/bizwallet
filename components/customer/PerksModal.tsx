@@ -17,14 +17,14 @@ export default function PerksModal({
   return (
     <>
       <motion.div
-        className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm"
+        className="fixed inset-0 z-50 bg-ink-950/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
       />
       <motion.div
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md rounded-t-3xl bg-white shadow-2xl"
+        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md rounded-t-sheet bg-white shadow-sheet"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
@@ -70,7 +70,7 @@ export default function PerksModal({
           <button
             type="button"
             onClick={onClose}
-            className="mt-6 w-full rounded-2xl bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white shadow-lg transition active:scale-[0.99]"
+            className="mt-6 w-full rounded-full bg-brand-600 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.99]"
           >
             Got it
           </button>

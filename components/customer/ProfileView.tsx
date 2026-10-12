@@ -79,9 +79,9 @@ export default function ProfileView({ data }: { data: ProfileData }) {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-col items-center rounded-3xl border border-brand-100 bg-white p-6 text-center shadow-sm"
+        className="flex flex-col items-center rounded-2xl bg-white p-6 text-center"
       >
-        <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-2xl font-semibold text-white shadow-md shadow-brand-600/30">
+        <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-ink-50 text-2xl font-bold text-ink-700 shadow-well">
           {data.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={data.avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -139,17 +139,17 @@ export default function ProfileView({ data }: { data: ProfileData }) {
       </motion.div>
 
       {/* Membership */}
-      <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 via-brand-800 to-slate-900 p-5 text-white shadow-glass">
+      <div className="rounded-2xl bg-white p-5">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-white/60">
+            <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">
               Membership
             </p>
-            <p className="mt-1 text-lg font-bold">{data.tier} tier</p>
+            <p className="mt-1 text-lg font-bold text-ink-900">{data.tier} tier</p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold">{data.points.toLocaleString()}</p>
-            <p className="text-xs text-white/60">points</p>
+            <p className="text-2xl font-semibold tracking-[-0.025em] text-ink-900">{data.points.toLocaleString()}</p>
+            <p className="text-xs text-ink-500">points</p>
           </div>
         </div>
       </div>
@@ -159,7 +159,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-        className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm"
+        className="rounded-2xl bg-white p-5"
       >
         <div className="flex items-center justify-between">
           <div>
@@ -171,9 +171,9 @@ export default function ProfileView({ data }: { data: ProfileData }) {
           </div>
           <span className="text-sm font-bold text-brand-600">{completionPercent}%</span>
         </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-ink-100 shadow-well">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600"
+            className="h-full rounded-full bg-brand-600"
             initial={{ width: 0 }}
             animate={{ width: `${completionPercent}%` }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -183,7 +183,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
           <button
             type="button"
             onClick={() => setShowCompletionSheet(true)}
-            className="mt-4 w-full rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white"
+            className="mt-4 w-full rounded-full bg-brand-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-700"
           >
             Add details
           </button>

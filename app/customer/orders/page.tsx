@@ -35,7 +35,7 @@ export default async function OrdersListPage() {
   const sym = currencySymbol("MYR");
 
   return (
-    <div className="min-h-dvh bg-brand-50">
+    <div className="min-h-dvh bg-ink-50">
       <div className="mx-auto max-w-md px-5 pb-28 pt-6">
         <header className="mb-5">
           <h1 className="text-2xl font-bold text-slate-900">My Orders</h1>

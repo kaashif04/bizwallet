@@ -61,11 +61,11 @@ export default function MenuView({
   return (
     <div className="mx-auto max-w-md">
       {/* Sticky header + category chips */}
-      <div className="sticky top-0 z-20 border-b border-slate-200/60 bg-brand-50/90 backdrop-blur-xl">
+      <div className="sticky top-0 z-20 border-b border-slate-200/60 bg-ink-50/90 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3 px-5 pt-[max(1rem,env(safe-area-inset-top))]">
           <span className="flex items-center gap-2">
             <HomeButton />
-            <span className="rounded-full bg-sun-300 px-3 py-1 text-xs font-extrabold text-slate-900">
+            <span className="rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-bold text-brand-700">
               {subtitle}
             </span>
           </span>
@@ -182,7 +182,7 @@ function MenuItemCard({
             {item.description}
           </span>
         )}
-        <span className="mt-1.5 block text-[15px] font-extrabold text-slate-900">
+        <span className="mt-1.5 block text-[15px] font-bold text-slate-900">
           {currencySymbol(currency)}
           {item.price.toFixed(2)}
         </span>
@@ -202,7 +202,7 @@ function MenuItemCard({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.4, opacity: 0 }}
               transition={{ type: "spring", stiffness: 600, damping: 26 }}
-              className="flex h-9 min-w-[2.25rem] items-center justify-center rounded-full bg-mint-500 px-2 text-sm font-extrabold text-white shadow-md shadow-mint-500/30"
+              className="flex h-9 min-w-[2.25rem] items-center justify-center rounded-full bg-brand-50 px-2 text-sm font-bold text-brand-700 shadow-well"
               aria-label={`${count} in cart`}
             >
               {count}
@@ -213,7 +213,7 @@ function MenuItemCard({
               initial={{ scale: 0.4, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.4, opacity: 0 }}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white shadow-md shadow-brand-600/25 transition-colors group-hover:bg-brand-700"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white shadow-sm transition-colors group-hover:bg-brand-700"
             >
               <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
                 <path d="M8 3v10M3 8h10" />
