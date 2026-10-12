@@ -58,7 +58,7 @@ export default function GuestOrder(
         <p className="mt-2 max-w-xs text-sm text-slate-600">{loadError}</p>
         <Link
           href="/customer/dashboard"
-          className="mt-6 rounded-full bg-brand-600 px-6 py-3 text-[15px] font-bold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+          className="mt-6 rounded-full bg-brand-600 px-6 py-3 text-[15px] font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
         >
           Go to my wallet
         </Link>
@@ -188,7 +188,7 @@ function CartReview({
   return (
     <>
       <motion.div
-        className="fixed inset-0 z-40 bg-ink-950/50"
+        className="fixed inset-0 z-40 bg-black/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -324,7 +324,7 @@ function CartReview({
           type="button"
           onClick={place}
           disabled={placing}
-          className="mt-5 h-14 w-full rounded-full bg-brand-600 px-5 text-base font-bold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
+          className="mt-5 h-14 w-full rounded-full bg-brand-600 px-5 text-base font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
         >
           {placing ? "Sending…" : error ? "Try again" : "Place order"}
         </button>

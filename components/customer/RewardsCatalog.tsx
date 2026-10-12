@@ -61,7 +61,7 @@ export default function RewardsCatalog({
   return (
     <>
       <motion.div
-        className="fixed inset-0 z-50 bg-ink-950/50"
+        className="fixed inset-0 z-50 bg-black/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -92,7 +92,7 @@ export default function RewardsCatalog({
                 initial={{ scale: 0.6, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", damping: 12, stiffness: 220 }}
-                className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-600 text-white"
+                className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-600 text-on"
               >
                 <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M5 13l4 4L19 7" />
@@ -110,7 +110,7 @@ export default function RewardsCatalog({
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-6 w-full rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-white shadow-lg transition active:scale-[0.99]"
+                className="mt-6 w-full rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-on shadow-lg transition active:scale-[0.99]"
               >
                 Done
               </button>
@@ -166,7 +166,7 @@ export default function RewardsCatalog({
                           disabled={!affordable || busyId === r.id}
                           className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition disabled:opacity-60 ${
                             affordable
-                              ? "bg-brand-600 text-white hover:bg-brand-700"
+                              ? "bg-brand-600 text-on hover:bg-brand-700"
                               : "bg-slate-100 text-slate-400"
                           }`}
                         >

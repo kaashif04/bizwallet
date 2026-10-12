@@ -118,7 +118,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
               type="button"
               onClick={save}
               disabled={saving}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-on disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save"}
             </button>
@@ -183,7 +183,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
           <button
             type="button"
             onClick={() => setShowCompletionSheet(true)}
-            className="mt-4 w-full rounded-full bg-brand-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-700"
+            className="mt-4 w-full rounded-full bg-brand-600 px-4 py-2.5 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700"
           >
             Add details
           </button>

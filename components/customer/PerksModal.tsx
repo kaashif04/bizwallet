@@ -17,7 +17,7 @@ export default function PerksModal({
   return (
     <>
       <motion.div
-        className="fixed inset-0 z-50 bg-ink-950/50"
+        className="fixed inset-0 z-50 bg-black/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -37,7 +37,7 @@ export default function PerksModal({
         <div className="px-5 pb-8 pt-4">
           <div className="flex items-center gap-3">
             <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl font-bold text-white shadow-inner"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl font-bold text-on shadow-inner"
               style={{ backgroundColor: tier.theme_color }}
             >
               {tier.name.charAt(0).toUpperCase()}
@@ -70,7 +70,7 @@ export default function PerksModal({
           <button
             type="button"
             onClick={onClose}
-            className="mt-6 w-full rounded-full bg-brand-600 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.99]"
+            className="mt-6 w-full rounded-full bg-brand-600 px-5 py-3.5 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.99]"
           >
             Got it
           </button>

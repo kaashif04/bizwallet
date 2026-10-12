@@ -57,7 +57,7 @@ export default function StorePicker({ branches, logos = {} }: { branches: Pickup
                   <div className="grid grid-cols-2 gap-2 px-4 pb-4">
                     <Link
                       href={`/scan?at=${encodeURIComponent(b.name)}`}
-                      className="flex flex-col gap-1 rounded-xl bg-brand-600 p-4 text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.98]"
+                      className="flex flex-col gap-1 rounded-xl bg-brand-600 p-4 text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.98]"
                     >
                       <ScanIcon />
                       <span className="mt-1 text-[15px] font-semibold">Dine in</span>

@@ -111,7 +111,7 @@ export default function TopUpPanel({
         type="button"
         onClick={confirm}
         disabled={!valid || status === "loading"}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:opacity-60"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-on shadow-sm transition active:scale-[0.99] disabled:opacity-60"
       >
         <AnimatePresence mode="wait" initial={false}>
           {status === "loading" ? (

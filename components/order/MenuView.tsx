@@ -85,7 +85,7 @@ export default function MenuView({
               aria-current={active === c ? "true" : undefined}
               className={`relative whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
                 active === c
-                  ? "text-white"
+                  ? "text-on"
                   : "bg-white text-slate-600 shadow-sm hover:text-slate-900"
               }`}
             >
@@ -213,7 +213,7 @@ function MenuItemCard({
               initial={{ scale: 0.4, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.4, opacity: 0 }}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white shadow-sm transition-colors group-hover:bg-brand-700"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-on shadow-sm transition-colors group-hover:bg-brand-700"
             >
               <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
                 <path d="M8 3v10M3 8h10" />

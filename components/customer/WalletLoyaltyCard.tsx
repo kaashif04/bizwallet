@@ -105,7 +105,7 @@ export default function WalletLoyaltyCard({
             </span>
             <span className="block text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Credit</span>
           </Link>
-          <span className="flex items-center justify-center gap-1 rounded-full bg-brand-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-brand-700">
+          <span className="flex items-center justify-center gap-1 rounded-full bg-brand-600 px-4 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700">
             Rewards <span aria-hidden="true">›</span>
           </span>
         </div>

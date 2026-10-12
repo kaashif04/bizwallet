@@ -201,7 +201,7 @@ export default function ProfileCompletionSheet({
   return (
     <>
       <motion.div
-        className="fixed inset-0 z-50 bg-ink-950/50"
+        className="fixed inset-0 z-50 bg-black/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -326,7 +326,7 @@ export default function ProfileCompletionSheet({
                               onClick={() => toggleDietary(tag)}
                               className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                                 active
-                                  ? "bg-brand-600 text-white"
+                                  ? "bg-brand-600 text-on"
                                   : "border border-slate-200 bg-white text-slate-600"
                               }`}
                             >
@@ -384,7 +384,7 @@ export default function ProfileCompletionSheet({
                     type="button"
                     onClick={continueCurrent}
                     disabled={saving || !isContinueEnabled}
-                    className="flex-1 rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60"
+                    className="flex-1 rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-on shadow-sm disabled:opacity-60"
                   >
                     {saving ? "Saving…" : "Continue"}
                   </button>
@@ -410,7 +410,7 @@ export default function ProfileCompletionSheet({
               <button
                 type="button"
                 onClick={finish}
-                className="mt-6 w-full rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-white shadow-sm"
+                className="mt-6 w-full rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-on shadow-sm"
               >
                 {earned > 0 ? `Nice — +${earned} pts banked` : "Done"}
               </button>

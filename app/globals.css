@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
-}
-
 html,
 body {
   height: 100%;
@@ -21,7 +17,7 @@ body {
   letter-spacing: -0.011em;
   /* Money everywhere: digits line up in balances, prices and ledgers. */
   font-variant-numeric: tabular-nums;
-  caret-color: theme("colors.brand.600");
+  caret-color: rgb(var(--brand-600));
 }
 
 /* No double-tap zoom delay on controls: taps feel instant. */
@@ -56,17 +52,17 @@ p {
 
 ::selection {
   background: rgb(47 100 240 / 0.26);
-  color: theme("colors.ink.950");
+  color: rgb(var(--ink-950));
 }
 
 :focus-visible {
-  outline: 2px solid theme("colors.brand.500");
+  outline: 2px solid rgb(var(--brand-500));
   outline-offset: 2px;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: theme("colors.slate.300") transparent;
+  scrollbar-color: rgb(var(--ink-300)) transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {

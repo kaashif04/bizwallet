@@ -28,7 +28,7 @@ export default function ViewCartBar({
           <button
             type="button"
             onClick={onClick}
-            className="flex h-14 w-full items-center justify-between rounded-full bg-brand-600 pl-2 pr-6 text-white shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+            className="flex h-14 w-full items-center justify-between rounded-full bg-brand-600 pl-2 pr-6 text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
           >
             <span className="flex items-center gap-3">
               <motion.span

@@ -97,7 +97,7 @@ export default function AddToCartSheet({
   return (
     <>
       <motion.div
-        className="fixed inset-0 z-40 bg-ink-950/50"
+        className="fixed inset-0 z-40 bg-black/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -290,7 +290,7 @@ export default function AddToCartSheet({
             className={`flex h-12 flex-1 items-center justify-between rounded-full px-5 text-[15px] font-bold transition active:scale-[0.97] ${
               unmetGroup
                 ? "bg-slate-100 text-slate-600"
-                : "bg-brand-600 text-white shadow-sm hover:bg-brand-700"
+                : "bg-brand-600 text-on shadow-sm hover:bg-brand-700"
             }`}
           >
             <span className="truncate">{unmetGroup ? `Choose ${unmetGroup.label}` : "Add"}</span>
