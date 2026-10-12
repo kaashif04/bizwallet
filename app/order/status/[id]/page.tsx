@@ -250,7 +250,7 @@ function Track({ step }: { step: number }) {
           <li key={t.key} aria-current={current ? "step" : undefined}>
             <div className="relative h-2 overflow-hidden rounded-full bg-ink-100 shadow-well">
               <motion.div
-                className="absolute inset-y-0 left-0 rounded-full bg-brand-600"
+                className="absolute inset-y-0 left-0 rounded-full bg-marple"
                 initial={false}
                 animate={{ width: done ? "100%" : "0%" }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: i * 0.04 }}

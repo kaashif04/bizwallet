@@ -51,7 +51,7 @@ p {
 }
 
 ::selection {
-  background: rgb(47 100 240 / 0.26);
+  background: rgb(var(--brand-400) / 0.3);
   color: rgb(var(--ink-950));
 }
 

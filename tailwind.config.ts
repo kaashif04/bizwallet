@@ -2,7 +2,7 @@ import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 
 // "Soft System", shared with BizEazy Hub and BizEazy Staff (~/BizEazy/DESIGN.md).
-// Ivory paper, charcoal ink, one cobalt accent, mint/amber/coral for status,
+// Ivory paper, charcoal ink, one Marple accent (crimson to cream), mint/amber/coral for status,
 // depth from paired light/shade shadows. Change the Hub first, then copy here.
 
 type Ramp = Record<string | number, string>;
@@ -12,10 +12,11 @@ const ink = {
   50: "#F2EFE9", 100: "#E9E5DD", 200: "#DCD6CB", 300: "#C4BDB0", 400: "#9C958A", 500: "#6A645B",
   600: "#544F48", 700: "#3E3A35", 800: "#2A2825", 900: "#1C1B19", 950: "#121110",
 };
-// Cobalt: primary actions, progress, the active place.
-const cobalt = {
-  50: "#EEF3FF", 100: "#DCE6FF", 200: "#BACDFF", 300: "#8DADFF", 400: "#5A86F7", 500: "#2F64F0",
-  600: "#1450E6", 700: "#0E40C2", 800: "#10369A", 900: "#132F78", 950: "#0C1C4A",
+// Marple: crimson CA2851, coral FF6766, apricot FFB173, cream FFE3B3.
+// 600 (crimson) is the button colour: ivory text on it is 5.8:1.
+const marple = {
+  50: "#FFF6EA", 100: "#FFE3B3", 200: "#FFCB98", 300: "#FFB173", 400: "#FF6766", 500: "#E8454F",
+  600: "#CA2851", 700: "#A81E43", 800: "#861737", 900: "#64112A", 950: "#3D0A1A",
 };
 const emerald = { 50: "#E6FAF3", 100: "#C2F2E1", 500: "#00A877", 600: "#008A62", 700: "#006E4F" };
 const amber = { 50: "#FFF7E6", 100: "#FFEBC2", 200: "#FFD98A", 300: "#FFC24D", 500: "#F09A00", 700: "#9A5C00", 800: "#7A4800" };
@@ -30,14 +31,14 @@ const dark: Record<string, Ramp> = {
     600: "#C4BDB0", 700: "#DCD6CB", 800: "#E9E5DD", 900: "#F2EFE9", 950: "#FBFAF7",
   },
   brand: {
-    50: "#16213F", 100: "#1B2A55", 200: "#22346A", 300: "#2B4285", 400: "#8DADFF", 500: "#5A86F7",
-    600: "#2F64F0", 700: "#5A86F7", 800: "#8DADFF", 900: "#BACDFF", 950: "#DCE6FF",
+    50: "#2A1619", 100: "#3A1B20", 200: "#4D2129", 300: "#6A2735", 400: "#FFB173", 500: "#FF6766",
+    600: "#D63558", 700: "#FF8A7A", 800: "#FFB173", 900: "#FFCB98", 950: "#FFE3B3",
   },
   emerald: { 50: "#0D2A21", 100: "#123A2D", 500: "#12C48C", 600: "#4AD6A7", 700: "#4AD6A7" },
   amber: { 50: "#2E2108", 100: "#3D2C0A", 200: "#5C3600", 300: "#FFC24D", 500: "#FFB020", 700: "#FFC24D", 800: "#FFD98A" },
   rose: { 50: "#33130F", 100: "#451109", 200: "#7A271A", 400: "#FF8F86", 500: "#FF6257", 600: "#FF8F86", 700: "#FF8F86" },
 };
-const light: Record<string, Ramp> = { ink, brand: cobalt, emerald, amber, rose };
+const light: Record<string, Ramp> = { ink, brand: marple, emerald, amber, rose };
 
 const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(" ");
 const vars = (pal: Record<string, Ramp>, card: string) => ({
@@ -65,10 +66,14 @@ const config: Config = {
         // One family carries everything; display is kept as an alias.
         display: ["var(--font-body)", "ui-sans-serif", "system-ui", "sans-serif"],
       },
+      backgroundImage: {
+        marple: "linear-gradient(90deg, #CA2851, #FF6766 45%, #FFB173 80%, #FFE3B3)",
+        "marple-card": "linear-gradient(135deg, #CA2851 0%, #E8454F 50%, #FF6766 80%, #FFB173 100%)",
+      },
       fontSize: { "2xs": ["0.6875rem", "1.09rem"] },
       colors: {
         // bg-white is the card surface (charcoal in dark mode); text-on is the
-        // fixed ivory for text on cobalt and on photos.
+        // fixed ivory for text on crimson, the gradient and photos.
         white: "rgb(var(--card) / <alpha-value>)",
         on: "#FBFAF7",
         ink: themed("ink"),
@@ -79,7 +84,7 @@ const config: Config = {
         amber: themed("amber"),
         rose: themed("rose"),
         red: themed("rose"),
-        // Old playful accents fold into the status trio and cobalt.
+        // Old playful accents fold into the status trio and the accent.
         sun: themed("amber"),
         mint: themed("emerald"),
         sky: themed("brand"),

@@ -46,17 +46,19 @@ export default function WalletLoyaltyCard({
         role="button"
         tabIndex={0}
         aria-label={`${points} points. Open rewards`}
-        className="cursor-pointer rounded-2xl bg-white p-5 transition hover:shadow-md active:scale-[0.99]"
+        className="relative cursor-pointer overflow-hidden rounded-2xl bg-marple-card p-5 text-on shadow-md transition hover:shadow-lg active:scale-[0.99]"
       >
-        <div className="flex items-center justify-between">
-          <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Your points</p>
+        {/* Soft cream glow, like light through the gradient. */}
+        <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#FFE3B3]/30 blur-3xl" />
+        <div className="relative flex items-center justify-between">
+          <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-on/80">Your points</p>
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               setShowPerks(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-bold text-brand-700 transition hover:bg-brand-100 active:scale-95"
+            className="inline-flex items-center gap-1.5 rounded-full bg-black/15 px-2.5 py-1 text-2xs font-bold text-on backdrop-blur-sm transition hover:bg-black/25 active:scale-95"
           >
             <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tier.currentTier.theme_color }} />
             {tier.current}
@@ -67,25 +69,25 @@ export default function WalletLoyaltyCard({
         <AnimatedNumber
           value={points}
           decimals={0}
-          className="mt-2 block text-5xl font-semibold leading-none tracking-[-0.03em] text-ink-900"
+          className="relative mt-2 block text-5xl font-semibold leading-none tracking-[-0.03em]"
         />
 
-        <div className="mt-5">
+        <div className="relative mt-5">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-ink-500">
+            <span className="text-on/85">
               {tier.nextTier ? (
                 <>
-                  <span className="font-bold text-ink-900">{tier.pointsToNext.toLocaleString()} pts</span> to {tier.next}
+                  <span className="font-bold">{tier.pointsToNext.toLocaleString()} pts</span> to {tier.next}
                 </>
               ) : (
                 "Top tier. Every perk is yours."
               )}
             </span>
-            <span className="font-bold text-ink-700">{progressPct}%</span>
+            <span className="font-bold">{progressPct}%</span>
           </div>
-          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-ink-100 shadow-well">
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-black/20">
             <motion.div
-              className="h-full rounded-full bg-brand-600"
+              className="h-full rounded-full bg-[#FFE3B3]"
               initial={{ width: 0 }}
               animate={{ width: `${Math.max(progressPct, 3)}%` }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
@@ -93,19 +95,19 @@ export default function WalletLoyaltyCard({
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="relative mt-5 grid grid-cols-2 gap-3">
           <Link
             href="/customer/wallet"
             onClick={(e) => e.stopPropagation()}
-            className="rounded-xl bg-ink-50 px-3 py-2.5 shadow-well transition hover:bg-ink-100"
+            className="rounded-xl bg-black/15 px-3 py-2.5 backdrop-blur-sm transition hover:bg-black/25"
           >
-            <span className="block text-lg font-semibold tracking-[-0.025em] text-ink-900">
+            <span className="block text-lg font-semibold tracking-[-0.025em]">
               {sym}
               {balance.toFixed(2)}
             </span>
-            <span className="block text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Credit</span>
+            <span className="block text-2xs font-semibold uppercase tracking-[0.14em] text-on/80">Credit</span>
           </Link>
-          <span className="flex items-center justify-center gap-1 rounded-full bg-brand-600 px-4 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700">
+          <span className="flex h-11 items-center justify-center gap-1 self-center rounded-full bg-on px-4 text-sm font-bold text-[#A81E43] shadow-sm transition hover:bg-[#FFE3B3]">
             Rewards <span aria-hidden="true">›</span>
           </span>
         </div>

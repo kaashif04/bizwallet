@@ -173,7 +173,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
         </div>
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-ink-100 shadow-well">
           <motion.div
-            className="h-full rounded-full bg-brand-600"
+            className="h-full rounded-full bg-marple"
             initial={{ width: 0 }}
             animate={{ width: `${completionPercent}%` }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}

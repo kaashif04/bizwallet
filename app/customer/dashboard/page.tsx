@@ -196,7 +196,7 @@ function NextReward({ points, rewards }: { points: number; rewards: Reward[] }) 
           aria-valuemax={100}
           aria-label={`Progress to ${target.name}`}
         >
-          <div className={`h-full rounded-full ${ready ? "bg-emerald-500" : "bg-brand-600"}`} style={{ width: `${Math.max(pct, 4)}%` }} />
+          <div className={`h-full rounded-full ${ready ? "bg-emerald-500" : "bg-marple"}`} style={{ width: `${Math.max(pct, 4)}%` }} />
         </div>
         <p className="mt-1.5 text-xs text-ink-500">
           {ready ? "Tap your points card to redeem" : `${(target.points_cost - points).toLocaleString()} more points to go`}
