@@ -23,13 +23,17 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const { data: order } = await admin
     .from("guest_orders")
-    .select("id, claim_token, status, amount_due, payment_ref, outlet_id")
+    .select("id, claim_token, status, amount_due, payment_ref, outlet_id, created_at")
     .eq("id", order_id)
     .maybeSingle();
   if (!order || order.claim_token !== claim_token) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
   if (order.status !== "awaiting_payment") return NextResponse.json({ paid: true });
+  // Same 30-minute window as fn_guest_payment_expired; an open bill can still be paid.
+  if (!order.payment_ref && Date.now() - Date.parse(order.created_at) > 30 * 60_000) {
+    return NextResponse.json({ error: "This order expired. Please order again." }, { status: 410 });
+  }
 
   try {
     if (order.payment_ref) {
