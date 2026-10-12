@@ -27,7 +27,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={body.variable}>
+    <html lang="en" className={body.variable} suppressHydrationWarning>
+      <head>
+        {/* Apply the saved Appearance before paint, so there's no flash. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="font-sans">
         <MotionProvider>{children}</MotionProvider>
       </body>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import ProfileCompletionSheet from "./ProfileCompletionSheet";
+import AppearancePicker from "./AppearancePicker";
 
 export type ProfileData = {
   name: string;
@@ -221,6 +222,8 @@ export default function ProfileView({ data }: { data: ProfileData }) {
         My orders
       </Link>
 
+
+      <AppearancePicker />
 
       {/* Sign out */}
       <form action="/auth/signout" method="post">

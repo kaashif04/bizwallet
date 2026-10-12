@@ -119,23 +119,26 @@ const config: Config = {
     },
   },
   plugins: [
-    plugin(({ addBase }) =>
+    // Auto follows the phone; Profile > Appearance can pin light or dark
+    // (html[data-theme], set before paint in app/layout.tsx).
+    plugin(({ addBase }) => {
+      const darkVars = {
+        ...vars({ ...light, ...dark }, "#1C1B19"),
+        "--nm-hl": "rgb(255 255 255 / 0.035)",
+        "--nm-sh": "rgb(0 0 0 / 0.55)",
+        "color-scheme": "dark",
+      };
       addBase({
         ":root": {
           ...vars(light, "#FBFAF7"),
           "--nm-hl": "rgb(255 255 255 / 0.85)",
           "--nm-sh": "rgb(122 104 78 / 0.2)",
-          "color-scheme": "light dark",
+          "color-scheme": "light",
         },
-        "@media (prefers-color-scheme: dark)": {
-          ":root": {
-            ...vars({ ...light, ...dark }, "#1C1B19"),
-            "--nm-hl": "rgb(255 255 255 / 0.035)",
-            "--nm-sh": "rgb(0 0 0 / 0.55)",
-          },
-        },
-      }),
-    ),
+        "@media (prefers-color-scheme: dark)": { ':root:not([data-theme="light"])': darkVars },
+        ':root[data-theme="dark"]': darkVars,
+      });
+    }),
   ],
 };
 
