@@ -29,6 +29,15 @@ export default async function OrdersListPage() {
     .order("created_at", { ascending: false })
     .limit(50);
 
+  // Placed but not on a POS bill yet: waiting for payment or for the outlet.
+  const { data: waiting } = await supabase
+    .from("guest_orders")
+    .select("id,status,amount_due,subtotal,created_at,outlet_id")
+    .eq("member_id", user.id)
+    .in("status", ["awaiting_payment", "pending"])
+    .order("created_at", { ascending: false })
+    .limit(10);
+
   const orders = rows ?? [];
   const nameMap = await names;
   const outletName = (o: { outlet_id: string }) => nameMap.get(o.outlet_id) ?? "Restaurant";
@@ -41,6 +50,36 @@ export default async function OrdersListPage() {
           <h1 className="text-2xl font-bold text-slate-900">My Orders</h1>
           <p className="text-sm text-slate-500">Your bills from every outlet</p>
         </header>
+
+        {!!waiting?.length && (
+          <section className="mb-6">
+            <h2 className="mb-2 px-1 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">In progress</h2>
+            <div className="space-y-3">
+              {waiting.map((g) => (
+                <Link
+                  key={g.id}
+                  href={`/order/status/${g.id}`}
+                  className="flex items-center gap-3 rounded-2xl bg-white p-4 transition hover:shadow-md active:scale-[0.99]"
+                >
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="absolute inset-0 animate-ping rounded-full bg-amber-500 opacity-60" />
+                    <span className="relative h-2.5 w-2.5 rounded-full bg-amber-500" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold text-ink-900">{outletName(g)}</span>
+                    <span className="block text-xs text-ink-500">
+                      {g.status === "awaiting_payment" ? "Waiting for your payment" : "Waiting for the outlet to confirm"}
+                    </span>
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums text-ink-900">
+                    {sym}
+                    {Number(g.amount_due ?? g.subtotal).toFixed(2)}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {orders.length === 0 ? (
           <div className="rounded-2xl border border-slate-100 bg-white p-10 text-center text-sm text-slate-500">

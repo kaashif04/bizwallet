@@ -34,7 +34,8 @@ export type GuestMenu = {
 };
 
 export type GuestOrderStatus = {
-  status: "pending" | "accepted" | "rejected";
+  status: "awaiting_payment" | "pending" | "accepted" | "rejected";
+  amount_due: number | null;
   reject_reason: string | null;
   table_label: string | null;
   subtotal: number;

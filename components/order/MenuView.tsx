@@ -117,9 +117,10 @@ export default function MenuView({
             <div className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm">
               {items
                 .filter((i) => i.category === cat)
-                .map((item) => (
+                .map((item, i) => (
                   <MenuItemCard
                     key={item.id}
+                    index={i}
                     item={item}
                     currency={currency}
                     onClick={() => onItemClick(item)}
@@ -141,10 +142,12 @@ export default function MenuView({
 
 function MenuItemCard({
   item,
+  index,
   currency,
   onClick,
 }: {
   item: MenuItem;
+  index: number;
   currency: string;
   onClick: () => void;
 }) {
@@ -154,9 +157,13 @@ function MenuItemCard({
     .reduce((n, l) => n + l.quantity, 0);
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
+      initial={{ opacity: 0, y: 14 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "0px 0px -40px 0px" }}
+      transition={{ duration: 0.3, delay: Math.min(index, 6) * 0.04, ease: [0.22, 1, 0.36, 1] }}
       className="group flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-brand-50/60 active:bg-brand-50"
     >
       {item.imageUrl ? (
@@ -222,6 +229,6 @@ function MenuItemCard({
           )}
         </AnimatePresence>
       </span>
-    </button>
+    </motion.button>
   );
 }

@@ -4,6 +4,7 @@ import DashboardHeader from "@/components/customer/DashboardHeader";
 import WalletLoyaltyCard from "@/components/customer/WalletLoyaltyCard";
 import OrderAgain, { type RecentOrder } from "@/components/customer/OrderAgain";
 import BottomNav from "@/components/customer/BottomNav";
+import Reveal from "@/components/Reveal";
 import StorePicker from "@/components/order/StorePicker";
 import { DEMO_TIERS, type Reward } from "@/lib/dashboard-demo";
 import type { LoyaltyTier } from "@/lib/loyalty";
@@ -71,7 +72,7 @@ export default async function CustomerDashboardPage() {
     outlet: branchName.get(o.outlet_id) ?? "Restaurant",
     items: summarizeItems(o.items),
     total: Number(o.subtotal),
-    href: o.transaction_id ? `/customer/orders/${o.transaction_id}` : "/customer/orders",
+    href: o.transaction_id ? `/customer/orders/${o.transaction_id}` : `/order/status/${o.id}`,
     date: o.created_at,
   }));
 
@@ -91,6 +92,7 @@ export default async function CustomerDashboardPage() {
             userId={uid}
           />
 
+          <Reveal delay={0.06}>
           <div className="grid grid-cols-2 gap-3">
             <Link
               href="/scan"
@@ -123,9 +125,13 @@ export default async function CustomerDashboardPage() {
               </span>
             </Link>
           </div>
+          </Reveal>
 
+          <Reveal delay={0.12}>
           <NextReward points={loyalty?.points_balance ?? 0} rewards={(rewardRows ?? []) as Reward[]} />
+          </Reveal>
 
+          <Reveal delay={0.18}>
           <section>
             <SectionHeader title="Recent orders" actionHref={recent.length ? "/customer/orders" : undefined} />
             {recent.length ? (
@@ -136,7 +142,9 @@ export default async function CustomerDashboardPage() {
               </p>
             )}
           </section>
+          </Reveal>
 
+          <Reveal delay={0.24}>
           <section>
             <SectionHeader title="Stores" />
             {branches.length ? (
@@ -147,6 +155,7 @@ export default async function CustomerDashboardPage() {
               </p>
             )}
           </section>
+          </Reveal>
         </div>
       </div>
 

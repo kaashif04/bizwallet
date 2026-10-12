@@ -43,7 +43,8 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isCustomerArea = path.startsWith("/customer");
+  // Pickup is paid online, so it needs an account (table QR ordering doesn't).
+  const isCustomerArea = path.startsWith("/customer") || path.startsWith("/order/p/");
 
   // A redirect is a new response: carry over any cookies getUser() just
   // refreshed, or the browser keeps a spent refresh token and gets signed out.

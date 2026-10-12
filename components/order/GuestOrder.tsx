@@ -119,10 +119,12 @@ export default function GuestOrder(
             menu={menu}
             token={props.token}
             onClose={() => setReviewing(false)}
-            onPlaced={(id, claimToken) => {
-              saveClaimToken(id, claimToken, window.location.pathname);
+            onPlaced={(id) => {
+              // The sheet would drop its history entry on close (history.back),
+              // undoing this navigation; mark it gone first.
+              history.replaceState({ ...history.state, sheet: false }, "");
               cart.clear();
-              router.push(`/order/status/${id}`);
+              router.push(`/order/status/${id}?placed=1`);
             }}
           />
         )}
@@ -140,7 +142,7 @@ function CartReview({
   menu: GuestMenu;
   token?: string;
   onClose: () => void;
-  onPlaced: (id: string, claimToken: string) => void;
+  onPlaced: (id: string) => void;
 }) {
   const cart = useCart();
   const [supabase] = useState(() => createClient());
@@ -175,11 +177,30 @@ function CartReview({
         })),
       },
     });
-    setPlacing(false);
-    if (error) return setError(error.message);
+    if (error) {
+      setPlacing(false);
+      return setError(error.message);
+    }
     requestId.current = null;
-    onPlaced(data.id, data.claim_token);
+    saveClaimToken(data.id, data.claim_token, window.location.pathname);
+    if (data.status !== "awaiting_payment") return onPlaced(data.id);
+
+    // Pickup: pay online first; the kitchen only sees it once paid.
+    const res = await fetch("/api/pay", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order_id: data.id, claim_token: data.claim_token }),
+    });
+    const pay = await res.json().catch(() => ({}));
+    if (pay.url) {
+      cart.clear();
+      return window.location.assign(pay.url);
+    }
+    // Couldn't open payment: the order page has a Pay button to retry.
+    onPlaced(data.id);
   }
+
+  const pickup = !token;
 
   useEffect(() => {
     if (cart.totalItems === 0) onClose();
@@ -298,11 +319,12 @@ function CartReview({
           </span>
         </div>
         <p className="mt-1 text-xs text-slate-500">
-          {charges.length ? `Final price with ${charges.join(" and ")} is confirmed at the counter. ` : ""}
-          Pay at the counter when you&apos;re done.
+          {pickup
+            ? `Pay online with FPX online banking${charges.length ? `, ${charges.join(" and ")} included` : ""}. The kitchen starts once you've paid.`
+            : `${charges.length ? `Final price with ${charges.join(" and ")} is confirmed at the counter. ` : ""}Pay at the counter when you're done.`}
         </p>
 
-        {Math.floor(cart.totalPrice) > 0 && (
+        {!pickup && Math.floor(cart.totalPrice) > 0 && (
           <p className="mt-4 flex items-center gap-3 rounded-xl bg-ink-50 px-4 py-3 text-sm text-ink-700 shadow-well">
             <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0 text-brand-600" fill="currentColor" aria-hidden="true">
               <path d="M10 1.5l2.5 5.2 5.7.8-4.1 4 1 5.6L10 14.4l-5.1 2.7 1-5.6-4.1-4 5.7-.8L10 1.5Z" />
@@ -326,7 +348,7 @@ function CartReview({
           disabled={placing}
           className="mt-5 h-14 w-full rounded-full bg-brand-600 px-5 text-base font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
         >
-          {placing ? "Sending…" : error ? "Try again" : "Place order"}
+          {placing ? (pickup ? "Opening payment…" : "Sending…") : error ? "Try again" : pickup ? "Pay and place order" : "Place order"}
         </button>
         <button
           type="button"
