@@ -29,6 +29,9 @@ export async function POST(request: Request) {
   if (!order || order.claim_token !== claim_token) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
+  if (order.status === "rejected") {
+    return NextResponse.json({ error: "This order was cancelled. Please order again." }, { status: 410 });
+  }
   if (order.status !== "awaiting_payment") return NextResponse.json({ paid: true });
   // Same 30-minute window as fn_guest_payment_expired; an open bill can still be paid.
   if (!order.payment_ref && Date.now() - Date.parse(order.created_at) > 30 * 60_000) {
