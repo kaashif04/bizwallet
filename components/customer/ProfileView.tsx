@@ -147,10 +147,10 @@ export default function ProfileView({ data }: { data: ProfileData }) {
       >
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-slate-900">Complete your profile</p>
+            <p className="text-sm font-bold text-ink-900">Complete your profile</p>
             <p className="mt-0.5 text-xs text-slate-500">
               {completedCount} of {totalFields} done
-              {completedCount === totalFields ? " · all done" : " · helps restaurants serve you better"}
+              {completedCount === totalFields ? " · all done" : " · fill in once, used at every restaurant"}
             </p>
           </div>
           <span className="text-sm font-bold text-brand-600">{completionPercent}%</span>
