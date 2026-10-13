@@ -86,7 +86,11 @@ export default function MyPlaces({
                   <BranchLogo name={p.company} logoUrl={logo} className="h-10 w-10 rounded-xl text-base" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-bold">{p.company}</span>
-                    <span className="block text-xs text-on/80">{p.branches.length} {p.branches.length === 1 ? "branch" : "branches"}</span>
+                    <span className="block text-xs text-on/80">
+                      {p.branches.length
+                        ? `${p.branches.length} ${p.branches.length === 1 ? "branch" : "branches"} you've ordered from`
+                        : "Rewards member"}
+                    </span>
                   </span>
                   {p.tier.name && (
                     <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-black/20 px-2.5 py-1 text-2xs font-bold backdrop-blur-sm">

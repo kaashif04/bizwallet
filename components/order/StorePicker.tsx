@@ -41,6 +41,11 @@ export default function StorePicker({
       );
     };
     window.addEventListener(STORES_EVENT, onPick);
+    // Arrived from a banner on another page: ?store=<outlet> or ?company=<company>.
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("store") || q.get("company")) {
+      onPick(new CustomEvent(STORES_EVENT, { detail: { outletId: q.get("store"), companyId: q.get("company") ?? undefined } }));
+    }
     return () => window.removeEventListener(STORES_EVENT, onPick);
   }, []);
 

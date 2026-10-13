@@ -6,7 +6,6 @@ import OrderAgain, { type RecentOrder } from "@/components/customer/OrderAgain";
 import BottomNav from "@/components/customer/BottomNav";
 import Reveal from "@/components/Reveal";
 import ActiveOrders from "@/components/customer/ActiveOrders";
-import StorePicker from "@/components/order/StorePicker";
 import BannerCarousel from "@/components/order/BannerCarousel";
 import { billplzEnabled } from "@/lib/billplz";
 import { groupBy, type Place, type Reward, type Voucher } from "@/lib/places";
@@ -38,6 +37,8 @@ export default async function CustomerDashboardPage() {
     { data: branchData },
     logos,
     { data: bannerData },
+    { data: orderedGuest },
+    { data: orderedBills },
   ] = await Promise.all([
     supabase.from("members").select("full_name").eq("id", uid).maybeSingle(),
     supabase.from("wallets").select("balance, currency").eq("user_id", uid).maybeSingle(),
@@ -52,13 +53,21 @@ export default async function CustomerDashboardPage() {
     supabase.rpc("guest_list_outlets"),
     outletLogos(supabase),
     supabase.rpc("wallet_banners"),
+    // Branches I've ordered from: QR/pickup orders and counter bills.
+    supabase.from("guest_orders").select("outlet_id").eq("member_id", uid).neq("status", "rejected").limit(500),
+    supabase.from("transactions").select("outlet_id").eq("member_id", uid).limit(500),
   ]);
+  const orderedAt = new Set([...(orderedGuest ?? []), ...(orderedBills ?? [])].map((r) => r.outlet_id as string));
   const pickupOpen = billplzEnabled();
 
   const branches = (branchData ?? []) as PickupOutlet[];
   const branchName = new Map(branches.map((b) => [b.id, b.name]));
   // Loyalty is per company: rewards and vouchers of the companies I've joined.
-  const places = (placeData ?? []) as Place[];
+  // Home shows only the branches I've ordered from; the Order tab lists them all.
+  const places = ((placeData ?? []) as Place[]).map((p) => ({
+    ...p,
+    branches: p.branches.filter((b) => orderedAt.has(b.id)),
+  }));
   const companyIds = places.map((p) => p.company_id);
   const [{ data: rewardRows }, { data: voucherRows }] = companyIds.length
     ? await Promise.all([
@@ -92,7 +101,7 @@ export default async function CustomerDashboardPage() {
         <DashboardHeader name={member?.full_name ?? user?.email?.split("@")[0] ?? "there"} />
 
         <div className="mt-5 space-y-6">
-          <BannerCarousel banners={(bannerData ?? []) as Banner[]} branches={branches} pickupOpen={pickupOpen} />
+          <BannerCarousel banners={(bannerData ?? []) as Banner[]} branches={branches} pickupOpen={pickupOpen} storesHref="/customer/order" />
           <ActiveOrders names={Object.fromEntries(branchName)} />
           <MyPlaces
             places={places}
@@ -171,18 +180,6 @@ export default async function CustomerDashboardPage() {
           </section>
           </Reveal>
 
-          <Reveal delay={0.24}>
-          <section>
-            <SectionHeader title="Stores" />
-            {branches.length ? (
-              <StorePicker branches={branches} logos={logos} pickupOpen={pickupOpen} />
-            ) : (
-              <p className="rounded-2xl bg-white px-5 py-6 text-sm text-slate-600 shadow-sm">
-                No store is taking online orders right now. Order with our staff at the restaurant.
-              </p>
-            )}
-          </section>
-          </Reveal>
         </div>
       </div>
 

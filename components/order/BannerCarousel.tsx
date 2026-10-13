@@ -12,10 +12,12 @@ export default function BannerCarousel({
   banners,
   branches,
   pickupOpen,
+  storesHref,
 }: {
   banners: Banner[];
   branches: PickupOutlet[];
   pickupOpen: boolean;
+  storesHref?: string; // no store list on this page: open it there instead
 }) {
   const router = useRouter();
   const track = useRef<HTMLDivElement>(null);
@@ -46,6 +48,9 @@ export default function BannerCarousel({
     if (b.action !== "order") return;
     const branch = b.outlet_id ? branches.find((x) => x.id === b.outlet_id) : null;
     if (branch?.pickup && pickupOpen && branch.open_now !== false) return router.push(`/order/p/${branch.id}`);
+    if (storesHref) {
+      return router.push(`${storesHref}?${b.outlet_id ? `store=${b.outlet_id}` : `company=${b.company_id}`}`);
+    }
     window.dispatchEvent(new CustomEvent(STORES_EVENT, { detail: { outletId: b.outlet_id, companyId: b.company_id } }));
   };
 
