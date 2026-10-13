@@ -58,6 +58,18 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
     }
   }, [params.id]);
 
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  async function cancel() {
+    setCancelling(true);
+    setError(null);
+    const { error } = await supabase.rpc("guest_cancel_order", { p_id: params.id, p_claim_token: claimToken });
+    setCancelling(false);
+    setConfirmCancel(false);
+    if (error) setError(error.message);
+    refresh();
+  }
+
   async function pay() {
     setPaying(true);
     setError(null);
@@ -158,7 +170,9 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
   const sym = currencySymbol("MYR");
   const headline =
     order.status === "rejected"
-      ? "The outlet couldn't take this order"
+      ? order.reject_reason === "Cancelled by customer"
+        ? "Order cancelled"
+        : "The outlet couldn't take this order"
       : order.status === "awaiting_payment" || order.status === "pending"
         ? STEPS[order.status]
         : STEPS[order.kitchen_status ?? "queued"];
@@ -241,7 +255,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
       )}
 
       {order.status !== "rejected" && <Track step={step} />}
-      {order.status === "rejected" && order.reject_reason && (
+      {order.status === "rejected" && order.reject_reason && order.reject_reason !== "Cancelled by customer" && (
         <p className="mt-2 text-center text-sm text-ink-500">{order.reject_reason}</p>
       )}
       {refundOwed && paidBackAt !== undefined && (
@@ -347,6 +361,60 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           >
             My account
           </Link>
+        </div>
+      )}
+      {/* Until the outlet confirms, the customer can take it back. */}
+      {(order.status === "awaiting_payment" || order.status === "pending") && (
+        <div className="mt-8 text-center">
+          <AnimatePresence mode="wait" initial={false}>
+            {confirmCancel ? (
+              <motion.div
+                key="confirm"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                className="rounded-2xl bg-white p-4"
+              >
+                <p className="text-sm font-bold text-ink-900">Cancel this order?</p>
+                {order.paid && (
+                  <p className="mt-1 text-xs text-ink-500">
+                    The restaurant will refund {sym}
+                    {Number(order.amount_due ?? 0).toFixed(2)} to your bank account.
+                  </p>
+                )}
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmCancel(false)}
+                    className="h-11 rounded-full bg-ink-50 text-sm font-bold text-ink-700 shadow-well transition active:scale-[0.97]"
+                  >
+                    Keep it
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancel}
+                    disabled={cancelling}
+                    className="h-11 rounded-full bg-rose-600 text-sm font-bold text-on shadow-sm transition active:scale-[0.97] disabled:opacity-60"
+                  >
+                    {cancelling ? "Cancelling…" : "Yes, cancel"}
+                  </button>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.button
+                key="ask"
+                type="button"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setConfirmCancel(true)}
+                className="h-11 rounded-full px-5 text-sm font-bold text-rose-700 transition hover:bg-rose-50"
+              >
+                Cancel order
+              </motion.button>
+            )}
+          </AnimatePresence>
+          <p className="mt-1 text-xs text-ink-400">You can cancel until the restaurant confirms it.</p>
         </div>
       )}
       {error && (

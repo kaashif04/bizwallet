@@ -149,6 +149,15 @@ function CartReview({
   const sym = currencySymbol(CURRENCY);
   useSheet(onClose);
   const [name, setName] = useState("");
+  // Signed-in members order under the name they registered with.
+  const [memberName, setMemberName] = useState<string | null>(null);
+  useEffect(() => {
+    supabase
+      .from("members")
+      .select("full_name")
+      .maybeSingle()
+      .then(({ data }) => setMemberName(data?.full_name?.trim() || null));
+  }, [supabase]);
   const [note, setNote] = useState("");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -168,7 +177,7 @@ function CartReview({
       p_payload: {
         request_id: requestId.current,
         ...(token ? { table_token: token } : { outlet_id: menu.outlet.id }),
-        customer_name: name.trim() || undefined,
+        customer_name: memberName ?? (name.trim() || undefined),
         note: note.trim() || undefined,
         items: cart.lines.map((l) => ({
           menu_item_id: l.item.id,
@@ -286,6 +295,11 @@ function CartReview({
           ))}
         </ul>
 
+        {memberName ? (
+          <p className="mt-4 text-sm text-ink-500">
+            Ordering as <span className="font-bold text-ink-900">{memberName}</span>
+          </p>
+        ) : (
         <label className="mt-4 block">
           <span className="mb-1.5 block text-sm font-medium text-slate-700">
             Your name <span className="font-normal text-slate-400">(optional)</span>
@@ -298,6 +312,7 @@ function CartReview({
             className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-[15px] outline-none transition focus:border-brand-400 focus:bg-white"
           />
         </label>
+        )}
         <label className="mt-3 block">
           <span className="mb-1.5 block text-sm font-medium text-slate-700">
             Note for the kitchen <span className="font-normal text-slate-400">(optional)</span>
