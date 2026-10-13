@@ -1,62 +1,54 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { topUpEnabled } from "@/lib/wallet-types";
+import { billplzEnabled, createBill } from "@/lib/billplz";
 
+const MIN_TOPUP = 1; // Billplz's smallest bill
 const MAX_TOPUP = 1000;
 
+// Start a wallet top-up: records it, opens a Billplz bill and returns its
+// page. The wallet is credited only after Billplz confirms the payment
+// (callback or return -> confirmBill -> wallet_confirm_topup).
 export async function POST(request: Request) {
-  if (!topUpEnabled()) {
+  if (!billplzEnabled()) {
     return NextResponse.json({ error: "Top-ups aren't available yet." }, { status: 503 });
   }
-
-  // 1. Identify the caller from their session cookies (anon/authenticated).
-  const supabase = createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  } = await createClient().auth.getUser();
+  if (!user?.email) return NextResponse.json({ error: "Please sign in to top up." }, { status: 401 });
+
+  const { amount: raw } = await request.json().catch(() => ({}));
+  const amount = Math.round(Number(raw) * 100) / 100;
+  if (!Number.isFinite(amount) || amount < MIN_TOPUP || amount > MAX_TOPUP) {
+    return NextResponse.json({ error: `Top up between RM${MIN_TOPUP} and RM${MAX_TOPUP.toLocaleString()}.` }, { status: 400 });
   }
 
-  // 2. Validate the amount.
-  let body: { amount?: unknown };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-  const amount = Number(body.amount);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return NextResponse.json(
-      { error: "Amount must be greater than zero" },
-      { status: 400 }
-    );
-  }
-  if (amount > MAX_TOPUP) {
-    return NextResponse.json(
-      { error: `Maximum top-up is RM ${MAX_TOPUP.toLocaleString()}` },
-      { status: 400 }
-    );
-  }
-
-  // 3. PAYMENT GATEWAY (integrate later): in production you'd create a charge
-  //    with SenangPay/Fiuu here and only credit the wallet after the gateway's
-  //    server-to-server callback confirms success. For now we treat it as paid.
-
-  // 4. Credit the wallet via the service-role RPC (top_up_wallet is
-  //    service_role-only by design — clients can't call it directly).
   const admin = createAdminClient();
-  const { data, error } = await admin.rpc("top_up_wallet", {
-    p_user_id: user.id,
-    p_amount: amount,
-    p_description: "Top-up (demo gateway)",
-  });
+  const { data: member } = await admin.from("members").select("full_name").eq("id", user.id).maybeSingle();
+  if (!member) return NextResponse.json({ error: "Only BizWallet members can top up." }, { status: 403 });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  const { data: topup, error } = await admin
+    .from("wallet_topups")
+    .insert({ user_id: user.id, amount })
+    .select("id")
+    .single();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  try {
+    const origin = new URL(request.url).origin;
+    const bill = await createBill({
+      email: user.email,
+      name: member.full_name || user.email.split("@")[0],
+      amountSen: Math.round(amount * 100),
+      description: "BizWallet top-up",
+      callbackUrl: `${origin}/api/pay/billplz/callback`,
+      redirectUrl: `${origin}/api/pay/billplz/return?topup=${topup.id}`,
+      reference: topup.id,
+    });
+    await admin.from("wallet_topups").update({ payment_ref: bill.id }).eq("id", topup.id);
+    return NextResponse.json({ url: bill.url });
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 502 });
   }
-
-  // data = { wallet_id, transaction_id, amount, new_balance }
-  return NextResponse.json(data);
 }

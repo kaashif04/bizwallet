@@ -5,6 +5,7 @@ import WalletLoyaltyCard from "@/components/customer/WalletLoyaltyCard";
 import OrderAgain, { type RecentOrder } from "@/components/customer/OrderAgain";
 import BottomNav from "@/components/customer/BottomNav";
 import Reveal from "@/components/Reveal";
+import ActiveOrders from "@/components/customer/ActiveOrders";
 import StorePicker from "@/components/order/StorePicker";
 import { billplzEnabled } from "@/lib/billplz";
 import { DEMO_TIERS, type Reward } from "@/lib/dashboard-demo";
@@ -83,6 +84,7 @@ export default async function CustomerDashboardPage() {
         <DashboardHeader name={member?.full_name ?? user?.email?.split("@")[0] ?? "there"} />
 
         <div className="mt-5 space-y-6">
+          <ActiveOrders names={Object.fromEntries(branchName)} />
           <WalletLoyaltyCard
             balance={Number(wallet?.balance ?? 0)}
             currency={currency}

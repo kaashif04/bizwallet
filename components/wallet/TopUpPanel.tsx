@@ -24,7 +24,7 @@ export default function TopUpPanel({
   const [lastAmount, setLastAmount] = useState(0);
 
   const amount = custom ? parseFloat(custom) : preset ?? 0;
-  const valid = Number.isFinite(amount) && amount > 0 && amount <= MAX;
+  const valid = Number.isFinite(amount) && amount >= 1 && amount <= MAX;
 
   async function confirm() {
     if (!valid || status === "loading") return;
@@ -45,10 +45,10 @@ export default function TopUpPanel({
   }
 
   return (
-    <div className="rounded-3xl border border-brand-100 bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-900">Top up your wallet</h2>
-      <p className="mt-0.5 text-xs text-slate-500">
-        Choose an amount to add as store credit.
+    <div className="rounded-2xl bg-white p-5">
+      <h2 className="font-bold text-ink-900">Top up your wallet</h2>
+      <p className="mt-0.5 text-xs text-ink-500">
+        Pay with FPX online banking. Your balance updates once the bank confirms.
       </p>
 
       {/* Preset amounts */}
@@ -64,10 +64,10 @@ export default function TopUpPanel({
                 setPreset(p);
                 setCustom("");
               }}
-              className={`rounded-2xl border py-3 text-center text-base font-semibold transition ${
+              className={`rounded-full py-3 text-center text-base font-bold transition ${
                 active
-                  ? "border-brand-600 bg-brand-50 text-brand-700"
-                  : "border-slate-200 text-slate-700"
+                  ? "bg-brand-600 text-on shadow-sm"
+                  : "bg-ink-50 text-ink-700 shadow-well hover:bg-ink-100"
               }`}
             >
               {sym}
@@ -82,7 +82,7 @@ export default function TopUpPanel({
         <span className="mb-1.5 block text-xs font-medium text-slate-500">
           Or enter a custom amount
         </span>
-        <div className="flex items-center rounded-2xl border border-slate-200 px-4 transition focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-400/30">
+        <div className="flex items-center rounded-xl bg-ink-50 px-4 shadow-pressed">
           <span className="text-sm font-semibold text-slate-500">{sym}</span>
           <input
             type="number"
@@ -95,7 +95,8 @@ export default function TopUpPanel({
               setCustom(e.target.value);
               setPreset(null);
             }}
-            className="w-full bg-transparent px-2 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+            style={{ boxShadow: "none" }}
+            className="w-full bg-transparent px-2 py-3 text-sm text-ink-900 outline-none placeholder:text-ink-400"
           />
         </div>
       </label>
@@ -111,7 +112,7 @@ export default function TopUpPanel({
         type="button"
         onClick={confirm}
         disabled={!valid || status === "loading"}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-on shadow-sm transition active:scale-[0.99] disabled:opacity-60"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-5 py-3.5 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-60"
       >
         <AnimatePresence mode="wait" initial={false}>
           {status === "loading" ? (
@@ -123,7 +124,7 @@ export default function TopUpPanel({
               className="flex items-center gap-2"
             >
               <Spinner />
-              Processing payment…
+              Opening payment…
             </motion.span>
           ) : status === "success" ? (
             <motion.span

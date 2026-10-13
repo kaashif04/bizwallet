@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
   try {
     if (order.payment_ref) {
-      if (await confirmBill(order.payment_ref)) return NextResponse.json({ paid: true });
+      if ((await confirmBill(order.payment_ref)).paid) return NextResponse.json({ paid: true });
       return NextResponse.json({ url: (await getBill(order.payment_ref)).url });
     }
 

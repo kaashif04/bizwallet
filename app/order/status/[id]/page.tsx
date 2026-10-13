@@ -46,7 +46,17 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
   // A paid order the outlet cancelled: the owner pays it back in Billplz and marks it.
   const [paidBackAt, setPaidBackAt] = useState<string | null | undefined>(undefined);
   useEffect(() => {
-    setClaimToken(loadClaimToken(params.id));
+    // Another device, or local storage cleared: a signed-in member can still
+    // open their own order (RLS lets them read its claim token).
+    const local = loadClaimToken(params.id);
+    if (local) setClaimToken(local);
+    else
+      supabase
+        .from("guest_orders")
+        .select("claim_token")
+        .eq("id", params.id)
+        .maybeSingle()
+        .then(({ data }) => setClaimToken(data?.claim_token ?? null));
     setMenuPath(loadMenuPath(params.id));
     const q = new URLSearchParams(window.location.search);
     const a = q.get("paid") === "1" ? "paid" : q.get("paid") === "0" ? "unpaid" : q.get("placed") ? "placed" : null;
@@ -56,7 +66,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
       const t = window.setTimeout(() => setArrival(null), 2200);
       return () => window.clearTimeout(t);
     }
-  }, [params.id]);
+  }, [params.id, supabase]);
 
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);

@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import WalletExperience from "@/components/wallet/WalletExperience";
 import BottomNav from "@/components/customer/BottomNav";
-import { topUpEnabled, type WalletTxn } from "@/lib/wallet-types";
+import type { WalletTxn } from "@/lib/wallet-types";
+import { billplzEnabled } from "@/lib/billplz";
 
 export default async function WalletPage() {
   const supabase = createClient();
@@ -32,7 +33,7 @@ export default async function WalletPage() {
     <div className="min-h-dvh bg-ink-50">
       <div className="mx-auto max-w-md px-5 pb-28 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <header className="mb-5">
-          <h1 className="text-[2rem] font-semibold text-slate-900">Wallet</h1>
+          <h1 className="text-[1.75rem] leading-tight tracking-[-0.03em] text-ink-900">Wallet</h1>
           <p className="text-sm text-slate-500">Your store credit and history</p>
         </header>
 
@@ -40,7 +41,7 @@ export default async function WalletPage() {
           initialBalance={Number(wallet?.balance ?? 0)}
           currency={wallet?.currency ?? "MYR"}
           initialTxns={txns}
-          topUpEnabled={topUpEnabled()}
+          topUpEnabled={billplzEnabled()}
         />
       </div>
 

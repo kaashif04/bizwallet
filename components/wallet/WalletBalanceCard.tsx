@@ -42,7 +42,7 @@ export default function WalletBalanceCard({
         </div>
 
         <p className="mt-3 text-xs text-ink-500">
-          Use it to pay instantly at any outlet.
+          Your BizWallet store credit.
         </p>
       </div>
     </motion.div>

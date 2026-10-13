@@ -13,6 +13,7 @@ import MenuView from "./MenuView";
 import AddToCartSheet from "./AddToCartSheet";
 import ViewCartBar from "./ViewCartBar";
 import { useSheet } from "./useSheet";
+import ActiveOrders from "@/components/customer/ActiveOrders";
 
 // ponytail: BizPos's guest_get_menu doesn't return a currency yet; every outlet is MYR today.
 const CURRENCY = "MYR";
@@ -92,6 +93,8 @@ export default function GuestOrder(
 
   return (
     <div className="min-h-dvh bg-ink-50">
+      {/* Came back to the menu with an order on the go: one tap to follow it. */}
+      <ActiveOrders names={{}} outletId={menu.outlet.id} variant="pill" />
       <MenuView
         title={menu.outlet.name}
         subtitle={menu.table ? `Table ${menu.table.label}` : "Pickup order"}
