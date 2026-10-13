@@ -26,6 +26,21 @@ export default function StorePicker({
   const [company, setCompany] = useState<string | null>(null);
   const [highlight, setHighlight] = useState<string | null>(null);
   const list = useRef<HTMLUListElement>(null);
+  // Nearest first. The position stays on the phone: it's only used to sort.
+  const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
+  const [noLocation, setNoLocation] = useState(false);
+  const locate = () => {
+    if (!navigator.geolocation) return setNoLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setHere({ lat: p.coords.latitude, lng: p.coords.longitude });
+        setNoLocation(false);
+      },
+      () => setNoLocation(true),
+      { maximumAge: 600_000, timeout: 15_000 }
+    );
+  };
+  useEffect(locate, []);
 
   useEffect(() => {
     const onPick = (e: Event) => {
@@ -49,17 +64,33 @@ export default function StorePicker({
     return () => window.removeEventListener(STORES_EVENT, onPick);
   }, []);
 
+  const km = useMemo(
+    () => new Map(branches.map((b) => [b.id, here && b.lat != null && b.lng != null ? distanceKm(here, b.lat, b.lng) : null])),
+    [branches, here]
+  );
+
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     const rank = (b: PickupOutlet) => (b.open_now === true ? 0 : b.open_now === null ? 1 : 2);
+    const far = (b: PickupOutlet) => km.get(b.id) ?? Infinity;
     return branches
       .filter((b) => !company || b.company_id === company)
       .filter((b) => !q || b.name.toLowerCase().includes(q) || (b.address ?? "").toLowerCase().includes(q))
-      .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
-  }, [branches, query, company]);
+      .sort((a, b) => far(a) - far(b) || rank(a) - rank(b) || a.name.localeCompare(b.name));
+  }, [branches, query, company, km]);
 
   return (
     <div>
+      {noLocation && (
+        <button
+          type="button"
+          onClick={locate}
+          className="mb-3 flex w-full items-center gap-2 rounded-xl bg-white px-4 py-3 text-left text-sm text-ink-600"
+        >
+          <PinIcon />
+          <span className="flex-1">Turn on location to see what&apos;s nearest</span>
+        </button>
+      )}
       {branches.length >= 4 && (
         <input
           type="search"
@@ -95,7 +126,7 @@ export default function StorePicker({
               highlight === b.id ? "ring-2 ring-brand-500" : ""
             }`}
           >
-            <BranchCard b={b} logo={logos[b.id]} pickupOpen={pickupOpen} />
+            <BranchCard b={b} logo={logos[b.id]} pickupOpen={pickupOpen} km={km.get(b.id) ?? null} />
           </motion.li>
         ))}
         {shown.length === 0 && (
@@ -106,7 +137,7 @@ export default function StorePicker({
   );
 }
 
-function BranchCard({ b, logo, pickupOpen }: { b: PickupOutlet; logo?: string; pickupOpen: boolean }) {
+function BranchCard({ b, logo, pickupOpen, km }: { b: PickupOutlet; logo?: string; pickupOpen: boolean; km: number | null }) {
   const status = openLabel(b.open_now, b.today, b.hours);
   const pickupState: { href?: string; note: string } = !b.pickup
     ? { note: "Not offered here" }
@@ -115,6 +146,9 @@ function BranchCard({ b, logo, pickupOpen }: { b: PickupOutlet; logo?: string; p
       : b.open_now === false
         ? { note: status?.opens ? `Opens ${status.opens}` : "Closed now" }
         : { href: `/order/p/${b.id}`, note: "Order ahead, collect" };
+
+  const directions =
+    b.maps_url || (b.lat != null && b.lng != null ? `https://www.google.com/maps/dir/?api=1&destination=${b.lat},${b.lng}` : null);
 
   return (
     <>
@@ -146,6 +180,11 @@ function BranchCard({ b, logo, pickupOpen }: { b: PickupOutlet; logo?: string; p
             <h3 className="truncate text-[17px] font-bold leading-tight text-ink-900">{b.name}</h3>
             <p className="truncate text-xs text-ink-500">{b.company}</p>
           </div>
+          {km !== null && (
+            <span className="shrink-0 pt-0.5 text-xs font-bold text-ink-600">
+              {km < 1 ? `${Math.max(10, Math.round(km * 100) * 10)} m` : `${km.toFixed(1)} km`}
+            </span>
+          )}
         </div>
         {b.tagline && <p className="mt-2 line-clamp-2 text-sm text-ink-700">{b.tagline}</p>}
         {b.address && (
@@ -188,11 +227,11 @@ function BranchCard({ b, logo, pickupOpen }: { b: PickupOutlet; logo?: string; p
           )}
         </div>
 
-        {(b.maps_url || b.phone) && (
+        {(directions || b.phone) && (
           <div className="mt-2 flex gap-2">
-            {b.maps_url && (
+            {directions && (
               <a
-                href={b.maps_url}
+                href={directions}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-sm font-bold text-brand-700 transition hover:bg-brand-50"
@@ -215,6 +254,15 @@ function BranchCard({ b, logo, pickupOpen }: { b: PickupOutlet; logo?: string; p
       </div>
     </>
   );
+}
+
+// Straight-line distance (haversine), in km.
+function distanceKm(from: { lat: number; lng: number }, lat: number, lng: number) {
+  const rad = Math.PI / 180;
+  const a =
+    Math.sin(((lat - from.lat) * rad) / 2) ** 2 +
+    Math.cos(from.lat * rad) * Math.cos(lat * rad) * Math.sin(((lng - from.lng) * rad) / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(a));
 }
 
 const icon = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true } as const;

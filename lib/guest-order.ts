@@ -153,6 +153,8 @@ export type PickupOutlet = {
   hours: Hours | null; // 7 entries, Monday first; null entry = closed that day
   open_now: boolean | null; // null when hours aren't set
   today: DayHours;
+  lat?: number | null; // branch location, when the owner has set it
+  lng?: number | null;
 };
 export type DayHours = { open: string; close: string } | null; // "HH:MM"; close may be after midnight
 export type Hours = DayHours[];

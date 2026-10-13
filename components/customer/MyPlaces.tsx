@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import RewardsCatalog from "./RewardsCatalog";
 import BranchLogo from "@/components/order/BranchLogo";
@@ -16,6 +17,7 @@ export default function MyPlaces({
   logos,
   userId,
   pickupOpen,
+  openCompany,
 }: {
   places: Place[];
   rewards: Record<string, Reward[]>;
@@ -23,11 +25,17 @@ export default function MyPlaces({
   logos: Record<string, string>;
   userId: string;
   pickupOpen: boolean;
+  openCompany?: string | null; // a rewards notification was tapped: open that company's rewards
 }) {
+  const router = useRouter();
   const [points, setPoints] = useState<Record<string, number>>(() =>
     Object.fromEntries(places.map((p) => [p.company_id, p.points_balance ?? 0]))
   );
   const [open, setOpen] = useState<Place | null>(null);
+  useEffect(() => {
+    if (openCompany) setOpen(places.find((p) => p.company_id === openCompany) ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openCompany]);
 
   if (!places.length) {
     return (
@@ -65,7 +73,7 @@ export default function MyPlaces({
           const ready = [...list].reverse().find((r) => r.points_cost <= pts);
           const next = list.find((r) => r.points_cost > pts);
           const logo = p.branches.map((b) => logos[b.id]).find(Boolean);
-          const unused = vouchers[p.company_id]?.length ?? 0;
+          const unused = vouchers[p.company_id]?.filter((v) => v.status === "active").length ?? 0;
 
           return (
             <motion.article
@@ -188,7 +196,11 @@ export default function MyPlaces({
       <AnimatePresence>
         {open && (
           <RewardsCatalog
-            onClose={() => setOpen(null)}
+            onClose={() => {
+              setOpen(null);
+              // Clear ?rewards so the same notification can open it again.
+              if (openCompany) router.replace("/customer/dashboard", { scroll: false });
+            }}
             company={open.company}
             points={points[open.company_id] ?? 0}
             userId={userId}

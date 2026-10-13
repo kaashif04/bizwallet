@@ -124,18 +124,13 @@ export default function RewardsCatalog({
             <>
               {vouchers.length > 0 && (
                 <section className="mt-3">
-                  <h3 className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">
-                    Your vouchers · Use at {company}
-                  </h3>
+                  <h3 className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Your vouchers</h3>
                   <ul className="mt-2 space-y-2">
-                    {vouchers.map((v) => (
-                      <li key={v.id} className="flex items-center justify-between gap-3 rounded-xl bg-ink-50 px-4 py-3 shadow-well">
-                        <span className="min-w-0 truncate text-sm font-bold text-ink-900">{v.title}</span>
-                        <span className="shrink-0 rounded-lg border border-dashed border-brand-400 px-2 py-1 font-mono text-sm font-bold tracking-wider text-brand-700">
-                          {v.code}
-                        </span>
-                      </li>
-                    ))}
+                    {[...vouchers]
+                      .sort((a, b) => Number(a.status !== "active") - Number(b.status !== "active"))
+                      .map((v) => (
+                        <VoucherCard key={v.id} v={v} company={company} />
+                      ))}
                   </ul>
                 </section>
               )}
@@ -204,5 +199,57 @@ export default function RewardsCatalog({
         </div>
       </motion.div>
     </>
+  );
+}
+
+// Staff type the code at the counter (BizPos: Discount, Promo or voucher code).
+function VoucherCard({ v, company }: { v: Voucher; company: string }) {
+  const [copied, setCopied] = useState(false);
+  const active = v.status === "active";
+  const worth =
+    v.kind === "free_item" ? "1 free item" : v.value ? `RM${Number(v.value).toFixed(2).replace(/\.00$/, "")} off` : null;
+
+  return (
+    <li className={`rounded-xl bg-ink-50 p-4 shadow-well ${active ? "" : "opacity-60"}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-ink-900">{v.title}</p>
+          {worth && <p className="text-xs font-semibold text-brand-700">{worth}</p>}
+        </div>
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-1 text-2xs font-bold ${
+            active ? "bg-emerald-50 text-emerald-700" : "bg-white text-ink-500"
+          }`}
+        >
+          {active
+            ? "Active"
+            : v.used_at
+              ? `Used on ${new Date(v.used_at).toLocaleDateString("en-MY", { day: "numeric", month: "short" })}`
+              : "Used"}
+        </span>
+      </div>
+      <button
+        type="button"
+        disabled={!active}
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(v.code);
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1500);
+          } catch {
+            // Clipboard blocked: the code is on screen to read out.
+          }
+        }}
+        aria-label={`Voucher code ${v.code}. Tap to copy`}
+        className={`mt-3 w-full rounded-xl border-2 border-dashed border-brand-300 bg-white py-3 text-center font-mono text-2xl font-bold tracking-widest text-brand-700 transition active:scale-[0.99] ${
+          active ? "" : "line-through"
+        }`}
+      >
+        {copied ? "Copied" : v.code}
+      </button>
+      <p className="mt-2 text-center text-xs text-ink-500">
+        {company} · {active ? "show this code at the counter" : "already used"}
+      </p>
+    </li>
   );
 }

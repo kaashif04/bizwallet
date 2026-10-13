@@ -29,6 +29,10 @@ export type Voucher = {
   code: string;
   title: string;
   created_at: string;
+  status: string; // active | used
+  kind: string | null; // voucher (RM off) | free_item
+  value: number | null;
+  used_at: string | null;
 };
 
 export const groupBy = <T extends { company_id: string }>(rows: T[]) =>

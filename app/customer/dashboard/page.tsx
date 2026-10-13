@@ -22,7 +22,12 @@ function summarizeItems(items: any): string {
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 // Middleware guarantees a signed-in member here, so everything is real data.
-export default async function CustomerDashboardPage() {
+// ?rewards=<branch> or ?voucher=<code>: from a rewards notification.
+export default async function CustomerDashboardPage({
+  searchParams,
+}: {
+  searchParams: { rewards?: string; voucher?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -79,12 +84,18 @@ export default async function CustomerDashboardPage() {
           .order("points_cost"),
         supabase
           .from("vouchers")
-          .select("id,company_id,code,title,created_at")
+          .select("id,company_id,code,title,created_at,status,kind,value,used_at")
           .eq("user_id", uid)
-          .eq("status", "active")
+          // Unused, or used in the last 30 days.
+          .or(`status.eq.active,used_at.gte."${new Date(Date.now() - 30 * 86_400_000).toISOString()}"`)
           .order("created_at", { ascending: false }),
       ])
     : [{ data: [] }, { data: [] }];
+  const named = branches.filter((b) => b.name === searchParams.rewards);
+  const openCompany =
+    (voucherRows ?? []).find((v) => v.code === searchParams.voucher)?.company_id ??
+    (named.find((b) => companyIds.includes(b.company_id)) ?? named[0])?.company_id ??
+    (searchParams.rewards && places.length === 1 ? places[0].company_id : null);
   const currency = wallet?.currency ?? "MYR";
   const recent: RecentOrder[] = (orderRows ?? []).map((o) => ({
     id: o.id,
@@ -110,6 +121,7 @@ export default async function CustomerDashboardPage() {
             logos={logos}
             userId={uid}
             pickupOpen={pickupOpen}
+            openCompany={openCompany}
           />
 
           <Link

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { BellIcon } from "./icons";
@@ -21,6 +22,16 @@ function timeAgo(iso: string): string {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
+}
+
+// Rewards notifications open that company's rewards on Home: "Reward unlocked"
+// and points names the branch, "Reward redeemed" carries the voucher code.
+function rewardsHref(n: Notif): string | null {
+  if (!/reward|points/i.test(n.title)) return null;
+  const code = n.message?.match(/Voucher code: (\w+)/)?.[1];
+  if (code) return `/customer/dashboard?voucher=${code}`;
+  const at = n.message?.match(/ at (.+?)\.( Redeem it in Rewards\.)?$/)?.[1];
+  return at ? `/customer/dashboard?rewards=${encodeURIComponent(at)}` : null;
 }
 
 export default function NotificationBell() {
@@ -120,10 +131,12 @@ export default function NotificationBell() {
                   </p>
                 ) : (
                   <ul className="space-y-2.5">
-                    {notifs.map((n) => (
+                    {notifs.map((n) => {
+                      const href = rewardsHref(n);
+                      return (
                       <li
                         key={n.id}
-                        className={`rounded-2xl border p-3.5 ${
+                        className={`relative rounded-2xl border p-3.5 ${
                           n.is_read
                             ? "border-slate-100 bg-white"
                             : "border-brand-100 bg-brand-50/60"
@@ -145,9 +158,19 @@ export default function NotificationBell() {
                           suppressHydrationWarning
                         >
                           {timeAgo(n.created_at)}
+                          {href && <span className="font-bold text-brand-700"> · See rewards ›</span>}
                         </p>
+                        {href && (
+                          <Link
+                            href={href}
+                            onClick={() => setOpen(false)}
+                            className="absolute inset-0 rounded-2xl"
+                            aria-label={`${n.title}. See rewards`}
+                          />
+                        )}
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
               </div>
