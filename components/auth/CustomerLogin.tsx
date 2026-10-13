@@ -131,7 +131,7 @@ export default function CustomerLogin() {
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           {mode === "signup"
-            ? "Free account. Earn 1 point for every RM1."
+            ? "Free account. Earn points at every restaurant you visit."
             : "Sign in to your wallet and rewards"}
         </p>
       </div>

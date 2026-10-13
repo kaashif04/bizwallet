@@ -7,7 +7,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
 import type { MenuItem } from "@/lib/order-types";
-import { outletLogos, saveClaimToken, toMenu, type GuestMenu } from "@/lib/guest-order";
+import { outletLogos, saveClaimToken, toMenu, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
+import type { AccountState } from "./AccountChip";
+import JoinPrompt from "./JoinPrompt";
 import { useCart } from "./cart-context";
 import MenuView from "./MenuView";
 import AddToCartSheet from "./AddToCartSheet";
@@ -29,6 +31,16 @@ export default function GuestOrder(
   const [sheetItem, setSheetItem] = useState<MenuItem | null>(null);
   const [reviewing, setReviewing] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  // Loyalty is per company: this branch's company, its points rate, and
+  // whether the signed-in member has joined it.
+  const [loyalty, setLoyalty] = useState<{
+    companyId: string;
+    company: string;
+    pointsPerRm: number | null; // null = the company runs no points programme
+    member: boolean;
+    joined: boolean;
+    points: number;
+  } | null>(null);
 
   useEffect(() => {
     supabase
@@ -38,7 +50,37 @@ export default function GuestOrder(
         const m = data as GuestMenu;
         setMenu(m);
         outletLogos(supabase).then((logos) => setLogoUrl(logos[m.outlet.id] ?? null));
+        loadLoyalty(m.outlet.id);
       });
+
+    async function loadLoyalty(outletId: string) {
+      const [{ data: outlets }, { data: auth }] = await Promise.all([
+        supabase.rpc("guest_list_outlets"),
+        supabase.auth.getUser(),
+      ]);
+      const o = ((outlets ?? []) as PickupOutlet[]).find((x) => x.id === outletId);
+      if (!o) return;
+      const { data: prog } = await supabase
+        .from("loyalty_programs")
+        .select("is_enabled, points_per_rm")
+        .eq("company_id", o.company_id)
+        .maybeSingle();
+      const base = {
+        companyId: o.company_id,
+        company: o.company,
+        pointsPerRm: prog?.is_enabled === false ? null : Number(prog?.points_per_rm ?? 1),
+        member: false,
+        joined: false,
+        points: 0,
+      };
+      if (!auth.user) return setLoyalty(base);
+      const [{ data: m }, { data: cm }, { data: acct }] = await Promise.all([
+        supabase.from("members").select("id").maybeSingle(),
+        supabase.from("company_members").select("company_id").eq("company_id", o.company_id).maybeSingle(),
+        supabase.from("loyalty_accounts").select("points_balance").eq("company_id", o.company_id).maybeSingle(),
+      ]);
+      setLoyalty({ ...base, member: !!m, joined: !!cm, points: acct?.points_balance ?? 0 });
+    }
   }, [supabase, props.token, props.outletId]);
 
   const { items, groupsByItem } = useMemo(
@@ -91,14 +133,29 @@ export default function GuestOrder(
     );
   }
 
+  const account: AccountState = !loyalty
+    ? null
+    : loyalty.member
+      ? { points: loyalty.points, joined: loyalty.joined }
+      : "guest";
+
   return (
     <div className="min-h-dvh bg-ink-50">
       {/* Came back to the menu with an order on the go: one tap to follow it. */}
       <ActiveOrders names={{}} outletId={menu.outlet.id} variant="pill" />
+      {loyalty?.member && !loyalty.joined && loyalty.pointsPerRm !== null && (
+        <JoinPrompt
+          companyId={loyalty.companyId}
+          company={loyalty.company}
+          pointsPerRm={loyalty.pointsPerRm}
+          onJoined={(points) => setLoyalty({ ...loyalty, joined: true, points })}
+        />
+      )}
       <MenuView
         title={menu.outlet.name}
         subtitle={menu.table ? `Table ${menu.table.label}` : "Pickup order"}
         logoUrl={logoUrl}
+        account={account}
         items={items}
         currency={CURRENCY}
         onItemClick={setSheetItem}
@@ -121,6 +178,8 @@ export default function GuestOrder(
             key="review"
             menu={menu}
             token={props.token}
+            pointsPerRm={loyalty?.pointsPerRm ?? null}
+            company={loyalty?.company ?? null}
             onClose={() => setReviewing(false)}
             onPlaced={(id, paid) => {
               // The sheet would drop its history entry on close (history.back),
@@ -139,11 +198,15 @@ export default function GuestOrder(
 function CartReview({
   menu,
   token,
+  pointsPerRm,
+  company,
   onClose,
   onPlaced,
 }: {
   menu: GuestMenu;
   token?: string;
+  pointsPerRm: number | null;
+  company: string | null;
   onClose: () => void;
   onPlaced: (id: string, paid?: boolean) => void;
 }) {
@@ -396,14 +459,16 @@ function CartReview({
           </fieldset>
         )}
 
-        {!pickup && Math.floor(cart.totalPrice) > 0 && (
+        {!pickup && pointsPerRm !== null && Math.floor(cart.totalPrice * pointsPerRm) > 0 && (
           <p className="mt-4 flex items-center gap-3 rounded-xl bg-ink-50 px-4 py-3 text-sm text-ink-700 shadow-well">
             <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0 text-brand-600" fill="currentColor" aria-hidden="true">
               <path d="M10 1.5l2.5 5.2 5.7.8-4.1 4 1 5.6L10 14.4l-5.1 2.7 1-5.6-4.1-4 5.7-.8L10 1.5Z" />
             </svg>
             <span>
-              This order earns <strong className="font-bold">{Math.floor(cart.totalPrice)} points</strong> with a free
-              BizWallet account. You can join after you order.
+              This order earns{" "}
+              <strong className="font-bold">{Math.floor(cart.totalPrice * pointsPerRm).toLocaleString()} points</strong>
+              {company ? ` at ${company}` : ""}
+              {memberName ? "." : " with a free BizWallet account. You can join after you order."}
             </span>
           </p>
         )}

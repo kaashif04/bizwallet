@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import DashboardHeader from "@/components/customer/DashboardHeader";
-import WalletLoyaltyCard from "@/components/customer/WalletLoyaltyCard";
+import MyPlaces from "@/components/customer/MyPlaces";
 import OrderAgain, { type RecentOrder } from "@/components/customer/OrderAgain";
 import BottomNav from "@/components/customer/BottomNav";
 import Reveal from "@/components/Reveal";
@@ -9,8 +9,7 @@ import ActiveOrders from "@/components/customer/ActiveOrders";
 import StorePicker from "@/components/order/StorePicker";
 import BannerCarousel from "@/components/order/BannerCarousel";
 import { billplzEnabled } from "@/lib/billplz";
-import { DEMO_TIERS, type Reward } from "@/lib/dashboard-demo";
-import type { LoyaltyTier } from "@/lib/loyalty";
+import { groupBy, type Place, type Reward, type Voucher } from "@/lib/places";
 import { outletLogos, type Banner, type PickupOutlet } from "@/lib/guest-order";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -34,9 +33,7 @@ export default async function CustomerDashboardPage() {
   const [
     { data: member },
     { data: wallet },
-    { data: loyalty },
-    { data: rewardRows },
-    { data: tierRows },
+    { data: placeData },
     { data: orderRows },
     { data: branchData },
     logos,
@@ -44,16 +41,7 @@ export default async function CustomerDashboardPage() {
   ] = await Promise.all([
     supabase.from("members").select("full_name").eq("id", uid).maybeSingle(),
     supabase.from("wallets").select("balance, currency").eq("user_id", uid).maybeSingle(),
-    supabase.from("loyalty_accounts").select("points_balance, points_earned").eq("user_id", uid).maybeSingle(),
-    supabase
-      .from("loyalty_rewards")
-      .select("id,name,description,points_cost,kind,value")
-      .eq("is_active", true)
-      .order("points_cost"),
-    supabase
-      .from("loyalty_tiers")
-      .select("id,name,points_required,discount_percentage,theme_color")
-      .order("points_required"),
+    supabase.rpc("wallet_my_places"),
     supabase
       .from("guest_orders")
       .select("id,subtotal,items,status,created_at,transaction_id,outlet_id")
@@ -69,9 +57,25 @@ export default async function CustomerDashboardPage() {
 
   const branches = (branchData ?? []) as PickupOutlet[];
   const branchName = new Map(branches.map((b) => [b.id, b.name]));
-  const tiers: LoyaltyTier[] = tierRows?.length
-    ? tierRows.map((t) => ({ ...t, discount_percentage: Number(t.discount_percentage) }))
-    : DEMO_TIERS;
+  // Loyalty is per company: rewards and vouchers of the companies I've joined.
+  const places = (placeData ?? []) as Place[];
+  const companyIds = places.map((p) => p.company_id);
+  const [{ data: rewardRows }, { data: voucherRows }] = companyIds.length
+    ? await Promise.all([
+        supabase
+          .from("loyalty_rewards")
+          .select("id,company_id,name,description,points_cost,kind,value")
+          .eq("is_active", true)
+          .in("company_id", companyIds)
+          .order("points_cost"),
+        supabase
+          .from("vouchers")
+          .select("id,company_id,code,title,created_at")
+          .eq("user_id", uid)
+          .eq("status", "active")
+          .order("created_at", { ascending: false }),
+      ])
+    : [{ data: [] }, { data: [] }];
   const currency = wallet?.currency ?? "MYR";
   const recent: RecentOrder[] = (orderRows ?? []).map((o) => ({
     id: o.id,
@@ -90,15 +94,33 @@ export default async function CustomerDashboardPage() {
         <div className="mt-5 space-y-6">
           <BannerCarousel banners={(bannerData ?? []) as Banner[]} branches={branches} pickupOpen={pickupOpen} />
           <ActiveOrders names={Object.fromEntries(branchName)} />
-          <WalletLoyaltyCard
-            balance={Number(wallet?.balance ?? 0)}
-            currency={currency}
-            points={loyalty?.points_balance ?? 0}
-            lifetimePoints={loyalty?.points_earned ?? 0}
-            tiers={tiers}
-            rewards={(rewardRows ?? []) as Reward[]}
+          <MyPlaces
+            places={places}
+            rewards={groupBy((rewardRows ?? []) as Reward[])}
+            vouchers={groupBy((voucherRows ?? []) as Voucher[])}
+            logos={logos}
             userId={uid}
+            pickupOpen={pickupOpen}
           />
+
+          <Link
+            href="/customer/wallet"
+            className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 transition hover:shadow-md active:scale-[0.99]"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink-50 text-brand-600 shadow-well">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="6" width="18" height="13" rx="3" />
+                <path d="M3 10h18M16 15h2" />
+              </svg>
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Wallet credit</span>
+              <span className="block text-lg font-semibold tracking-[-0.025em] text-ink-900">
+                RM{Number(wallet?.balance ?? 0).toFixed(2)}
+              </span>
+            </span>
+            <span className="shrink-0 text-sm font-bold text-brand-700">Top up ›</span>
+          </Link>
 
           <Reveal delay={0.06}>
           <div className="grid grid-cols-2 gap-3">
@@ -135,9 +157,6 @@ export default async function CustomerDashboardPage() {
           </div>
           </Reveal>
 
-          <Reveal delay={0.12}>
-          <NextReward points={loyalty?.points_balance ?? 0} rewards={(rewardRows ?? []) as Reward[]} />
-          </Reveal>
 
           <Reveal delay={0.18}>
           <section>
@@ -181,44 +200,6 @@ function SectionHeader({ title, actionHref }: { title: string; actionHref?: stri
           See all
         </Link>
       )}
-    </div>
-  );
-}
-
-// The nearest reward: ready to redeem, or how far there is to go.
-function NextReward({ points, rewards }: { points: number; rewards: Reward[] }) {
-  const ready = [...rewards].reverse().find((r) => r.points_cost <= points);
-  const next = rewards.find((r) => r.points_cost > points);
-  const target = ready ?? next;
-  if (!target) return null;
-  const pct = Math.min(100, Math.round((points / target.points_cost) * 100));
-
-  return (
-    <div className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm">
-      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink-50 shadow-well ${ready ? "text-emerald-600" : "text-brand-600"}`}>
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M4 11h16v9H4zM3 7h18v4H3zM12 7v13" />
-          <path d="M12 7c-1.5-3-5-3-5-1s3 1 5 1c2 0 5 1 5-1s-3.5-2-5 1Z" />
-        </svg>
-      </span>
-      <div className="min-w-0 flex-1">
-        <h2 className="font-bold leading-tight text-ink-900">
-          {ready ? `${target.name} is ready` : target.name}
-        </h2>
-        <div
-          className="mt-2 h-2 overflow-hidden rounded-full bg-ink-100 shadow-well"
-          role="progressbar"
-          aria-valuenow={pct}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={`Progress to ${target.name}`}
-        >
-          <div className={`h-full rounded-full ${ready ? "bg-emerald-500" : "bg-marple"}`} style={{ width: `${Math.max(pct, 4)}%` }} />
-        </div>
-        <p className="mt-1.5 text-xs text-ink-500">
-          {ready ? "Tap your points card to redeem" : `${(target.points_cost - points).toLocaleString()} more points to go`}
-        </p>
-      </div>
     </div>
   );
 }

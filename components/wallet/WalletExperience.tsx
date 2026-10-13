@@ -77,7 +77,7 @@ export default function WalletExperience({
         <div className="rounded-2xl bg-white p-5">
           <h2 className="font-bold text-ink-900">Top-ups are coming soon</h2>
           <p className="mt-1 text-sm text-ink-500">
-            For now, pay at the counter. Every RM1 you spend still earns a point.
+            For now, pay at the counter. Your orders still earn points.
           </p>
         </div>
       )}

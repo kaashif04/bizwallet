@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import BottomNav from "@/components/customer/BottomNav";
 import ProfileView, { type ProfileData } from "@/components/customer/ProfileView";
-import { computeTierProgress } from "@/lib/loyalty";
-import { DEMO_TIERS } from "@/lib/dashboard-demo";
+import type { Place } from "@/lib/places";
 
 const DEMO: ProfileData = {
   name: "Aisyah",
@@ -11,8 +10,7 @@ const DEMO: ProfileData = {
   avatarUrl: null,
   emailVerified: true,
   phoneVerified: false,
-  points: 350,
-  tier: "Silver",
+  places: [],
   memberSince: "June 2026",
   dateOfBirth: null,
   gender: null,
@@ -31,7 +29,7 @@ export default async function ProfilePage() {
     } = await supabase.auth.getUser();
 
     if (user) {
-      const [{ data: profile }, { data: loyalty }, { data: tierRows }] = await Promise.all([
+      const [{ data: profile }, { data: placeData }] = await Promise.all([
         supabase
           .from("members")
           .select(
@@ -39,28 +37,8 @@ export default async function ProfilePage() {
           )
           .eq("id", user.id)
           .single(),
-        supabase
-          .from("loyalty_accounts")
-          .select("points_balance, points_earned")
-          .eq("user_id", user.id)
-          .single(),
-        supabase
-          .from("loyalty_tiers")
-          .select("id,name,points_required,discount_percentage,theme_color")
-          .order("points_required"),
+        supabase.rpc("wallet_my_places"),
       ]);
-
-      const points = loyalty?.points_balance ?? 0;
-      const lifetimePoints = loyalty?.points_earned ?? 0;
-      const tiers = tierRows && tierRows.length > 0
-        ? tierRows.map((t) => ({
-            id: t.id,
-            name: t.name,
-            points_required: t.points_required,
-            discount_percentage: Number(t.discount_percentage),
-            theme_color: t.theme_color,
-          }))
-        : DEMO_TIERS;
       data = {
         name: profile?.full_name ?? user.email?.split("@")[0] ?? "There",
         email: profile?.email ?? user.email ?? "",
@@ -68,8 +46,11 @@ export default async function ProfilePage() {
         avatarUrl: profile?.avatar_url ?? null,
         emailVerified: profile?.email_verified ?? Boolean(user.email_confirmed_at),
         phoneVerified: profile?.phone_verified ?? false,
-        points,
-        tier: computeTierProgress(tiers, lifetimePoints).current,
+        places: ((placeData ?? []) as Place[]).map((p) => ({
+          companyId: p.company_id,
+          company: p.company,
+          consent: p.marketing_consent,
+        })),
         memberSince: profile?.created_at
           ? new Date(profile.created_at).toLocaleDateString("en-MY", {
               month: "long",

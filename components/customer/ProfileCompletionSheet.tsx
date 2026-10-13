@@ -16,7 +16,6 @@ const DIETARY_OPTIONS = [
 ];
 const GENDER_OPTIONS = ["Female", "Male", "Non-binary", "Prefer not to say"];
 const TODAY = new Date().toISOString().slice(0, 10);
-const BONUS_POINTS = 20;
 
 const inputClass =
   "w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30";
@@ -56,7 +55,7 @@ const STEP_COPY: Record<FieldKey, { question: string; hint?: string }> = {
     hint: "Pick as many as apply.",
   },
   address: { question: "What's your delivery address?" },
-  marketingConsent: { question: "Want promos, news and offers?", hint: "You can change this anytime." },
+  marketingConsent: { question: "Want news and updates from BizWallet?", hint: "Offers from each restaurant are set in Privacy." },
 };
 
 const DB_COLUMN: Record<FieldKey, string> = {
@@ -110,8 +109,7 @@ export default function ProfileCompletionSheet({
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [earned, setEarned] = useState(0);
-  const [burst, setBurst] = useState(0);
+  const [saved, setSaved] = useState(0);
 
   const currentField = steps[stepIndex];
 
@@ -156,9 +154,8 @@ export default function ProfileCompletionSheet({
       setError(saveErr.message);
       return;
     }
-    setEarned((e) => e + BONUS_POINTS);
-    setBurst((b) => b + 1);
-    setTimeout(advance, 750); // let the +20 burst play before the step changes
+    setSaved((n) => n + 1);
+    advance();
   }
 
   function continueCurrent() {
@@ -177,7 +174,7 @@ export default function ProfileCompletionSheet({
   }
 
   function finish() {
-    if (earned > 0) router.refresh();
+    if (saved > 0) router.refresh();
     onSaved();
   }
 
@@ -219,20 +216,6 @@ export default function ProfileCompletionSheet({
         </div>
 
         <div className="relative px-5 pb-8 pt-3">
-          <AnimatePresence>
-            {burst > 0 && (
-              <motion.div
-                key={burst}
-                initial={{ opacity: 0, y: 6, scale: 0.7 }}
-                animate={{ opacity: 1, y: -30, scale: 1.15 }}
-                exit={{ opacity: 0, y: -46 }}
-                transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-                className="pointer-events-none absolute right-5 top-2 text-sm font-bold text-emerald-600"
-              >
-                +{BONUS_POINTS} pts
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {!finished ? (
             <>
@@ -268,9 +251,6 @@ export default function ProfileCompletionSheet({
                   {STEP_COPY[currentField].hint && (
                     <p className="mt-1 text-sm text-slate-500">{STEP_COPY[currentField].hint}</p>
                   )}
-                  <p className="mt-1 text-xs font-semibold text-brand-600">
-                    +{BONUS_POINTS} points for answering
-                  </p>
 
                   {error && (
                     <p className="mt-3 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</p>
@@ -403,16 +383,14 @@ export default function ProfileCompletionSheet({
               </span>
               <h2 className="mt-3 text-lg font-bold text-slate-900">All done</h2>
               <p className="mt-1 text-sm text-slate-500">
-                {earned > 0
-                  ? `You just earned ${earned} points.`
-                  : "Come back anytime to add more details."}
+                {saved > 0 ? "Thanks, your details are saved." : "Come back anytime to add more details."}
               </p>
               <button
                 type="button"
                 onClick={finish}
                 className="mt-6 w-full rounded-2xl bg-brand-600 px-5 py-3.5 text-sm font-semibold text-on shadow-sm"
               >
-                {earned > 0 ? `Nice — +${earned} pts banked` : "Done"}
+                Done
               </button>
             </motion.div>
           )}

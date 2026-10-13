@@ -379,15 +379,12 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           transition={{ delay: 0.2, duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
           className="mt-8 rounded-2xl bg-white p-5"
         >
-          <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Points on this order</p>
-          <p className="mt-1 text-4xl font-semibold tracking-[-0.03em] text-ink-900">
-            +{Math.floor(Number(order.subtotal))} pts
-          </p>
-          <p className="mt-3 font-bold text-ink-900">
+          <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Rewards</p>
+          <p className="mt-2 font-bold text-ink-900">
             {order.paid ? "You can still claim points for this order" : "Join to earn points on this order"}
           </p>
           <p className="mt-1 text-sm text-ink-500">
-            1 point for every RM1. Redeem them for free drinks and vouchers.
+            Every restaurant has its own rewards. Collect points here and redeem them for treats.
           </p>
           <Link
             href={`/login?redirect=${encodeURIComponent(`/order/status/${params.id}`)}`}

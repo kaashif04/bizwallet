@@ -4,24 +4,29 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Reward } from "@/lib/dashboard-demo";
+import type { Reward, Voucher } from "@/lib/places";
 
 // redeem_reward's p_reward_id is a strict Postgres uuid — reject anything
 // else client-side instead of letting a raw "invalid input syntax" error
 // through (e.g. if a non-UUID placeholder id ever ends up in `rewards`).
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// One company's rewards (spent from its points) and the vouchers to use there.
 export default function RewardsCatalog({
   onClose,
+  company,
   points,
   userId,
   rewards,
+  vouchers,
   onRedeemed,
 }: {
   onClose: () => void;
+  company: string;
   points: number;
   userId: string | null;
   rewards: Reward[];
+  vouchers: Voucher[];
   onRedeemed: (newPoints: number) => void;
 }) {
   const router = useRouter();
@@ -80,7 +85,7 @@ export default function RewardsCatalog({
 
         <div className="max-h-[80vh] overflow-y-auto px-5 pb-6 pt-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">Rewards</h2>
+            <h2 className="min-w-0 truncate text-lg font-bold text-ink-900">Rewards at {company}</h2>
             <span className="rounded-full bg-brand-100 px-3 py-1 text-sm font-bold text-brand-700">
               {localPoints.toLocaleString()} pts
             </span>
@@ -102,7 +107,7 @@ export default function RewardsCatalog({
                 {success.reward} unlocked
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                Show this code at the counter:
+                Show this code at the counter at {company}:
               </p>
               <div className="mt-4 rounded-2xl border-2 border-dashed border-brand-300 bg-brand-50 px-6 py-4 font-mono text-2xl font-bold tracking-widest text-brand-700">
                 {success.code}
@@ -117,7 +122,24 @@ export default function RewardsCatalog({
             </div>
           ) : (
             <>
-              <p className="mt-1 text-sm text-slate-500">Redeem your points for rewards.</p>
+              {vouchers.length > 0 && (
+                <section className="mt-3">
+                  <h3 className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">
+                    Your vouchers · Use at {company}
+                  </h3>
+                  <ul className="mt-2 space-y-2">
+                    {vouchers.map((v) => (
+                      <li key={v.id} className="flex items-center justify-between gap-3 rounded-xl bg-ink-50 px-4 py-3 shadow-well">
+                        <span className="min-w-0 truncate text-sm font-bold text-ink-900">{v.title}</span>
+                        <span className="shrink-0 rounded-lg border border-dashed border-brand-400 px-2 py-1 font-mono text-sm font-bold tracking-wider text-brand-700">
+                          {v.code}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              <p className="mt-4 text-sm text-ink-500">Spend your {company} points on these.</p>
               {error && (
                 <p className="mt-3 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700">
                   {error}

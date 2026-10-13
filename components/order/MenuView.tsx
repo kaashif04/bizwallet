@@ -6,7 +6,7 @@ import type { MenuItem } from "@/lib/order-types";
 import { currencySymbol } from "@/lib/format";
 import { useCart } from "./cart-context";
 import ItemMark from "./ItemMark";
-import AccountChip from "./AccountChip";
+import AccountChip, { type AccountState } from "./AccountChip";
 import HomeButton from "./HomeButton";
 import BranchLogo from "./BranchLogo";
 
@@ -14,6 +14,7 @@ export default function MenuView({
   title,
   subtitle,
   logoUrl,
+  account,
   items,
   currency,
   onItemClick,
@@ -21,6 +22,7 @@ export default function MenuView({
   title: string;
   subtitle: string;
   logoUrl?: string | null;
+  account: AccountState;
   items: MenuItem[]; // already in category display order
   currency: string;
   onItemClick: (item: MenuItem) => void;
@@ -69,7 +71,7 @@ export default function MenuView({
               {subtitle}
             </span>
           </span>
-          <AccountChip />
+          <AccountChip state={account} />
         </div>
         <div className="flex items-center gap-3 px-5 pb-3 pt-2.5">
           {logoUrl && <BranchLogo name={title} logoUrl={logoUrl} className="h-11 w-11 rounded-2xl" />}

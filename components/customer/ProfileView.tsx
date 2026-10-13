@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import ProfileCompletionSheet from "./ProfileCompletionSheet";
 import AppearancePicker from "./AppearancePicker";
+import PrivacySettings from "./PrivacySettings";
 
 export type ProfileData = {
   name: string;
@@ -14,8 +15,7 @@ export type ProfileData = {
   avatarUrl: string | null;
   emailVerified: boolean;
   phoneVerified: boolean;
-  points: number;
-  tier: string;
+  places: { companyId: string; company: string; consent: boolean }[];
   memberSince: string;
   dateOfBirth: string | null;
   gender: string | null;
@@ -24,7 +24,6 @@ export type ProfileData = {
   marketingConsent: boolean | null;
 };
 
-const COMPLETION_BONUS_POINTS = 20;
 
 export default function ProfileView({ data }: { data: ProfileData }) {
   const [supabase] = useState(() => createClient());
@@ -47,7 +46,6 @@ export default function ProfileView({ data }: { data: ProfileData }) {
   const completedCount = completionFlags.filter(Boolean).length;
   const totalFields = completionFlags.length;
   const completionPercent = Math.round((completedCount / totalFields) * 100);
-  const pointsRemaining = (totalFields - completedCount) * COMPLETION_BONUS_POINTS;
 
   async function save() {
     const next = draft.trim();
@@ -139,21 +137,6 @@ export default function ProfileView({ data }: { data: ProfileData }) {
         )}
       </motion.div>
 
-      {/* Membership */}
-      <div className="rounded-2xl bg-white p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">
-              Membership
-            </p>
-            <p className="mt-1 text-lg font-bold text-ink-900">{data.tier} tier</p>
-          </div>
-          <div className="text-right">
-            <p className="text-2xl font-semibold tracking-[-0.025em] text-ink-900">{data.points.toLocaleString()}</p>
-            <p className="text-xs text-ink-500">points</p>
-          </div>
-        </div>
-      </div>
 
       {/* Profile completion / gamification */}
       <motion.div
@@ -167,7 +150,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
             <p className="text-sm font-semibold text-slate-900">Complete your profile</p>
             <p className="mt-0.5 text-xs text-slate-500">
               {completedCount} of {totalFields} done
-              {pointsRemaining > 0 ? ` · earn up to ${pointsRemaining} more pts` : " · all done"}
+              {completedCount === totalFields ? " · all done" : " · helps restaurants serve you better"}
             </p>
           </div>
           <span className="text-sm font-bold text-brand-600">{completionPercent}%</span>
@@ -224,6 +207,8 @@ export default function ProfileView({ data }: { data: ProfileData }) {
 
 
       <AppearancePicker />
+
+      <PrivacySettings places={data.places} />
 
       {/* Sign out */}
       <form action="/auth/signout" method="post">
