@@ -7,7 +7,16 @@ import BranchLogo from "./BranchLogo";
 import type { PickupOutlet } from "@/lib/guest-order";
 
 // Pick a store, then dine in (scan the table QR) or order ahead for pickup.
-export default function StorePicker({ branches, logos = {} }: { branches: PickupOutlet[]; logos?: Record<string, string> }) {
+// pickupOpen: pickup is paid online, so it's offered only once payment is set up.
+export default function StorePicker({
+  branches,
+  logos = {},
+  pickupOpen = true,
+}: {
+  branches: PickupOutlet[];
+  logos?: Record<string, string>;
+  pickupOpen?: boolean;
+}) {
   const [open, setOpen] = useState<string | null>(branches.length === 1 ? branches[0].id : null);
   const showCompany = new Set(branches.map((b) => b.company_id)).size > 1;
 
@@ -28,7 +37,7 @@ export default function StorePicker({ branches, logos = {} }: { branches: Pickup
                 <span className="block text-[15px] font-bold text-ink-900">{b.name}</span>
                 <span className="block truncate text-[13px] text-slate-500">
                   {showCompany ? `${b.company} · ` : ""}
-                  {b.pickup ? "Dine in or pickup" : "Dine in"}
+                  {b.pickup && pickupOpen ? "Dine in or pickup" : "Dine in"}
                 </span>
               </span>
               <motion.svg
@@ -63,7 +72,7 @@ export default function StorePicker({ branches, logos = {} }: { branches: Pickup
                       <span className="mt-1 text-[15px] font-semibold">Dine in</span>
                       <span className="text-xs text-brand-100">Scan your table QR</span>
                     </Link>
-                    {b.pickup ? (
+                    {b.pickup && pickupOpen ? (
                       <Link
                         href={`/order/p/${b.id}`}
                         className="flex flex-col gap-1 rounded-xl bg-ink-50 p-4 text-ink-900 shadow-well transition hover:bg-ink-100 active:scale-[0.98]"
@@ -76,7 +85,7 @@ export default function StorePicker({ branches, logos = {} }: { branches: Pickup
                       <div className="flex flex-col gap-1 rounded-xl bg-ink-50 p-4 text-ink-400 shadow-well">
                         <BagIcon />
                         <span className="mt-1 text-[15px] font-semibold">Pickup</span>
-                        <span className="text-xs">Not offered here yet</span>
+                        <span className="text-xs">{b.pickup ? "Coming soon" : "Not offered here yet"}</span>
                       </div>
                     )}
                   </div>

@@ -6,6 +6,7 @@ import OrderAgain, { type RecentOrder } from "@/components/customer/OrderAgain";
 import BottomNav from "@/components/customer/BottomNav";
 import Reveal from "@/components/Reveal";
 import StorePicker from "@/components/order/StorePicker";
+import { billplzEnabled } from "@/lib/billplz";
 import { DEMO_TIERS, type Reward } from "@/lib/dashboard-demo";
 import type { LoyaltyTier } from "@/lib/loyalty";
 import { outletLogos, type PickupOutlet } from "@/lib/guest-order";
@@ -148,7 +149,7 @@ export default async function CustomerDashboardPage() {
           <section>
             <SectionHeader title="Stores" />
             {branches.length ? (
-              <StorePicker branches={branches} logos={logos} />
+              <StorePicker branches={branches} logos={logos} pickupOpen={billplzEnabled()} />
             ) : (
               <p className="rounded-2xl bg-white px-5 py-6 text-sm text-slate-600 shadow-sm">
                 No store is taking online orders right now. Order with our staff at the restaurant.

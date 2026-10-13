@@ -43,6 +43,8 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
   // Arrived from placing (?placed=1) or from the bank (?paid=1|0).
   const [arrival, setArrival] = useState<"placed" | "paid" | "unpaid" | null>(null);
   const [paying, setPaying] = useState(false);
+  // A paid order the outlet cancelled: the owner pays it back in Billplz and marks it.
+  const [paidBackAt, setPaidBackAt] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     setClaimToken(loadClaimToken(params.id));
     setMenuPath(loadMenuPath(params.id));
@@ -92,6 +94,17 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
     const t = window.setInterval(refresh, 5000);
     return () => window.clearInterval(t);
   }, [refresh, done]);
+
+  const refundOwed = order?.status === "rejected" && order.paid;
+  useEffect(() => {
+    if (!refundOwed) return;
+    supabase
+      .from("guest_orders")
+      .select("paid_back_at")
+      .eq("id", params.id)
+      .maybeSingle()
+      .then(({ data }) => setPaidBackAt(data?.paid_back_at ?? null));
+  }, [supabase, params.id, refundOwed]);
 
   const step = order ? stepOf(order) : -1;
   useEffect(() => {
@@ -229,7 +242,15 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
 
       {order.status !== "rejected" && <Track step={step} />}
       {order.status === "rejected" && order.reject_reason && (
-        <p className="mt-2 text-sm text-slate-600">{order.reject_reason}</p>
+        <p className="mt-2 text-center text-sm text-ink-500">{order.reject_reason}</p>
+      )}
+      {refundOwed && paidBackAt !== undefined && (
+        <p className="mt-5 flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm text-ink-800">
+          <span className={`h-2 w-2 shrink-0 rounded-full ${paidBackAt ? "bg-emerald-500" : "bg-amber-500"}`} />
+          {paidBackAt
+            ? `Refunded ${sym}${Number(order.amount_due ?? 0).toFixed(2)} on ${new Date(paidBackAt).toLocaleDateString("en-MY", { dateStyle: "medium" })}.`
+            : `Your ${sym}${Number(order.amount_due ?? 0).toFixed(2)} will be refunded to your bank account by the restaurant.`}
+        </p>
       )}
 
       {order.status !== "rejected" && order.status !== "awaiting_payment" && (

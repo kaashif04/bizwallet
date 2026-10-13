@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import BottomNav from "@/components/customer/BottomNav";
 import StorePicker from "@/components/order/StorePicker";
+import { billplzEnabled } from "@/lib/billplz";
 import { outletLogos, type PickupOutlet } from "@/lib/guest-order";
 
 // Order tab: pick a store, then dine in (scan the table QR) or pickup.
@@ -34,7 +35,7 @@ export default async function OrderPage() {
 
         <h2 className="mb-3 mt-8 px-1 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Choose a store</h2>
         {branches.length ? (
-          <StorePicker branches={branches} logos={logos} />
+          <StorePicker branches={branches} logos={logos} pickupOpen={billplzEnabled()} />
         ) : (
           <p className="rounded-2xl bg-white px-6 py-10 text-center text-sm text-slate-500 shadow-sm">
             No store is taking online orders right now.
