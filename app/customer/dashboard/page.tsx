@@ -7,10 +7,11 @@ import BottomNav from "@/components/customer/BottomNav";
 import Reveal from "@/components/Reveal";
 import ActiveOrders from "@/components/customer/ActiveOrders";
 import StorePicker from "@/components/order/StorePicker";
+import BannerCarousel from "@/components/order/BannerCarousel";
 import { billplzEnabled } from "@/lib/billplz";
 import { DEMO_TIERS, type Reward } from "@/lib/dashboard-demo";
 import type { LoyaltyTier } from "@/lib/loyalty";
-import { outletLogos, type PickupOutlet } from "@/lib/guest-order";
+import { outletLogos, type Banner, type PickupOutlet } from "@/lib/guest-order";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function summarizeItems(items: any): string {
@@ -39,6 +40,7 @@ export default async function CustomerDashboardPage() {
     { data: orderRows },
     { data: branchData },
     logos,
+    { data: bannerData },
   ] = await Promise.all([
     supabase.from("members").select("full_name").eq("id", uid).maybeSingle(),
     supabase.from("wallets").select("balance, currency").eq("user_id", uid).maybeSingle(),
@@ -61,7 +63,9 @@ export default async function CustomerDashboardPage() {
       .limit(6),
     supabase.rpc("guest_list_outlets"),
     outletLogos(supabase),
+    supabase.rpc("wallet_banners"),
   ]);
+  const pickupOpen = billplzEnabled();
 
   const branches = (branchData ?? []) as PickupOutlet[];
   const branchName = new Map(branches.map((b) => [b.id, b.name]));
@@ -84,6 +88,7 @@ export default async function CustomerDashboardPage() {
         <DashboardHeader name={member?.full_name ?? user?.email?.split("@")[0] ?? "there"} />
 
         <div className="mt-5 space-y-6">
+          <BannerCarousel banners={(bannerData ?? []) as Banner[]} branches={branches} pickupOpen={pickupOpen} />
           <ActiveOrders names={Object.fromEntries(branchName)} />
           <WalletLoyaltyCard
             balance={Number(wallet?.balance ?? 0)}
@@ -151,7 +156,7 @@ export default async function CustomerDashboardPage() {
           <section>
             <SectionHeader title="Stores" />
             {branches.length ? (
-              <StorePicker branches={branches} logos={logos} pickupOpen={billplzEnabled()} />
+              <StorePicker branches={branches} logos={logos} pickupOpen={pickupOpen} />
             ) : (
               <p className="rounded-2xl bg-white px-5 py-6 text-sm text-slate-600 shadow-sm">
                 No store is taking online orders right now. Order with our staff at the restaurant.

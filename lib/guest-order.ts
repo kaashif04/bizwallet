@@ -146,6 +146,30 @@ export type PickupOutlet = {
   company_id: string;
   company: string;
   pickup: boolean; // false = table QR ordering only
+  cover_url: string | null;
+  tagline: string | null;
+  phone: string | null;
+  maps_url: string | null;
+  hours: Hours | null; // 7 entries, Monday first; null entry = closed that day
+  open_now: boolean | null; // null when hours aren't set
+  today: DayHours;
+};
+export type DayHours = { open: string; close: string } | null; // "HH:MM"; close may be after midnight
+export type Hours = DayHours[];
+
+// Owner-managed banners and offers (BizPos), live ones only.
+export type Banner = {
+  id: string;
+  company_id: string;
+  company: string;
+  outlet_id: string | null;
+  outlet: string | null;
+  title: string;
+  subtitle: string | null;
+  image_url: string | null;
+  promo_code: string | null;
+  action: "order" | "none";
+  ends_on: string | null; // YYYY-MM-DD
 };
 
 // `outlets` is company-private in BizPos, so members can't read it directly.

@@ -2,20 +2,30 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import BottomNav from "@/components/customer/BottomNav";
 import StorePicker from "@/components/order/StorePicker";
+import BannerCarousel from "@/components/order/BannerCarousel";
 import { billplzEnabled } from "@/lib/billplz";
-import { outletLogos, type PickupOutlet } from "@/lib/guest-order";
+import { outletLogos, type Banner, type PickupOutlet } from "@/lib/guest-order";
 
 // Order tab: pick a store, then dine in (scan the table QR) or pickup.
 export default async function OrderPage() {
   const supabase = createClient();
-  const [{ data }, logos] = await Promise.all([supabase.rpc("guest_list_outlets"), outletLogos(supabase)]);
+  const [{ data }, logos, { data: bannerData }] = await Promise.all([
+    supabase.rpc("guest_list_outlets"),
+    outletLogos(supabase),
+    supabase.rpc("wallet_banners"),
+  ]);
   const branches = (data ?? []) as PickupOutlet[];
+  const pickupOpen = billplzEnabled();
 
   return (
     <main className="min-h-dvh bg-ink-50">
       <div className="mx-auto max-w-md px-4 pb-28 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <h1 className="text-[1.75rem] leading-tight tracking-[-0.03em] text-ink-900">Order</h1>
-        <p className="mt-2 text-sm text-slate-600">Every order earns points. Pay at the counter.</p>
+        <p className="mt-2 text-sm text-slate-600">Every order earns points.</p>
+
+        <div className="mt-5">
+          <BannerCarousel banners={(bannerData ?? []) as Banner[]} branches={branches} pickupOpen={pickupOpen} />
+        </div>
 
         <Link
           href="/scan"
@@ -35,7 +45,7 @@ export default async function OrderPage() {
 
         <h2 className="mb-3 mt-8 px-1 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Choose a store</h2>
         {branches.length ? (
-          <StorePicker branches={branches} logos={logos} pickupOpen={billplzEnabled()} />
+          <StorePicker branches={branches} logos={logos} pickupOpen={pickupOpen} />
         ) : (
           <p className="rounded-2xl bg-white px-6 py-10 text-center text-sm text-slate-500 shadow-sm">
             No store is taking online orders right now.
