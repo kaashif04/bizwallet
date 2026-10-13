@@ -31,7 +31,7 @@ export default function AppearancePicker() {
 
   return (
     <div className="rounded-2xl bg-white p-4">
-      <p id="appearance-label" className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">
+      <p id="appearance-label" className="text-sm font-bold text-ink-900">
         Appearance
       </p>
       <div role="radiogroup" aria-labelledby="appearance-label" className="mt-3 flex rounded-full bg-ink-50 p-1 shadow-pressed">

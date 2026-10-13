@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import ProfileCompletionSheet from "./ProfileCompletionSheet";
 import AppearancePicker from "./AppearancePicker";
 import PrivacySettings from "./PrivacySettings";
+import { SectionTitle } from "./ui";
 
 export type ProfileData = {
   name: string;
@@ -72,15 +73,15 @@ export default function ProfileView({ data }: { data: ProfileData }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       {/* Identity */}
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-col items-center rounded-2xl bg-white p-6 text-center"
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="flex items-center gap-4 rounded-2xl bg-white p-4"
       >
-        <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-ink-50 text-2xl font-bold text-ink-700 shadow-well">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink-50 text-2xl font-bold text-ink-700 shadow-well">
           {data.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={data.avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -88,140 +89,131 @@ export default function ProfileView({ data }: { data: ProfileData }) {
             initial
           )}
         </div>
-
-        {editing ? (
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            autoFocus
-            className="mt-4 w-full max-w-[16rem] rounded-xl border border-slate-200 px-3 py-2 text-center text-base font-semibold text-slate-900 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30"
-          />
-        ) : (
-          <h2 className="mt-4 text-xl font-bold text-slate-900">{name}</h2>
-        )}
-
-
-        {editing ? (
-          <div className="mt-4 flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(false);
-                setDraft(name);
-              }}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={save}
-              disabled={saving}
-              className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-on disabled:opacity-60"
-            >
-              {saving ? "Saving…" : "Save"}
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(name);
-              setEditing(true);
-            }}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-          >
-            <PencilIcon />
-            Edit name
-          </button>
-        )}
+        <div className="min-w-0 flex-1">
+          {editing ? (
+            <>
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && save()}
+                autoFocus
+                aria-label="Your name"
+                className="w-full rounded-xl bg-ink-50 px-3 py-2 text-base font-semibold text-ink-900 shadow-pressed outline-none focus:ring-2 focus:ring-brand-400/40"
+              />
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={save}
+                  disabled={saving}
+                  className="h-9 rounded-full bg-brand-600 px-4 text-sm font-bold text-on disabled:opacity-60"
+                >
+                  {saving ? "Saving…" : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing(false);
+                    setDraft(name);
+                  }}
+                  className="h-9 rounded-full px-3 text-sm font-bold text-ink-600 hover:bg-ink-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="truncate text-xl font-semibold tracking-[-0.02em] text-ink-900">{name}</h2>
+              {data.memberSince && <p className="text-xs text-ink-500">Member since {data.memberSince}</p>}
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft(name);
+                  setEditing(true);
+                }}
+                className="-ml-2 mt-1 inline-flex h-8 items-center gap-1.5 rounded-full px-2 text-sm font-bold text-brand-700 transition hover:bg-brand-50"
+              >
+                <PencilIcon />
+                Edit name
+              </button>
+            </>
+          )}
+        </div>
       </motion.div>
 
-
-      {/* Profile completion / gamification */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-        className="rounded-2xl bg-white p-5"
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-bold text-ink-900">Complete your profile</p>
-            <p className="mt-0.5 text-xs text-slate-500">
-              {completedCount} of {totalFields} done
-              {completedCount === totalFields ? " · all done" : " · fill in once, used at every restaurant"}
-            </p>
+      {/* Profile completion */}
+      {completionPercent < 100 && (
+        <div className="rounded-2xl bg-white p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold text-ink-900">Complete your profile</p>
+              <p className="mt-0.5 text-xs text-ink-500">
+                {completedCount} of {totalFields} done · fill in once, used at every restaurant
+              </p>
+            </div>
+            <span className="text-sm font-bold tabular-nums text-brand-700">{completionPercent}%</span>
           </div>
-          <span className="text-sm font-bold text-brand-600">{completionPercent}%</span>
-        </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-ink-100 shadow-well">
-          <motion.div
-            className="h-full rounded-full bg-marple"
-            initial={{ width: 0 }}
-            animate={{ width: `${completionPercent}%` }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          />
-        </div>
-        {completionPercent < 100 && (
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-ink-100 shadow-well">
+            <motion.div
+              className="h-full rounded-full bg-marple"
+              initial={{ width: 0 }}
+              animate={{ width: `${completionPercent}%` }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            />
+          </div>
           <button
             type="button"
             onClick={() => setShowCompletionSheet(true)}
-            className="mt-4 w-full rounded-full bg-brand-600 px-4 py-2.5 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700"
+            className="mt-4 w-full rounded-full bg-brand-600 px-4 py-2.5 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.98]"
           >
             Add details
           </button>
-        )}
-      </motion.div>
+        </div>
+      )}
 
-      {/* Contact + verification */}
-      <div className="rounded-3xl border border-slate-100 bg-white p-2 shadow-sm">
-        <Row
-          icon={<MailIcon />}
-          label="Email"
-          value={data.email || "—"}
-          verified={data.email ? data.emailVerified : undefined}
-        />
-        <Divider />
-        <Row
-          icon={<PhoneIcon />}
-          label="Phone"
-          value={data.phone || "Not added"}
-          verified={data.phone ? data.phoneVerified : undefined}
-        />
-        {data.memberSince && (
-          <>
-            <Divider />
-            <Row icon={<CalendarIcon />} label="Member since" value={data.memberSince} />
-          </>
-        )}
-      </div>
+      <section>
+        <SectionTitle>Account</SectionTitle>
+        <div className="divide-y divide-ink-100 overflow-hidden rounded-2xl bg-white">
+          <Row
+            icon={<MailIcon />}
+            label="Email"
+            value={data.email || "—"}
+            verified={data.email ? data.emailVerified : undefined}
+          />
+          <Row
+            icon={<PhoneIcon />}
+            label="Phone"
+            value={data.phone || "Not added"}
+            verified={data.phone ? data.phoneVerified : undefined}
+          />
+          <Link href="/customer/orders" className="block transition hover:bg-ink-50 active:bg-ink-50">
+            <Row icon={<ReceiptIcon />} label="Orders" value="My orders" chevron />
+          </Link>
+          {completionPercent === 100 && (
+            <button type="button" onClick={() => setShowCompletionSheet(true)} className="block w-full text-left transition hover:bg-ink-50">
+              <Row icon={<CalendarIcon />} label="Details" value="Birthday, diet and address" chevron />
+            </button>
+          )}
+        </div>
+      </section>
 
-      {/* Orders */}
-      <Link
-        href="/customer/orders"
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-      >
-        My orders
-      </Link>
+      <section>
+        <SectionTitle>Settings</SectionTitle>
+        <div className="space-y-3">
+          <AppearancePicker />
+          <PrivacySettings places={data.places} />
+        </div>
+      </section>
 
-
-      <AppearancePicker />
-
-      <PrivacySettings places={data.places} />
-
-      {/* Sign out */}
       <form action="/auth/signout" method="post">
         <button
           type="submit"
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-5 py-3.5 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-50"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-sm font-bold text-rose-700 transition hover:bg-rose-50 active:scale-[0.99]"
         >
           <SignOutIcon />
           Sign out
         </button>
       </form>
-
-      <p className="text-center text-[11px] text-slate-400">BizWallet</p>
 
       <AnimatePresence>
         {showCompletionSheet && (
@@ -243,40 +235,38 @@ export default function ProfileView({ data }: { data: ProfileData }) {
   );
 }
 
-function Divider() {
-  return <div className="mx-3 h-px bg-slate-100" />;
-}
-
 function Row({
   icon,
   label,
   value,
   verified,
+  chevron,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   verified?: boolean;
+  chevron?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-3 px-3 py-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+    <div className="flex items-center gap-3 px-4 py-3">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-50 text-brand-600 shadow-well">
         {icon}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-slate-400">{label}</p>
-        <p className="truncate text-sm font-medium text-slate-900">{value}</p>
+        <p className="text-xs text-ink-500">{label}</p>
+        <p className="truncate text-sm font-bold text-ink-900">{value}</p>
       </div>
-      {verified !== undefined &&
-        (verified ? (
-          <span className="inline-flex items-center rounded-full bg-mint-100 px-2.5 py-1 text-[11px] font-semibold text-mint-700">
-            Verified
-          </span>
-        ) : (
-          <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-            Unverified
-          </span>
-        ))}
+      {verified !== undefined && (
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-1 text-2xs font-bold ${
+            verified ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+          }`}
+        >
+          {verified ? "Verified" : "Unverified"}
+        </span>
+      )}
+      {chevron && <span aria-hidden="true" className="text-lg text-ink-400">›</span>}
     </div>
   );
 }
@@ -316,6 +306,14 @@ function PhoneIcon() {
   return (
     <Svg>
       <path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25z" />
+    </Svg>
+  );
+}
+function ReceiptIcon() {
+  return (
+    <Svg>
+      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
+      <path d="M9 8h6M9 12h6M9 16h3" />
     </Svg>
   );
 }

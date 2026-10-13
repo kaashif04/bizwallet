@@ -79,11 +79,11 @@ export default function TopUpPanel({
 
       {/* Custom amount */}
       <label className="mt-3 block">
-        <span className="mb-1.5 block text-xs font-medium text-slate-500">
+        <span className="mb-1.5 block text-xs font-medium text-ink-500">
           Or enter a custom amount
         </span>
         <div className="flex items-center rounded-xl bg-ink-50 px-4 shadow-pressed">
-          <span className="text-sm font-semibold text-slate-500">{sym}</span>
+          <span className="text-sm font-semibold text-ink-500">{sym}</span>
           <input
             type="number"
             inputMode="decimal"
@@ -143,15 +143,15 @@ export default function TopUpPanel({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
             >
-              Confirm Top Up · {sym}
+              Top up {sym}
               {valid ? amount.toFixed(2) : "0.00"}
             </motion.span>
           )}
         </AnimatePresence>
       </button>
 
-      <p className="mt-2 text-center text-[11px] text-slate-400">
-        Demo gateway — funds are credited instantly via Supabase.
+      <p className="mt-2 text-center text-2xs text-ink-400">
+        Secured by Billplz. You confirm the payment with your bank.
       </p>
     </div>
   );

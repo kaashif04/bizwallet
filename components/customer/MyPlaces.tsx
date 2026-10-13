@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { SectionTitle } from "./ui";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import RewardsCatalog from "./RewardsCatalog";
@@ -63,7 +64,7 @@ export default function MyPlaces({
 
   return (
     <section>
-      <h2 className="mb-3 px-1 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">My places</h2>
+      <SectionTitle>My places</SectionTitle>
       <div className="space-y-4">
         {places.map((p, i) => {
           const pts = points[p.company_id] ?? 0;

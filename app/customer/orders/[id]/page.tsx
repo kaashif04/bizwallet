@@ -51,11 +51,11 @@ export default async function OrderDetailPage({ params }: { params: { id: string
 
   return (
     <div className="min-h-dvh bg-ink-50">
-      <div className="mx-auto max-w-md px-5 pb-12 pt-6">
+      <div className="mx-auto max-w-md px-4 pb-12 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <div className="mb-4 flex items-center gap-3">
           <Link
             href="/customer/orders"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-ink-700 shadow-sm transition active:scale-95"
             aria-label="Back to orders"
           >
             <span className="text-lg">←</span>

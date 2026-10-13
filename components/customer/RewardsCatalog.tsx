@@ -134,7 +134,7 @@ export default function RewardsCatalog({
                   </ul>
                 </section>
               )}
-              <p className="mt-4 text-sm text-ink-500">Spend your {company} points on these.</p>
+              <h3 className="mt-6 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Spend your points</h3>
               {error && (
                 <p className="mt-3 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700">
                   {error}
@@ -151,7 +151,7 @@ export default function RewardsCatalog({
                     return (
                       <div
                         key={r.id}
-                        className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
+                        className="flex items-center gap-3 rounded-2xl bg-ink-50 p-4 shadow-well"
                       >
                         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
                           {r.kind === "voucher" ? (
@@ -214,7 +214,9 @@ function VoucherCard({ v, company }: { v: Voucher; company: string }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-bold text-ink-900">{v.title}</p>
-          {worth && <p className="text-xs font-semibold text-brand-700">{worth}</p>}
+          {worth && worth.toLowerCase() !== v.title.toLowerCase() && (
+            <p className="text-xs font-semibold text-brand-700">{worth}</p>
+          )}
         </div>
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-2xs font-bold ${

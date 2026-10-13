@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import BottomNav from "@/components/customer/BottomNav";
+import { PageHeader, screen } from "@/components/customer/ui";
 import ProfileView, { type ProfileData } from "@/components/customer/ProfileView";
 import type { Place } from "@/lib/places";
 
@@ -70,11 +71,8 @@ export default async function ProfilePage() {
 
   return (
     <div className="min-h-dvh bg-ink-50">
-      <div className="mx-auto max-w-md px-5 pb-28 pt-6">
-        <header className="mb-5">
-          <h1 className="text-2xl font-bold text-slate-900">Profile</h1>
-          <p className="text-sm text-slate-500">Your account &amp; membership</p>
-        </header>
+      <div className={screen}>
+        <PageHeader title="Profile" />
 
         <ProfileView data={data} />
       </div>

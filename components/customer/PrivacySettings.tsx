@@ -29,7 +29,7 @@ export default function PrivacySettings({
 
   return (
     <section className="rounded-2xl bg-white p-4">
-      <h2 className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Privacy</h2>
+      <h3 className="text-sm font-bold text-ink-900">Offers and privacy</h3>
       {places.length === 0 ? (
         <p className="mt-2 text-sm text-ink-500">
           Once you order from or join a restaurant, you can choose here whether it may send you offers.

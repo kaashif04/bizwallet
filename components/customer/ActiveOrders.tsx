@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { SectionTitle } from "./ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
@@ -83,7 +84,7 @@ export default function ActiveOrders({
   if (!shown.length) return null;
   return (
     <section>
-      <h2 className="mb-3 px-1 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Happening now</h2>
+      <SectionTitle>Happening now</SectionTitle>
       <div className="space-y-3">
         <AnimatePresence initial={false}>
           {shown.map((o) => (

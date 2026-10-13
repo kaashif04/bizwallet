@@ -76,7 +76,7 @@ export default function NotificationBell() {
         whileTap={{ scale: 0.88 }}
         onClick={openPanel}
         aria-label="Notifications"
-        className="relative flex h-11 w-11 items-center justify-center rounded-full border border-slate-100 bg-white text-slate-700 shadow-sm"
+        className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white text-ink-700 shadow-sm"
       >
         <motion.span
           style={{ transformOrigin: "50% 4px" }}
@@ -138,8 +138,8 @@ export default function NotificationBell() {
                         key={n.id}
                         className={`relative rounded-2xl border p-3.5 ${
                           n.is_read
-                            ? "border-slate-100 bg-white"
-                            : "border-brand-100 bg-brand-50/60"
+                            ? "border-transparent bg-ink-50"
+                            : "border-brand-100 bg-brand-50"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -186,7 +186,7 @@ function Skeleton() {
   return (
     <ul className="space-y-2.5">
       {[0, 1, 2, 3].map((i) => (
-        <li key={i} className="rounded-2xl border border-slate-100 p-3.5">
+        <li key={i} className="rounded-2xl bg-ink-50 p-3.5">
           <div className="h-3.5 w-1/2 animate-pulse rounded bg-slate-200" />
           <div className="mt-2 h-3 w-4/5 animate-pulse rounded bg-slate-100" />
         </li>

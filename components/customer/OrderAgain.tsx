@@ -24,7 +24,7 @@ export default function OrderAgain({
   const sym = currencySymbol(currency);
 
   return (
-    <div className="-mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {orders.map((o, i) => (
         <motion.div
           key={o.id}
@@ -35,15 +35,15 @@ export default function OrderAgain({
         >
           <Link
             href={o.href}
-            className="flex gap-3 rounded-3xl bg-white p-4 shadow-sm transition hover:shadow-md active:scale-[0.98]"
+            className="flex gap-3 rounded-2xl bg-white p-4 transition hover:shadow-md active:scale-[0.98]"
           >
             <ItemMark name={o.items} className="h-14 w-14 rounded-2xl text-2xl" />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-slate-900">{o.items}</span>
-              <span className="block truncate text-xs text-slate-500">
+              <span className="block truncate text-sm font-semibold text-ink-900">{o.items}</span>
+              <span className="block truncate text-xs text-ink-500">
                 {o.outlet} · {new Date(o.date).toLocaleDateString("en-MY", { day: "numeric", month: "short" })}
               </span>
-              <span className="mt-1 block text-sm font-bold text-slate-900">
+              <span className="mt-1 block text-sm font-bold text-ink-900">
                 {sym}
                 {o.total.toFixed(2)}
               </span>

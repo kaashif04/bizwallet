@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import WalletExperience from "@/components/wallet/WalletExperience";
 import BottomNav from "@/components/customer/BottomNav";
+import { PageHeader, screen } from "@/components/customer/ui";
 import type { WalletTxn } from "@/lib/wallet-types";
 import { billplzEnabled } from "@/lib/billplz";
 
@@ -31,11 +32,8 @@ export default async function WalletPage() {
 
   return (
     <div className="min-h-dvh bg-ink-50">
-      <div className="mx-auto max-w-md px-5 pb-28 pt-[max(1.5rem,env(safe-area-inset-top))]">
-        <header className="mb-5">
-          <h1 className="text-[1.75rem] leading-tight tracking-[-0.03em] text-ink-900">Wallet</h1>
-          <p className="text-sm text-slate-500">Your store credit and history</p>
-        </header>
+      <div className={screen}>
+        <PageHeader title="Wallet" subtitle="Your credit and its history" />
 
         <WalletExperience
           initialBalance={Number(wallet?.balance ?? 0)}

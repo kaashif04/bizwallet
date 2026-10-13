@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import BottomNav from "@/components/customer/BottomNav";
+import { PageHeader, SectionTitle, screen } from "@/components/customer/ui";
 import StorePicker from "@/components/order/StorePicker";
 import BannerCarousel from "@/components/order/BannerCarousel";
 import { billplzEnabled } from "@/lib/billplz";
@@ -19,17 +20,14 @@ export default async function OrderPage() {
 
   return (
     <main className="min-h-dvh bg-ink-50">
-      <div className="mx-auto max-w-md px-4 pb-28 pt-[max(1.5rem,env(safe-area-inset-top))]">
-        <h1 className="text-[1.75rem] leading-tight tracking-[-0.03em] text-ink-900">Order</h1>
-        <p className="mt-2 text-sm text-slate-600">Every order earns points.</p>
+      <div className={screen}>
+        <PageHeader title="Order" subtitle="Dine in or order ahead. Every order earns points." />
 
-        <div className="mt-5">
-          <BannerCarousel banners={(bannerData ?? []) as Banner[]} branches={branches} pickupOpen={pickupOpen} />
-        </div>
+        <BannerCarousel banners={(bannerData ?? []) as Banner[]} branches={branches} pickupOpen={pickupOpen} />
 
         <Link
           href="/scan"
-          className="mt-6 flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm transition hover:shadow-md active:scale-[0.99]"
+          className="mt-6 flex items-center gap-4 rounded-2xl bg-white p-4 transition hover:shadow-md active:scale-[0.99]"
         >
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-ink-50 text-brand-600 shadow-well">
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -41,13 +39,16 @@ export default async function OrderPage() {
             <span className="block font-bold text-ink-900">At a table?</span>
             <span className="block text-xs text-ink-500">Scan its QR and order from your phone</span>
           </span>
+          <span aria-hidden="true" className="text-lg text-ink-400">›</span>
         </Link>
 
-        <h2 className="mb-3 mt-8 px-1 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Choose a store</h2>
+        <div className="mt-8">
+          <SectionTitle>Stores</SectionTitle>
+        </div>
         {branches.length ? (
           <StorePicker branches={branches} logos={logos} pickupOpen={pickupOpen} />
         ) : (
-          <p className="rounded-2xl bg-white px-6 py-10 text-center text-sm text-slate-500 shadow-sm">
+          <p className="rounded-2xl bg-white px-6 py-10 text-center text-sm text-ink-500">
             No store is taking online orders right now.
           </p>
         )}

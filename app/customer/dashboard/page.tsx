@@ -6,6 +6,7 @@ import OrderAgain, { type RecentOrder } from "@/components/customer/OrderAgain";
 import BottomNav from "@/components/customer/BottomNav";
 import Reveal from "@/components/Reveal";
 import ActiveOrders from "@/components/customer/ActiveOrders";
+import { SectionTitle, screen } from "@/components/customer/ui";
 import BannerCarousel from "@/components/order/BannerCarousel";
 import { billplzEnabled } from "@/lib/billplz";
 import { groupBy, type Place, type Reward, type Voucher } from "@/lib/places";
@@ -108,12 +109,30 @@ export default async function CustomerDashboardPage({
 
   return (
     <div className="min-h-dvh bg-ink-50">
-      <div className="mx-auto max-w-md px-4 pb-28 pt-[max(1.5rem,env(safe-area-inset-top))]">
+      <div className={screen}>
         <DashboardHeader name={member?.full_name ?? user?.email?.split("@")[0] ?? "there"} />
 
-        <div className="mt-5 space-y-6">
-          <BannerCarousel banners={(bannerData ?? []) as Banner[]} branches={branches} pickupOpen={pickupOpen} storesHref="/customer/order" />
+        <div className="mt-6 space-y-8">
           <ActiveOrders names={Object.fromEntries(branchName)} />
+
+          {/* Quick actions: dine in, order ahead, wallet */}
+          <div className="grid grid-cols-3 gap-3">
+            <Tile href="/scan" title="Scan table" note="Dine in">
+              <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" />
+              <path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 16h3" />
+            </Tile>
+            <Tile href="/customer/order" title="Order ahead" note="Pickup">
+              <path d="M5 8h14l-1 12H6L5 8Z" />
+              <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+            </Tile>
+            <Tile href="/customer/wallet" title={`RM${Number(wallet?.balance ?? 0).toFixed(2)}`} note="Wallet">
+              <rect x="3" y="6" width="18" height="13" rx="3" />
+              <path d="M3 10h18M16 15h2" />
+            </Tile>
+          </div>
+
+          <BannerCarousel banners={(bannerData ?? []) as Banner[]} branches={branches} pickupOpen={pickupOpen} storesHref="/customer/order" />
+
           <MyPlaces
             places={places}
             rewards={groupBy((rewardRows ?? []) as Reward[])}
@@ -124,74 +143,18 @@ export default async function CustomerDashboardPage({
             openCompany={openCompany}
           />
 
-          <Link
-            href="/customer/wallet"
-            className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 transition hover:shadow-md active:scale-[0.99]"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink-50 text-brand-600 shadow-well">
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="3" y="6" width="18" height="13" rx="3" />
-                <path d="M3 10h18M16 15h2" />
-              </svg>
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Wallet credit</span>
-              <span className="block text-lg font-semibold tracking-[-0.025em] text-ink-900">
-                RM{Number(wallet?.balance ?? 0).toFixed(2)}
-              </span>
-            </span>
-            <span className="shrink-0 text-sm font-bold text-brand-700">Top up ›</span>
-          </Link>
-
-          <Reveal delay={0.06}>
-          <div className="grid grid-cols-2 gap-3">
-            <Link
-              href="/scan"
-              className="flex flex-col gap-3 rounded-2xl bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]"
-            >
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-ink-50 text-brand-600 shadow-well">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" />
-                  <path d="M8 8h3v3H8zM13 13h3v3h-3zM13 8h3M8 16h3" />
-                </svg>
-              </span>
-              <span>
-                <span className="block font-bold text-ink-900">Scan table</span>
-                <span className="block text-xs text-ink-500">Dine in, order here</span>
-              </span>
-            </Link>
-            <Link
-              href="/customer/order"
-              className="flex flex-col gap-3 rounded-2xl bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]"
-            >
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-ink-50 text-brand-600 shadow-well">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M5 8h14l-1 12H6L5 8Z" />
-                  <path d="M9 8V6a3 3 0 0 1 6 0v2" />
-                </svg>
-              </span>
-              <span>
-                <span className="block font-bold text-ink-900">Order ahead</span>
-                <span className="block text-xs text-ink-500">Pick a store</span>
-              </span>
-            </Link>
-          </div>
+          <Reveal>
+            <section>
+              <SectionTitle href={recent.length ? "/customer/orders" : undefined}>Recent orders</SectionTitle>
+              {recent.length ? (
+                <OrderAgain orders={recent} currency={currency} />
+              ) : (
+                <p className="rounded-2xl bg-white px-5 py-6 text-sm text-ink-500">
+                  Scan the QR code on your table to order. Your orders and points show up here.
+                </p>
+              )}
+            </section>
           </Reveal>
-
-
-          <Reveal delay={0.18}>
-          <section>
-            <SectionHeader title="Recent orders" actionHref={recent.length ? "/customer/orders" : undefined} />
-            {recent.length ? (
-              <OrderAgain orders={recent} currency={currency} />
-            ) : (
-              <p className="rounded-2xl bg-white px-5 py-6 text-sm text-slate-600 shadow-sm">
-                Scan the QR code on your table to order. Your orders and points show up here.
-              </p>
-            )}
-          </section>
-          </Reveal>
-
         </div>
       </div>
 
@@ -200,15 +163,21 @@ export default async function CustomerDashboardPage({
   );
 }
 
-function SectionHeader({ title, actionHref }: { title: string; actionHref?: string }) {
+function Tile({ href, title, note, children }: { href: string; title: string; note: string; children: React.ReactNode }) {
   return (
-    <div className="mb-3 flex items-end justify-between px-1">
-      <h2 className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">{title}</h2>
-      {actionHref && (
-        <Link href={actionHref} className="text-sm font-bold text-brand-700 hover:underline">
-          See all
-        </Link>
-      )}
-    </div>
+    <Link
+      href={href}
+      className="flex flex-col gap-3 rounded-2xl bg-white p-3.5 transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.97]"
+    >
+      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ink-50 text-brand-600 shadow-well">
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          {children}
+        </svg>
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-bold tabular-nums text-ink-900">{title}</span>
+        <span className="block text-xs text-ink-500">{note}</span>
+      </span>
+    </Link>
   );
 }
