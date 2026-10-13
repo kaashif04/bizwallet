@@ -122,12 +122,12 @@ export default function GuestOrder(
             menu={menu}
             token={props.token}
             onClose={() => setReviewing(false)}
-            onPlaced={(id) => {
+            onPlaced={(id, paid) => {
               // The sheet would drop its history entry on close (history.back),
               // undoing this navigation; mark it gone first.
               history.replaceState({ ...history.state, sheet: false }, "");
               cart.clear();
-              router.push(`/order/status/${id}?placed=1`);
+              router.push(`/order/status/${id}?${paid ? "paid=1" : "placed=1"}`);
             }}
           />
         )}
@@ -145,7 +145,7 @@ function CartReview({
   menu: GuestMenu;
   token?: string;
   onClose: () => void;
-  onPlaced: (id: string) => void;
+  onPlaced: (id: string, paid?: boolean) => void;
 }) {
   const cart = useCart();
   const [supabase] = useState(() => createClient());
@@ -160,7 +160,20 @@ function CartReview({
       .select("full_name")
       .maybeSingle()
       .then(({ data }) => setMemberName(data?.full_name?.trim() || null));
+    supabase
+      .from("wallets")
+      .select("balance")
+      .maybeSingle()
+      .then(({ data }) => {
+        const b = Number(data?.balance ?? 0);
+        setBalance(b);
+        if (b > 0 && b >= cart.totalPrice) setPayWith("wallet");
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on open
   }, [supabase]);
+  // Pickup can be paid from wallet credit or by FPX.
+  const [balance, setBalance] = useState(0);
+  const [payWith, setPayWith] = useState<"wallet" | "fpx">("fpx");
   const [note, setNote] = useState("");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -197,7 +210,16 @@ function CartReview({
     saveClaimToken(data.id, data.claim_token, window.location.pathname);
     if (data.status !== "awaiting_payment") return onPlaced(data.id);
 
-    // Pickup: pay online first; the kitchen only sees it once paid.
+    // Pickup: pay first; the kitchen only sees it once paid.
+    if (payWith === "wallet") {
+      const { error: payError } = await supabase.rpc("wallet_pay_order", {
+        p_id: data.id,
+        p_claim_token: data.claim_token,
+      });
+      // Short after SST/rounding, or any hiccup: the order page offers FPX too.
+      if (!payError) return onPlaced(data.id, true);
+      return onPlaced(data.id);
+    }
     const res = await fetch("/api/pay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -338,9 +360,41 @@ function CartReview({
         </div>
         <p className="mt-1 text-xs text-slate-500">
           {pickup
-            ? `Pay online with FPX online banking${charges.length ? `, ${charges.join(" and ")} included` : ""}. The kitchen starts once you've paid.`
+            ? `Paid before it's made${charges.length ? `, ${charges.join(" and ")} included` : ""}. The kitchen starts once you've paid.`
             : `${charges.length ? `Final price with ${charges.join(" and ")} is confirmed at the counter. ` : ""}Pay at the counter when you're done.`}
         </p>
+
+        {pickup && balance > 0 && (
+          <fieldset className="mt-4">
+            <legend className="mb-2 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Pay with</legend>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  ["wallet", "Wallet credit", `${sym}${balance.toFixed(2)} available`],
+                  ["fpx", "Online banking", "FPX"],
+                ] as const
+              ).map(([value, label, hint]) => (
+                <label
+                  key={value}
+                  className={`cursor-pointer rounded-xl px-3 py-2.5 transition ${
+                    payWith === value ? "bg-brand-600 text-on shadow-sm" : "bg-ink-50 text-ink-800 shadow-well"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="pay-with"
+                    value={value}
+                    checked={payWith === value}
+                    onChange={() => setPayWith(value)}
+                    className="sr-only"
+                  />
+                  <span className="block text-sm font-bold">{label}</span>
+                  <span className={`block text-xs ${payWith === value ? "text-on/80" : "text-ink-500"}`}>{hint}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
 
         {!pickup && Math.floor(cart.totalPrice) > 0 && (
           <p className="mt-4 flex items-center gap-3 rounded-xl bg-ink-50 px-4 py-3 text-sm text-ink-700 shadow-well">
@@ -366,7 +420,7 @@ function CartReview({
           disabled={placing}
           className="mt-5 h-14 w-full rounded-full bg-brand-600 px-5 text-base font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
         >
-          {placing ? (pickup ? "Opening payment…" : "Sending…") : error ? "Try again" : pickup ? "Pay and place order" : "Place order"}
+          {placing ? (pickup ? (payWith === "wallet" ? "Paying…" : "Opening payment…") : "Sending…") : error ? "Try again" : pickup ? "Pay and place order" : "Place order"}
         </button>
         <button
           type="button"

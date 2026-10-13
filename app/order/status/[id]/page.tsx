@@ -80,6 +80,29 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
     refresh();
   }
 
+  // Wallet credit can pay an unpaid pickup too.
+  const [balance, setBalance] = useState(0);
+  const awaiting = order?.status === "awaiting_payment";
+  useEffect(() => {
+    if (!awaiting) return;
+    supabase
+      .from("wallets")
+      .select("balance")
+      .maybeSingle()
+      .then(({ data }) => setBalance(Number(data?.balance ?? 0)));
+  }, [supabase, awaiting]);
+
+  async function payFromWallet() {
+    setPaying(true);
+    setError(null);
+    const { error } = await supabase.rpc("wallet_pay_order", { p_id: params.id, p_claim_token: claimToken });
+    setPaying(false);
+    if (error) return setError(error.message);
+    setArrival("paid");
+    window.setTimeout(() => setArrival(null), 2200);
+    refresh();
+  }
+
   async function pay() {
     setPaying(true);
     setError(null);
@@ -253,13 +276,28 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
               ? "The payment wasn't completed. Nothing was charged and the kitchen hasn't started."
               : "The kitchen starts once you've paid."}
           </p>
+          {balance >= Number(order.amount_due ?? Infinity) && (
+            <button
+              type="button"
+              onClick={payFromWallet}
+              disabled={paying}
+              className="mt-4 h-12 w-full rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
+            >
+              {`Pay ${sym}${Number(order.amount_due ?? 0).toFixed(2)} from wallet`}
+              <span className="ml-1 font-normal text-on/80">({sym}{balance.toFixed(2)})</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={pay}
             disabled={paying}
-            className="mt-4 h-12 w-full rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
+            className={`h-12 w-full rounded-full text-sm font-bold transition active:scale-[0.97] disabled:opacity-60 ${
+              balance >= Number(order.amount_due ?? Infinity)
+                ? "mt-2 bg-ink-50 text-ink-800 shadow-well hover:bg-ink-100"
+                : "mt-4 bg-brand-600 text-on shadow-sm hover:bg-brand-700"
+            }`}
           >
-            {paying ? "Opening payment…" : `Pay ${sym}${Number(order.amount_due ?? 0).toFixed(2)} with FPX`}
+            {paying ? "One moment…" : `Pay ${sym}${Number(order.amount_due ?? 0).toFixed(2)} with FPX`}
           </button>
         </div>
       )}
