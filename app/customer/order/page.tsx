@@ -5,6 +5,7 @@ import { PageHeader, SectionTitle, screen } from "@/components/customer/ui";
 import StorePicker from "@/components/order/StorePicker";
 import BannerCarousel from "@/components/order/BannerCarousel";
 import { billplzEnabled } from "@/lib/billplz";
+import { withLocations } from "@/lib/locate";
 import { outletLogos, type Banner, type PickupOutlet } from "@/lib/guest-order";
 
 // Order tab: pick a store, then dine in (scan the table QR) or pickup.
@@ -15,7 +16,7 @@ export default async function OrderPage() {
     outletLogos(supabase),
     supabase.rpc("wallet_banners"),
   ]);
-  const branches = (data ?? []) as PickupOutlet[];
+  const branches = await withLocations((data ?? []) as PickupOutlet[]);
   const pickupOpen = billplzEnabled();
 
   return (

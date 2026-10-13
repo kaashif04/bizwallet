@@ -126,7 +126,13 @@ export default function StorePicker({
               highlight === b.id ? "ring-2 ring-brand-500" : ""
             }`}
           >
-            <BranchCard b={b} logo={logos[b.id]} pickupOpen={pickupOpen} km={km.get(b.id) ?? null} />
+            <BranchCard
+              b={b}
+              logo={logos[b.id]}
+              pickupOpen={pickupOpen}
+              km={km.get(b.id) ?? null}
+              nearest={i === 0 && !query && km.get(b.id) != null}
+            />
           </motion.li>
         ))}
         {shown.length === 0 && (
@@ -137,7 +143,19 @@ export default function StorePicker({
   );
 }
 
-function BranchCard({ b, logo, pickupOpen, km }: { b: PickupOutlet; logo?: string; pickupOpen: boolean; km: number | null }) {
+function BranchCard({
+  b,
+  logo,
+  pickupOpen,
+  km,
+  nearest,
+}: {
+  b: PickupOutlet;
+  logo?: string;
+  pickupOpen: boolean;
+  km: number | null;
+  nearest: boolean;
+}) {
   const status = openLabel(b.open_now, b.today, b.hours);
   const pickupState: { href?: string; note: string } = !b.pickup
     ? { note: "Not offered here" }
@@ -171,6 +189,13 @@ function BranchCard({ b, logo, pickupOpen, km }: { b: PickupOutlet; logo?: strin
             {status.text}
           </span>
         )}
+        {km !== null && (
+          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-ink-900 shadow-sm">
+            <PinIcon />
+            {nearest && <span className="text-brand-700">Nearest ·</span>}
+            {km < 1 ? `${Math.max(10, Math.round(km * 100) * 10)} m` : `${km.toFixed(1)} km`}
+          </span>
+        )}
       </div>
 
       <div className="p-4">
@@ -180,11 +205,6 @@ function BranchCard({ b, logo, pickupOpen, km }: { b: PickupOutlet; logo?: strin
             <h3 className="truncate text-[17px] font-bold leading-tight text-ink-900">{b.name}</h3>
             <p className="truncate text-xs text-ink-500">{b.company}</p>
           </div>
-          {km !== null && (
-            <span className="shrink-0 pt-0.5 text-xs font-bold text-ink-600">
-              {km < 1 ? `${Math.max(10, Math.round(km * 100) * 10)} m` : `${km.toFixed(1)} km`}
-            </span>
-          )}
         </div>
         {b.tagline && <p className="mt-2 line-clamp-2 text-sm text-ink-700">{b.tagline}</p>}
         {b.address && (
