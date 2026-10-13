@@ -42,6 +42,8 @@ export default async function WalletPage() {
           currency={wallet?.currency ?? "MYR"}
           initialTxns={txns}
           topUpEnabled={billplzEnabled()}
+          // Off until the POS has its Wallet button (BizPos), then WALLET_COUNTER_PAY=1.
+          counterPay={process.env.WALLET_COUNTER_PAY === "1"}
         />
       </div>
 

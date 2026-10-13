@@ -15,14 +15,14 @@ const STEPS: Record<string, string> = {
   queued: "Sent to the kitchen",
   preparing: "Being prepared",
   ready: "Your order is ready",
-  served: "Served. Enjoy your meal.",
+  served: "Collected. Enjoy your meal.",
 };
 
 const TRACK = [
   { key: "queued", label: "Sent" },
   { key: "preparing", label: "Preparing" },
   { key: "ready", label: "Ready" },
-  { key: "served", label: "Served" },
+  { key: "served", label: "Collected" },
 ] as const;
 
 // Progress through the kitchen as a 0-based step; -1 = not accepted yet.
@@ -208,7 +208,9 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         : "The outlet couldn't take this order"
       : order.status === "awaiting_payment" || order.status === "pending"
         ? STEPS[order.status]
-        : STEPS[order.kitchen_status ?? "queued"];
+        : !order.table_label && order.kitchen_status === "ready"
+          ? "Ready. Collect it at the counter."
+          : STEPS[order.kitchen_status ?? "queued"];
   const stage: OrbStage =
     order.status === "rejected"
       ? "rejected"
@@ -302,7 +304,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         </div>
       )}
 
-      {order.status !== "rejected" && <Track step={step} />}
+      {order.status !== "rejected" && <Track step={step} pickup={!order.table_label} />}
       {order.status === "rejected" && order.reject_reason && order.reject_reason !== "Cancelled by customer" && (
         <p className="mt-2 text-center text-sm text-ink-500">{order.reject_reason}</p>
       )}
@@ -472,10 +474,12 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
   );
 }
 
-function Track({ step }: { step: number }) {
+// The kitchen stops at Ready; only pickups have a Collected step (POS staff tap it).
+function Track({ step, pickup }: { step: number; pickup: boolean }) {
+  const steps = pickup ? TRACK : TRACK.slice(0, 3);
   return (
-    <ol className="mt-6 grid grid-cols-4 gap-2" aria-label="Order progress">
-      {TRACK.map((t, i) => {
+    <ol className={`mt-6 grid gap-2 ${pickup ? "grid-cols-4" : "grid-cols-3"}`} aria-label="Order progress">
+      {steps.map((t, i) => {
         const done = i <= step;
         const current = i === step;
         return (
@@ -487,7 +491,7 @@ function Track({ step }: { step: number }) {
                 animate={{ width: done ? "100%" : "0%" }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: i * 0.04 }}
               />
-              {current && i < TRACK.length - 1 && (
+              {current && i < steps.length - 1 && (
                 <motion.div
                   className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent"
                   animate={{ x: ["-100%", "220%"] }}

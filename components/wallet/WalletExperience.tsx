@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import WalletBalanceCard from "./WalletBalanceCard";
 import TopUpPanel from "./TopUpPanel";
 import TransactionList from "./TransactionList";
+import PayAtCounter from "./PayAtCounter";
 import type { WalletTxn } from "@/lib/wallet-types";
 
 export default function WalletExperience({
@@ -12,11 +13,13 @@ export default function WalletExperience({
   currency,
   initialTxns,
   topUpEnabled,
+  counterPay,
 }: {
   initialBalance: number;
   currency: string;
   initialTxns: WalletTxn[];
   topUpEnabled: boolean;
+  counterPay: boolean;
 }) {
   // Back from Billplz: ?topup=1 paid (already credited by the return route), 0 not paid.
   const [returned, setReturned] = useState<"paid" | "unpaid" | null>(null);
@@ -67,6 +70,7 @@ export default function WalletExperience({
         )}
       </AnimatePresence>
       <WalletBalanceCard balance={initialBalance} currency={currency} />
+      {counterPay && <PayAtCounter balance={initialBalance} />}
       {topUpEnabled ? (
         <TopUpPanel currency={currency} onTopUp={handleTopUp} />
       ) : (

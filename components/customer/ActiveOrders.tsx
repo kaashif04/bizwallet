@@ -101,7 +101,9 @@ export default function ActiveOrders({
                 <div className="flex items-center gap-3">
                   <LiveDot stage={o.stage} />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-bold text-ink-900">{LABEL[o.stage]}</span>
+                    <span className="block truncate text-sm font-bold text-ink-900">
+                      {o.stage === "ready" && !o.table_label ? "Ready to collect" : LABEL[o.stage]}
+                    </span>
                     <span className="block truncate text-xs text-ink-500">
                       {names[o.outlet_id] ?? "Restaurant"} · {o.table_label ? `Table ${o.table_label}` : "Pickup"}
                     </span>
