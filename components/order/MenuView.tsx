@@ -18,6 +18,7 @@ export default function MenuView({
   items,
   currency,
   onItemClick,
+  intro,
 }: {
   title: string;
   subtitle: string;
@@ -26,6 +27,7 @@ export default function MenuView({
   items: MenuItem[]; // already in category display order
   currency: string;
   onItemClick: (item: MenuItem) => void;
+  intro?: React.ReactNode; // offers and best-sellers above the categories
 }) {
   const categories = useMemo(
     () => Array.from(new Set(items.map((i) => i.category))),
@@ -106,6 +108,7 @@ export default function MenuView({
 
       {/* Menu sections */}
       <div className="space-y-9 px-5 pb-44 pt-6">
+        {intro}
         {categories.map((cat) => (
           <section
             key={cat}

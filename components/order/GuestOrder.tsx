@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
 import type { MenuItem } from "@/lib/order-types";
-import { outletLogos, saveClaimToken, toMenu, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
+import { outletLogos, saveClaimToken, toMenu, type Banner, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
 import type { AccountState } from "./AccountChip";
 import { storeNames } from "@/lib/places";
 import JoinPrompt from "./JoinPrompt";
@@ -17,6 +17,8 @@ import AddToCartSheet from "./AddToCartSheet";
 import ViewCartBar from "./ViewCartBar";
 import { useSheet } from "./useSheet";
 import ActiveOrders from "@/components/customer/ActiveOrders";
+import BannerCarousel from "./BannerCarousel";
+import { CartUpsell, PairNudge, PopularRow, goesWith, type Suggestions } from "./Upsell";
 
 // ponytail: BizPos's guest_get_menu doesn't return a currency yet; every outlet is MYR today.
 const CURRENCY = "MYR";
@@ -34,6 +36,9 @@ export default function GuestOrder(
   const [sheetItem, setSheetItem] = useState<MenuItem | null>(null);
   const [reviewing, setReviewing] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
+  const [nudge, setNudge] = useState<{ item: MenuItem; after: string } | null>(null);
   // Loyalty is per company: this branch's company, its points rate, and
   // whether the signed-in member has joined it.
   const [loyalty, setLoyalty] = useState<{
@@ -53,6 +58,13 @@ export default function GuestOrder(
         const m = data as GuestMenu;
         setMenu(m);
         outletLogos(supabase).then((logos) => setLogoUrl(logos[m.outlet.id] ?? null));
+        // This outlet's offers (guests too), shown without the "order" tap: they're already here.
+        supabase
+          .rpc("wallet_banners", { p_outlet: m.outlet.id })
+          .then(({ data }) => setBanners(((data ?? []) as Banner[]).map((b) => ({ ...b, action: "none" }))));
+        supabase
+          .rpc("guest_menu_suggestions", { p_outlet: m.outlet.id })
+          .then(({ data }) => data && setSuggestions(data as Suggestions));
         loadLoyalty(m.outlet.id);
       });
 
@@ -91,6 +103,25 @@ export default function GuestOrder(
     () => (menu ? toMenu(menu) : { items: [], groupsByItem: {} }),
     [menu]
   );
+
+  // A dish just went into the cart: suggest the one most often ordered with it
+  // here, for a few seconds. Lines already in the cart on arrival don't count.
+  const counted = useRef<Record<string, number> | null>(null);
+  useEffect(() => {
+    const now: Record<string, number> = {};
+    cart.lines.forEach((l) => (now[l.item.id] = (now[l.item.id] ?? 0) + l.quantity));
+    const before = counted.current;
+    counted.current = now;
+    if (!before || !suggestions) return;
+    const added = cart.lines.find((l) => now[l.item.id] > (before[l.item.id] ?? 0))?.item;
+    const partner = added && (suggestions.pairs[added.id] ?? []).map((id) => items.find((i) => i.id === id)).find((i) => i && !now[i.id]);
+    if (added && partner) setNudge({ item: partner, after: added.name });
+  }, [cart.lines, suggestions, items]);
+  useEffect(() => {
+    if (!nudge) return;
+    const t = window.setTimeout(() => setNudge(null), 7000);
+    return () => window.clearTimeout(t);
+  }, [nudge]);
 
   if (loadError) {
     return (
@@ -137,6 +168,16 @@ export default function GuestOrder(
     );
   }
 
+  const byId = new Map(items.map((i) => [i.id, i]));
+  const oneTap = new Map(items.filter((i) => !groupsByItem[i.id]?.length).map((i) => [i.id, i]));
+  const popular = (suggestions?.popular ?? []).map((id) => byId.get(id)).filter((i): i is MenuItem => !!i);
+  const addSuggested = (item: MenuItem) => {
+    setNudge(null);
+    // Dishes with choices (size, sugar…) open their sheet; the rest go straight in.
+    if (groupsByItem[item.id]?.length) setSheetItem(item);
+    else cart.add(item, 1, []);
+  };
+
   const account: AccountState = !loyalty
     ? null
     : loyalty.member
@@ -163,7 +204,28 @@ export default function GuestOrder(
         items={items}
         currency={CURRENCY}
         onItemClick={setSheetItem}
+        intro={
+          (banners.length > 0 || popular.length >= 3) && (
+            <>
+              <BannerCarousel banners={banners} branches={[]} pickupOpen={false} />
+              <PopularRow items={popular} currency={CURRENCY} onPick={addSuggested} />
+            </>
+          )
+        }
       />
+
+      <AnimatePresence>
+        {nudge && !reviewing && !sheetItem && (
+          <PairNudge
+            key={nudge.item.id}
+            item={nudge.item}
+            after={nudge.after}
+            currency={CURRENCY}
+            onAdd={() => addSuggested(nudge.item)}
+            onDismiss={() => setNudge(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {!reviewing && <ViewCartBar currency={CURRENCY} onClick={() => setReviewing(true)} />}
 
@@ -185,6 +247,7 @@ export default function GuestOrder(
             onlinePay={props.onlinePay ?? true}
             pointsPerRm={loyalty?.pointsPerRm ?? null}
             company={loyalty?.company ?? null}
+            upsell={goesWith(cart.lines.map((l) => l.item), suggestions, oneTap, 4)}
             onClose={() => setReviewing(false)}
             onPlaced={(id, paid) => {
               // The sheet would drop its history entry on close (history.back),
@@ -204,6 +267,7 @@ function CartReview({
   menu,
   token,
   onlinePay,
+  upsell,
   pointsPerRm,
   company,
   onClose,
@@ -212,6 +276,7 @@ function CartReview({
   menu: GuestMenu;
   token?: string;
   onlinePay: boolean;
+  upsell: MenuItem[];
   pointsPerRm: number | null;
   company: string | null;
   onClose: () => void;
@@ -436,6 +501,8 @@ function CartReview({
             className="w-full resize-none rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-[15px] outline-none transition focus:border-brand-400 focus:bg-white"
           />
         </label>
+
+        <CartUpsell items={upsell} currency={CURRENCY} onAdd={(i) => cart.add(i, 1, [])} />
 
         {service > 0 && (
           <div className="mt-5 space-y-1 text-sm text-ink-500">

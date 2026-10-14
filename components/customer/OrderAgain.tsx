@@ -24,7 +24,7 @@ export default function OrderAgain({
   const sym = currencySymbol(currency);
 
   return (
-    <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="-mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {orders.map((o, i) => (
         <motion.div
           key={o.id}
