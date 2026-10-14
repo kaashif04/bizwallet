@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
 import { currencySymbol } from "@/lib/format";
 
-const PRESETS = [20, 50, 100, 200];
+const PRESETS = [30, 50, 100, 200];
 const MAX = 1000;
 
 type Status = "idle" | "loading" | "success";
@@ -22,6 +23,15 @@ export default function TopUpPanel({
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [lastAmount, setLastAmount] = useState(0);
+
+  // Bonus credit BizWallet adds to a top-up (wallet_topup_bonuses), highest tier first.
+  const [tiers, setTiers] = useState<{ min: number; bonus: number }[]>([]);
+  useEffect(() => {
+    createClient()
+      .rpc("wallet_topup_bonuses")
+      .then(({ data }) => Array.isArray(data) && setTiers(data));
+  }, []);
+  const bonusFor = (a: number) => tiers.find((t) => a >= t.min)?.bonus ?? 0;
 
   const amount = custom ? parseFloat(custom) : preset ?? 0;
   const valid = Number.isFinite(amount) && amount >= 1 && amount <= MAX;
@@ -48,7 +58,9 @@ export default function TopUpPanel({
     <div className="rounded-2xl bg-white p-5">
       <h2 className="font-bold text-ink-900">Top up your wallet</h2>
       <p className="mt-0.5 text-xs text-ink-500">
-        Pay with FPX online banking. Your balance updates once the bank confirms.
+        {tiers.length
+          ? `Get up to ${sym}${tiers[0].bonus} free credit on top. Pay with FPX online banking.`
+          : "Pay with FPX online banking. Your balance updates once the bank confirms."}
       </p>
 
       {/* Preset amounts */}
@@ -64,14 +76,22 @@ export default function TopUpPanel({
                 setPreset(p);
                 setCustom("");
               }}
-              className={`rounded-full py-3 text-center text-base font-bold transition ${
+              className={`flex flex-col items-center rounded-2xl py-2.5 text-center text-base font-bold transition ${
                 active
                   ? "bg-brand-600 text-on shadow-sm"
                   : "bg-ink-50 text-ink-700 shadow-well hover:bg-ink-100"
               }`}
             >
-              {sym}
-              {p}
+              <span>
+                {sym}
+                {p}
+              </span>
+              {bonusFor(p) > 0 && (
+                <span className={`text-xs font-semibold ${active ? "text-on/85" : "text-emerald-700"}`}>
+                  +{sym}
+                  {bonusFor(p)} bonus
+                </span>
+              )}
             </motion.button>
           );
         })}
@@ -145,6 +165,7 @@ export default function TopUpPanel({
             >
               Top up {sym}
               {valid ? amount.toFixed(2) : "0.00"}
+              {valid && bonusFor(amount) > 0 && `, get ${sym}${(amount + bonusFor(amount)).toFixed(2)}`}
             </motion.span>
           )}
         </AnimatePresence>

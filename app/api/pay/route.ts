@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { billplzEnabled, createBill, getBill } from "@/lib/billplz";
 import { confirmBill } from "@/lib/pickup-payment";
 
-// Start (or resume) paying for a pickup order. Returns the Billplz page to
+// Start (or resume) paying for an order (pickup, or dine-in paid in the app). Returns the Billplz page to
 // send the customer to, or { paid: true } if it's already paid.
 export async function POST(request: Request) {
   if (!billplzEnabled()) {
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const { data: order } = await admin
     .from("guest_orders")
-    .select("id, claim_token, status, amount_due, payment_ref, outlet_id, created_at")
+    .select("id, claim_token, status, amount_due, payment_ref, outlet_id, created_at, table_id")
     .eq("id", order_id)
     .maybeSingle();
   if (!order || order.claim_token !== claim_token) {
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       email: user.email,
       name: member?.full_name || user.email.split("@")[0],
       amountSen: Math.round(Number(order.amount_due) * 100),
-      description: `Pickup order at ${outlet?.name ?? "BizWallet"}`,
+      description: `${order.table_id ? "Dine-in" : "Pickup"} order at ${outlet?.name ?? "BizWallet"}`,
       callbackUrl: `${origin}/api/pay/billplz/callback`,
       redirectUrl: `${origin}/api/pay/billplz/return?order=${order.id}`,
       reference: order.id,

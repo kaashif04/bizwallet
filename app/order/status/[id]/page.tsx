@@ -320,7 +320,9 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
       {order.status !== "rejected" && order.status !== "awaiting_payment" && (
         <p className="mt-6 rounded-2xl bg-white px-4 py-3 text-sm font-medium text-ink-800">
           {order.paid
-            ? order.table_label ? "Paid. Thank you." : "Paid online. Collect it at the counter when it's ready."
+            ? order.table_label
+              ? "Paid. Your food comes to your table, and you can leave when you're done."
+              : "Paid. Collect it at the counter when it's ready."
             : "Pay at the counter when you're done."}
         </p>
       )}

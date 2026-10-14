@@ -21,7 +21,9 @@ import ActiveOrders from "@/components/customer/ActiveOrders";
 const CURRENCY = "MYR";
 
 export default function GuestOrder(
-  props: { token: string; outletId?: never } | { outletId: string; token?: never }
+  props: ({ token: string; outletId?: never } | { outletId: string; token?: never }) & {
+    onlinePay?: boolean; // FPX is set up (Billplz); wallet credit works regardless
+  }
 ) {
   const router = useRouter();
   const cart = useCart();
@@ -178,6 +180,7 @@ export default function GuestOrder(
             key="review"
             menu={menu}
             token={props.token}
+            onlinePay={props.onlinePay ?? true}
             pointsPerRm={loyalty?.pointsPerRm ?? null}
             company={loyalty?.company ?? null}
             onClose={() => setReviewing(false)}
@@ -198,6 +201,7 @@ export default function GuestOrder(
 function CartReview({
   menu,
   token,
+  onlinePay,
   pointsPerRm,
   company,
   onClose,
@@ -205,6 +209,7 @@ function CartReview({
 }: {
   menu: GuestMenu;
   token?: string;
+  onlinePay: boolean;
   pointsPerRm: number | null;
   company: string | null;
   onClose: () => void;
@@ -222,7 +227,10 @@ function CartReview({
       .from("members")
       .select("full_name")
       .maybeSingle()
-      .then(({ data }) => setMemberName(data?.full_name?.trim() || null));
+      .then(({ data }) => {
+        setSignedIn(!!data);
+        setMemberName(data?.full_name?.trim() || null);
+      });
     supabase
       .from("wallets")
       .select("balance")
@@ -230,30 +238,37 @@ function CartReview({
       .then(({ data }) => {
         const b = Number(data?.balance ?? 0);
         setBalance(b);
-        if (b > 0 && b >= (due ?? cart.totalPrice)) setPayWith("wallet");
+        if (pickup && b > 0 && b >= (due ?? cart.totalPrice)) setPayWith("wallet");
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on open
   }, [supabase]);
-  // Pickup can be paid from wallet credit or by FPX.
+  // Pickup is paid first (wallet or FPX); dine-in may pay now or at the counter.
+  const [signedIn, setSignedIn] = useState(false);
   const [balance, setBalance] = useState(0);
-  const [payWith, setPayWith] = useState<"wallet" | "fpx">("fpx");
+  const [payWith, setPayWith] = useState<"counter" | "wallet" | "fpx">(token ? "counter" : "fpx");
   const [note, setNote] = useState("");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // One id per submission, reused on retry so a flaky network never duplicates the order.
   const requestId = useRef<string | null>(null);
 
-  const charges = [
-    menu.tax.service_charge_enabled && "service charge",
-    menu.tax.sst_enabled && "SST",
-  ].filter(Boolean);
-  // What pickup will charge. Exact with service charge only (BizPos rounds it the same way);
-  // SST depends on which dishes carry it, so with SST on the total is confirmed at payment.
-  const service = menu.tax.service_charge_enabled
-    ? Math.round(cart.totalPrice * Number(menu.tax.service_charge_rate)) / 100
-    : 0;
   const pickup = !token;
-  const due = pickup && !menu.tax.sst_enabled ? cart.totalPrice + service : null;
+  // Service charge is for dine-in only. The total is exact without SST (BizPos rounds
+  // the same way); SST depends on which dishes carry it, so then it's confirmed at payment.
+  const service =
+    !pickup && menu.tax.service_charge_enabled
+      ? Math.round(cart.totalPrice * Number(menu.tax.service_charge_rate)) / 100
+      : 0;
+  const due = menu.tax.sst_enabled ? null : cart.totalPrice + service;
+  const charges = [service > 0 && "service charge", menu.tax.sst_enabled && "SST"].filter(Boolean);
+  const payNow = pickup || payWith !== "counter";
+  const methods = (
+    [
+      !pickup && (["counter", "Pay at counter", "When you're done"] as const),
+      balance > 0 && (["wallet", "Wallet credit", `${sym}${balance.toFixed(2)} available`] as const),
+      onlinePay && (["fpx", "Online banking", "FPX"] as const),
+    ] as const
+  ).filter((m) => !!m) as (readonly ["counter" | "wallet" | "fpx", string, string])[];
 
   async function place() {
     setPlacing(true);
@@ -265,6 +280,7 @@ function CartReview({
         ...(token ? { table_token: token } : { outlet_id: menu.outlet.id }),
         customer_name: memberName ?? (name.trim() || undefined),
         note: note.trim() || undefined,
+        pay_now: payNow || undefined,
         items: cart.lines.map((l) => ({
           menu_item_id: l.item.id,
           quantity: l.quantity,
@@ -280,7 +296,7 @@ function CartReview({
     saveClaimToken(data.id, data.claim_token, window.location.pathname);
     if (data.status !== "awaiting_payment") return onPlaced(data.id);
 
-    // Pickup: pay first; the kitchen only sees it once paid.
+    // Paying now (pickup always): the kitchen only sees it once paid.
     if (payWith === "wallet") {
       const { error: payError } = await supabase.rpc("wallet_pay_order", {
         p_id: data.id,
@@ -419,7 +435,7 @@ function CartReview({
           />
         </label>
 
-        {due !== null && service > 0 && (
+        {service > 0 && (
           <div className="mt-5 space-y-1 text-sm text-ink-500">
             <div className="flex justify-between">
               <span>Subtotal</span>
@@ -437,7 +453,7 @@ function CartReview({
             </div>
           </div>
         )}
-        <div className={`flex items-baseline justify-between ${due !== null && service > 0 ? "mt-2" : "mt-5"}`}>
+        <div className={`flex items-baseline justify-between ${service > 0 ? "mt-2" : "mt-5"}`}>
           <span className="text-sm text-ink-600">{due !== null ? "Total" : "Subtotal"}</span>
           <span className="text-2xl font-bold tabular-nums text-ink-900">
             {sym}
@@ -445,21 +461,31 @@ function CartReview({
           </span>
         </div>
         <p className="mt-1 text-xs text-ink-500">
+          {due === null && `${charges.join(" and ")} added to the total. `}
           {pickup
-            ? `Paid before it's made${charges.length && due === null ? `, ${charges.join(" and ")} added at payment` : ""}. The kitchen starts once you've paid.`
-            : `${charges.length ? `Final price with ${charges.join(" and ")} is confirmed at the counter. ` : ""}Pay at the counter when you're done.`}
+            ? "Paid before it's made. The kitchen starts once you've paid."
+            : payNow
+              ? "Pay now and you can leave when you're done eating."
+              : "Pay at the counter when you're done."}
         </p>
 
-        {pickup && balance > 0 && (
+        {!pickup && !signedIn && (
+          <p className="mt-3 text-xs text-ink-500">
+            Want to pay from your phone?{" "}
+            <Link
+              href={`/login?redirect=${encodeURIComponent(typeof window === "undefined" ? "/" : window.location.pathname)}`}
+              className="font-bold text-brand-700"
+            >
+              Sign in
+            </Link>
+          </p>
+        )}
+
+        {(pickup ? methods.length > 1 : signedIn && methods.length > 1) && (
           <fieldset className="mt-4">
             <legend className="mb-2 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Pay with</legend>
-            <div className="grid grid-cols-2 gap-2">
-              {(
-                [
-                  ["wallet", "Wallet credit", `${sym}${balance.toFixed(2)} available`],
-                  ["fpx", "Online banking", "FPX"],
-                ] as const
-              ).map(([value, label, hint]) => (
+            <div className={`grid gap-2 ${methods.length > 2 ? "grid-cols-3" : "grid-cols-2"}`}>
+              {methods.map(([value, label, hint]) => (
                 <label
                   key={value}
                   className={`cursor-pointer rounded-xl px-3 py-2.5 transition ${
@@ -508,7 +534,17 @@ function CartReview({
           disabled={placing}
           className="mt-5 h-14 w-full rounded-full bg-brand-600 px-5 text-base font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
         >
-          {placing ? (pickup ? (payWith === "wallet" ? "Paying…" : "Opening payment…") : "Sending…") : error ? "Try again" : pickup ? "Pay and place order" : "Place order"}
+          {placing
+            ? payNow
+              ? payWith === "wallet"
+                ? "Paying…"
+                : "Opening payment…"
+              : "Sending…"
+            : error
+              ? "Try again"
+              : payNow
+                ? `Pay${due !== null ? ` ${sym}${due.toFixed(2)}` : ""} and place order`
+                : "Place order"}
         </button>
         <button
           type="button"

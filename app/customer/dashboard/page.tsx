@@ -125,7 +125,7 @@ export default async function CustomerDashboardPage({
               <path d="M5 8h14l-1 12H6L5 8Z" />
               <path d="M9 8V6a3 3 0 0 1 6 0v2" />
             </Tile>
-            <Tile href="/customer/wallet" title={`RM${Number(wallet?.balance ?? 0).toFixed(2)}`} note="Wallet">
+            <Tile href="/customer/wallet" title={`RM${Number(wallet?.balance ?? 0).toFixed(2)}`} note="Top-up bonus">
               <rect x="3" y="6" width="18" height="13" rx="3" />
               <path d="M3 10h18M16 15h2" />
             </Tile>
