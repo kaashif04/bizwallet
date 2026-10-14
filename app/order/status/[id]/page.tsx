@@ -130,8 +130,9 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
 
   // Anon can't subscribe to realtime on BizPos tables, so poll.
   // Prepaid pickup is paid from the start, so keep following the kitchen until it's ready.
+  const ended = order?.status === "rejected" || order?.status === "cancelled";
   const done =
-    order?.status === "rejected" ||
+    ended ||
     (order?.paid && order.member_linked && ["ready", "served"].includes(order.kitchen_status ?? ""));
   useEffect(() => {
     refresh();
@@ -139,6 +140,12 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
     const t = window.setInterval(refresh, 5000);
     return () => window.clearInterval(t);
   }, [refresh, done]);
+  // Back from another app or a locked phone: show the live order straight away.
+  useEffect(() => {
+    const onShow = () => document.visibilityState === "visible" && refresh();
+    document.addEventListener("visibilitychange", onShow);
+    return () => document.removeEventListener("visibilitychange", onShow);
+  }, [refresh]);
 
   const refundOwed = order?.status === "rejected" && order.paid;
   useEffect(() => {
@@ -202,7 +209,9 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
 
   const sym = currencySymbol("MYR");
   const headline =
-    order.status === "rejected"
+    order.status === "cancelled"
+      ? "Your order was cancelled by the restaurant"
+      : order.status === "rejected"
       ? order.reject_reason === "Cancelled by customer"
         ? "Order cancelled"
         : "The outlet couldn't take this order"
@@ -212,7 +221,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           ? "Ready. Collect it at the counter."
           : STEPS[order.kitchen_status ?? "queued"];
   const stage: OrbStage =
-    order.status === "rejected"
+    order.status === "rejected" || order.status === "cancelled"
       ? "rejected"
       : order.status === "awaiting_payment"
         ? "pay"
@@ -304,7 +313,12 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         </div>
       )}
 
-      {order.status !== "rejected" && <Track step={step} pickup={!order.table_label} />}
+      {!ended && <Track step={step} pickup={!order.table_label} />}
+      {order.status === "cancelled" && (
+        <p className="mt-2 text-center text-sm text-ink-500">
+          {order.paid ? "The restaurant will refund what you paid." : "No payment was taken."}
+        </p>
+      )}
       {order.status === "rejected" && order.reject_reason && order.reject_reason !== "Cancelled by customer" && (
         <p className="mt-2 text-center text-sm text-ink-500">{order.reject_reason}</p>
       )}
@@ -317,7 +331,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         </p>
       )}
 
-      {order.status !== "rejected" && order.status !== "awaiting_payment" && (
+      {!ended && order.status !== "awaiting_payment" && (
         <p className="mt-6 rounded-2xl bg-white px-4 py-3 text-sm font-medium text-ink-800">
           {order.paid
             ? order.table_label
@@ -343,7 +357,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
           <path d="M8 3v10M3 8h10" />
         </svg>
-        {order.status === "rejected" ? "Back to the menu" : order.paid ? "Order again" : "Order more"}
+        {ended ? "Back to the menu" : order.paid ? "Order again" : "Order more"}
       </button>
         </>
       )}
@@ -362,6 +376,17 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
             <span className="shrink-0 tabular-nums text-slate-700">
               {sym}
               {((Number(i.unit_price) + Number(i.modifier_delta)) * i.quantity).toFixed(2)}
+            </span>
+          </li>
+        ))}
+        {(order.cancelled_items ?? []).map((c, n) => (
+          <li key={`x${n}`} className="py-3 text-sm">
+            <span className="block text-ink-400 line-through">
+              {c.quantity} × {c.name}
+            </span>
+            {c.options && <span className="block text-xs text-ink-400 line-through">{c.options}</span>}
+            <span className="mt-0.5 block text-xs font-semibold text-rose-700">
+              Cancelled by the restaurant{c.reason ? ` · ${c.reason}` : ""}
             </span>
           </li>
         ))}

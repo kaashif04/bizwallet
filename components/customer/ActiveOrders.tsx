@@ -48,9 +48,12 @@ export default function ActiveOrders({
       });
     load();
     const t = window.setInterval(load, 10_000);
+    const onShow = () => document.visibilityState === "visible" && load();
+    document.addEventListener("visibilitychange", onShow);
     return () => {
       alive = false;
       window.clearInterval(t);
+      document.removeEventListener("visibilitychange", onShow);
     };
   }, [supabase]);
 

@@ -34,7 +34,8 @@ export type GuestMenu = {
 };
 
 export type GuestOrderStatus = {
-  status: "awaiting_payment" | "pending" | "accepted" | "rejected";
+  // cancelled: accepted, then staff voided every item (or the whole bill) in BizPos
+  status: "awaiting_payment" | "pending" | "accepted" | "rejected" | "cancelled";
   amount_due: number | null;
   reject_reason: string | null;
   table_label: string | null;
@@ -46,6 +47,8 @@ export type GuestOrderStatus = {
     modifier_delta: number;
     modifier_summary: string;
   }[];
+  // Items staff voided from this order (the rest of the order goes ahead).
+  cancelled_items?: { name: string; quantity: number; options: string | null; reason: string | null; at: string }[];
   kitchen_status: "queued" | "preparing" | "ready" | "served" | null;
   paid: boolean;
   member_linked: boolean;
