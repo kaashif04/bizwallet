@@ -14,7 +14,6 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // One company's rewards (spent from its points) and the vouchers to use there.
 export default function RewardsCatalog({
   onClose,
-  company,
   points,
   userId,
   rewards,
@@ -22,7 +21,6 @@ export default function RewardsCatalog({
   onRedeemed,
 }: {
   onClose: () => void;
-  company: string;
   points: number;
   userId: string | null;
   rewards: Reward[];
@@ -85,7 +83,7 @@ export default function RewardsCatalog({
 
         <div className="max-h-[80vh] overflow-y-auto px-5 pb-6 pt-3">
           <div className="flex items-center justify-between">
-            <h2 className="min-w-0 text-lg font-bold leading-tight text-ink-900">Rewards at {company}</h2>
+            <h2 className="min-w-0 text-lg font-bold leading-tight text-ink-900">Rewards</h2>
             <span className="rounded-full bg-brand-100 px-3 py-1 text-sm font-bold text-brand-700">
               {localPoints.toLocaleString()} pts
             </span>
@@ -107,7 +105,7 @@ export default function RewardsCatalog({
                 {success.reward} unlocked
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                Show this code at the counter at {company}:
+                Show this code at the counter:
               </p>
               <div className="mt-4 rounded-2xl border-2 border-dashed border-brand-300 bg-brand-50 px-6 py-4 font-mono text-2xl font-bold tracking-widest text-brand-700">
                 {success.code}
@@ -129,7 +127,7 @@ export default function RewardsCatalog({
                     {[...vouchers]
                       .sort((a, b) => Number(a.status !== "active") - Number(b.status !== "active"))
                       .map((v) => (
-                        <VoucherCard key={v.id} v={v} company={company} />
+                        <VoucherCard key={v.id} v={v} />
                       ))}
                   </ul>
                 </section>
@@ -203,7 +201,7 @@ export default function RewardsCatalog({
 }
 
 // Staff type the code at the counter (BizPos: Discount, Promo or voucher code).
-function VoucherCard({ v, company }: { v: Voucher; company: string }) {
+function VoucherCard({ v }: { v: Voucher }) {
   const [copied, setCopied] = useState(false);
   const active = v.status === "active";
   const worth =
@@ -250,7 +248,7 @@ function VoucherCard({ v, company }: { v: Voucher; company: string }) {
         {copied ? "Copied" : v.code}
       </button>
       <p className="mt-2 text-center text-xs text-ink-500">
-        {company} · {active ? "show this code at the counter" : "already used"}
+        {active ? "Show this code at the counter" : "Already used"}
       </p>
     </li>
   );

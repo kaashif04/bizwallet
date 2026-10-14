@@ -9,7 +9,7 @@ import ActiveOrders from "@/components/customer/ActiveOrders";
 import { SectionTitle, screen } from "@/components/customer/ui";
 import BannerCarousel from "@/components/order/BannerCarousel";
 import { billplzEnabled } from "@/lib/billplz";
-import { groupBy, storeNames, type Place, type Reward, type Voucher } from "@/lib/places";
+import { groupBy, type Place, type Reward, type Voucher } from "@/lib/places";
 import { outletLogos, type Banner, type PickupOutlet } from "@/lib/guest-order";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -43,8 +43,6 @@ export default async function CustomerDashboardPage({
     { data: branchData },
     logos,
     { data: bannerData },
-    { data: orderedGuest },
-    { data: orderedBills },
   ] = await Promise.all([
     supabase.from("members").select("full_name").eq("id", uid).maybeSingle(),
     supabase.from("wallets").select("balance, currency").eq("user_id", uid).maybeSingle(),
@@ -59,22 +57,13 @@ export default async function CustomerDashboardPage({
     supabase.rpc("guest_list_outlets"),
     outletLogos(supabase),
     supabase.rpc("wallet_banners"),
-    // Branches I've ordered from: QR/pickup orders and counter bills.
-    supabase.from("guest_orders").select("outlet_id").eq("member_id", uid).neq("status", "rejected").limit(500),
-    supabase.from("transactions").select("outlet_id").eq("member_id", uid).limit(500),
   ]);
-  const orderedAt = new Set([...(orderedGuest ?? []), ...(orderedBills ?? [])].map((r) => r.outlet_id as string));
   const pickupOpen = billplzEnabled();
 
   const branches = (branchData ?? []) as PickupOutlet[];
   const branchName = new Map(branches.map((b) => [b.id, b.name]));
-  // Loyalty is per company: rewards and vouchers of the companies I've joined.
-  // Home shows only the branches I've ordered from; the Order tab lists them all.
-  const places = ((placeData ?? []) as Place[]).map((p) => ({
-    ...p,
-    company: storeNames(p.branches.map((b) => b.name), p.company),
-    branches: p.branches.filter((b) => orderedAt.has(b.id)),
-  }));
+  // Loyalty is per company: points work at every outlet of the company.
+  const places = (placeData ?? []) as Place[];
   const companyIds = places.map((p) => p.company_id);
   const [{ data: rewardRows }, { data: voucherRows }] = companyIds.length
     ? await Promise.all([
