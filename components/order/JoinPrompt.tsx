@@ -52,7 +52,7 @@ export default function JoinPrompt({
             <motion.div key="ask" exit={{ opacity: 0 }} className="p-4">
               <p className="font-bold text-ink-900">Join {company} rewards</p>
               <p className="mt-0.5 text-xs text-ink-500">
-                Earn {pointsPerRm === 1 ? "1 point" : `${pointsPerRm} points`} per RM1 at every {company} branch.
+                Earn {pointsPerRm === 1 ? "1 point" : `${pointsPerRm} points`} per RM1 at {company}.
               </p>
               <label className="mt-3 flex items-center gap-2 text-sm text-ink-700">
                 <input

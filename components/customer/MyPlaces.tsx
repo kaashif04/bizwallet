@@ -94,7 +94,7 @@ export default function MyPlaces({
                 <span className="relative flex items-center gap-3">
                   <BranchLogo name={p.company} logoUrl={logo} className="h-10 w-10 rounded-xl text-base" />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-bold">{p.company}</span>
+                    <span className="line-clamp-2 font-bold leading-tight">{p.company}</span>
                     <span className="block text-xs text-on/80">
                       {p.branches.length
                         ? `${p.branches.length} ${p.branches.length === 1 ? "branch" : "branches"} you've ordered from`

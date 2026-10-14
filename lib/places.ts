@@ -35,5 +35,14 @@ export type Voucher = {
   used_at: string | null;
 };
 
+// Customers know the restaurants, not the company behind them: "A1 Bistro & Kiya's
+// Restaurant". Points are shared across a company, so every restaurant is named.
+export function storeNames(names: string[], fallback: string): string {
+  const u = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
+  if (u.length <= 1) return u[0] ?? fallback;
+  if (u.length === 2) return `${u[0]} & ${u[1]}`;
+  return `${u[0]}, ${u[1]} +${u.length - 2} more`;
+}
+
 export const groupBy = <T extends { company_id: string }>(rows: T[]) =>
   rows.reduce<Record<string, T[]>>((m, r) => ((m[r.company_id] ??= []).push(r), m), {});

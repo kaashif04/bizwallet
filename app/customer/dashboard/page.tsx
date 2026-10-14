@@ -9,7 +9,7 @@ import ActiveOrders from "@/components/customer/ActiveOrders";
 import { SectionTitle, screen } from "@/components/customer/ui";
 import BannerCarousel from "@/components/order/BannerCarousel";
 import { billplzEnabled } from "@/lib/billplz";
-import { groupBy, type Place, type Reward, type Voucher } from "@/lib/places";
+import { groupBy, storeNames, type Place, type Reward, type Voucher } from "@/lib/places";
 import { outletLogos, type Banner, type PickupOutlet } from "@/lib/guest-order";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -72,6 +72,7 @@ export default async function CustomerDashboardPage({
   // Home shows only the branches I've ordered from; the Order tab lists them all.
   const places = ((placeData ?? []) as Place[]).map((p) => ({
     ...p,
+    company: storeNames(p.branches.map((b) => b.name), p.company),
     branches: p.branches.filter((b) => orderedAt.has(b.id)),
   }));
   const companyIds = places.map((p) => p.company_id);

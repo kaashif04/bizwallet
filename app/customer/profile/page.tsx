@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import BottomNav from "@/components/customer/BottomNav";
 import { PageHeader, screen } from "@/components/customer/ui";
 import ProfileView, { type ProfileData } from "@/components/customer/ProfileView";
-import type { Place } from "@/lib/places";
+import { storeNames, type Place } from "@/lib/places";
 
 const DEMO: ProfileData = {
   name: "Aisyah",
@@ -49,7 +49,7 @@ export default async function ProfilePage() {
         phoneVerified: profile?.phone_verified ?? false,
         places: ((placeData ?? []) as Place[]).map((p) => ({
           companyId: p.company_id,
-          company: p.company,
+          company: storeNames(p.branches.map((b) => b.name), p.company),
           consent: p.marketing_consent,
         })),
         memberSince: profile?.created_at

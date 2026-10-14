@@ -85,7 +85,7 @@ export default function RewardsCatalog({
 
         <div className="max-h-[80vh] overflow-y-auto px-5 pb-6 pt-3">
           <div className="flex items-center justify-between">
-            <h2 className="min-w-0 truncate text-lg font-bold text-ink-900">Rewards at {company}</h2>
+            <h2 className="min-w-0 text-lg font-bold leading-tight text-ink-900">Rewards at {company}</h2>
             <span className="rounded-full bg-brand-100 px-3 py-1 text-sm font-bold text-brand-700">
               {localPoints.toLocaleString()} pts
             </span>

@@ -9,6 +9,7 @@ import { currencySymbol } from "@/lib/format";
 import type { MenuItem } from "@/lib/order-types";
 import { outletLogos, saveClaimToken, toMenu, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
 import type { AccountState } from "./AccountChip";
+import { storeNames } from "@/lib/places";
 import JoinPrompt from "./JoinPrompt";
 import { useCart } from "./cart-context";
 import MenuView from "./MenuView";
@@ -60,7 +61,8 @@ export default function GuestOrder(
         supabase.rpc("guest_list_outlets"),
         supabase.auth.getUser(),
       ]);
-      const o = ((outlets ?? []) as PickupOutlet[]).find((x) => x.id === outletId);
+      const all = (outlets ?? []) as PickupOutlet[];
+      const o = all.find((x) => x.id === outletId);
       if (!o) return;
       const { data: prog } = await supabase
         .from("loyalty_programs")
@@ -69,7 +71,7 @@ export default function GuestOrder(
         .maybeSingle();
       const base = {
         companyId: o.company_id,
-        company: o.company,
+        company: storeNames(all.filter((x) => x.company_id === o.company_id).map((x) => x.name), o.company),
         pointsPerRm: prog?.is_enabled === false ? null : Number(prog?.points_per_rm ?? 1),
         member: false,
         joined: false,

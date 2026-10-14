@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import BranchLogo from "./BranchLogo";
 import type { PickupOutlet } from "@/lib/guest-order";
 import { openLabel } from "@/lib/hours";
+import { storeNames } from "@/lib/places";
 
 // A banner tap asks the picker to show a branch or a company's branches.
 export const STORES_EVENT = "bizwallet:stores";
@@ -107,7 +108,10 @@ export default function StorePicker({
           onClick={() => setCompany(null)}
           className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-bold text-brand-700"
         >
-          {branches.find((b) => b.company_id === company)?.company}
+          {storeNames(
+            branches.filter((b) => b.company_id === company).map((b) => b.name),
+            "Show all"
+          )}
           <span aria-hidden="true">✕</span>
           <span className="sr-only">Show all stores</span>
         </button>
@@ -199,11 +203,10 @@ function BranchCard({
       </div>
 
       <div className="p-4">
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           {b.cover_url && <BranchLogo name={b.name} logoUrl={logo} className="h-10 w-10 rounded-xl text-base" />}
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-[17px] font-bold leading-tight text-ink-900">{b.name}</h3>
-            <p className="truncate text-xs text-ink-500">{b.company}</p>
           </div>
         </div>
         {b.tagline && <p className="mt-2 line-clamp-2 text-sm text-ink-700">{b.tagline}</p>}
