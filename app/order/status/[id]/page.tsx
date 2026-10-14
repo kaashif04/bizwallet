@@ -364,13 +364,39 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           </li>
         ))}
       </ul>
-      <div className="mt-3 flex justify-between px-4 text-sm font-bold">
-        <span>Subtotal</span>
-        <span className="tabular-nums">
-          {sym}
-          {Number(order.subtotal).toFixed(2)}
-        </span>
-      </div>
+      {Number(order.amount_due ?? 0) > Number(order.subtotal) ? (
+        <div className="mt-3 space-y-1 px-4 text-sm">
+          <div className="flex justify-between text-ink-500">
+            <span>Subtotal</span>
+            <span className="tabular-nums">
+              {sym}
+              {Number(order.subtotal).toFixed(2)}
+            </span>
+          </div>
+          <div className="flex justify-between text-ink-500">
+            <span>Service charge &amp; tax</span>
+            <span className="tabular-nums">
+              {sym}
+              {(Number(order.amount_due) - Number(order.subtotal)).toFixed(2)}
+            </span>
+          </div>
+          <div className="flex justify-between pt-1 font-bold">
+            <span>Total</span>
+            <span className="tabular-nums">
+              {sym}
+              {Number(order.amount_due).toFixed(2)}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex justify-between px-4 text-sm font-bold">
+          <span>Subtotal</span>
+          <span className="tabular-nums">
+            {sym}
+            {Number(order.subtotal).toFixed(2)}
+          </span>
+        </div>
+      )}
 
       {order.status !== "rejected" && !order.member_linked && !signedIn && (
         <motion.div

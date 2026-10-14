@@ -230,7 +230,7 @@ function CartReview({
       .then(({ data }) => {
         const b = Number(data?.balance ?? 0);
         setBalance(b);
-        if (b > 0 && b >= cart.totalPrice) setPayWith("wallet");
+        if (b > 0 && b >= (due ?? cart.totalPrice)) setPayWith("wallet");
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on open
   }, [supabase]);
@@ -247,6 +247,13 @@ function CartReview({
     menu.tax.service_charge_enabled && "service charge",
     menu.tax.sst_enabled && "SST",
   ].filter(Boolean);
+  // What pickup will charge. Exact with service charge only (BizPos rounds it the same way);
+  // SST depends on which dishes carry it, so with SST on the total is confirmed at payment.
+  const service = menu.tax.service_charge_enabled
+    ? Math.round(cart.totalPrice * Number(menu.tax.service_charge_rate)) / 100
+    : 0;
+  const pickup = !token;
+  const due = pickup && !menu.tax.sst_enabled ? cart.totalPrice + service : null;
 
   async function place() {
     setPlacing(true);
@@ -296,8 +303,6 @@ function CartReview({
     // Couldn't open payment: the order page has a Pay button to retry.
     onPlaced(data.id);
   }
-
-  const pickup = !token;
 
   useEffect(() => {
     if (cart.totalItems === 0) onClose();
@@ -414,16 +419,34 @@ function CartReview({
           />
         </label>
 
-        <div className="mt-5 flex items-baseline justify-between">
-          <span className="text-sm text-slate-600">Subtotal</span>
-          <span className="text-2xl font-bold text-slate-900">
+        {due !== null && service > 0 && (
+          <div className="mt-5 space-y-1 text-sm text-ink-500">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span className="tabular-nums">
+                {sym}
+                {cart.totalPrice.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Service charge ({Number(menu.tax.service_charge_rate)}%)</span>
+              <span className="tabular-nums">
+                {sym}
+                {service.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        )}
+        <div className={`flex items-baseline justify-between ${due !== null && service > 0 ? "mt-2" : "mt-5"}`}>
+          <span className="text-sm text-ink-600">{due !== null ? "Total" : "Subtotal"}</span>
+          <span className="text-2xl font-bold tabular-nums text-ink-900">
             {sym}
-            {cart.totalPrice.toFixed(2)}
+            {(due ?? cart.totalPrice).toFixed(2)}
           </span>
         </div>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-ink-500">
           {pickup
-            ? `Paid before it's made${charges.length ? `, ${charges.join(" and ")} included` : ""}. The kitchen starts once you've paid.`
+            ? `Paid before it's made${charges.length && due === null ? `, ${charges.join(" and ")} added at payment` : ""}. The kitchen starts once you've paid.`
             : `${charges.length ? `Final price with ${charges.join(" and ")} is confirmed at the counter. ` : ""}Pay at the counter when you're done.`}
         </p>
 

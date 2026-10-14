@@ -23,7 +23,8 @@ const LABEL: Record<Active["stage"], string> = {
   preparing: "Being prepared",
   ready: "Ready",
 };
-const STEP: Record<Active["stage"], number> = { awaiting_payment: 0, pending: 0, queued: 1, preparing: 2, ready: 3 };
+// Same steps as the order page: Sent, Preparing, Ready (+ Collected for pickup); -1 = not accepted yet.
+const STEP: Record<Active["stage"], number> = { awaiting_payment: -1, pending: -1, queued: 0, preparing: 1, ready: 2 };
 
 // The member's orders still in motion, kept live (polls every 10s), each
 // opening its order page. Renders nothing when there's nothing to follow.
@@ -114,8 +115,8 @@ export default function ActiveOrders({
                     {Number(o.amount).toFixed(2)}
                   </span>
                 </div>
-                <div className="mt-3 grid grid-cols-4 gap-1.5" aria-hidden="true">
-                  {[0, 1, 2, 3].map((i) => (
+                <div className={`mt-3 grid gap-1.5 ${o.table_label ? "grid-cols-3" : "grid-cols-4"}`} aria-hidden="true">
+                  {(o.table_label ? [0, 1, 2] : [0, 1, 2, 3]).map((i) => (
                     <span key={i} className="h-1.5 overflow-hidden rounded-full bg-ink-100">
                       <motion.span
                         className="block h-full rounded-full bg-marple"
