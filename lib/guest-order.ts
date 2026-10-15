@@ -52,6 +52,7 @@ export type GuestOrderStatus = {
   cancelled_items?: { name: string; quantity: number; options: string | null; reason: string | null; at: string }[];
   kitchen_status: "queued" | "preparing" | "ready" | "served" | null;
   paid: boolean;
+  table_due?: number | null; // still to pay at the counter for this table (open bill)
   member_linked: boolean;
 };
 

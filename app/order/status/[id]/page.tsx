@@ -332,12 +332,21 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
       )}
 
       {!ended && order.status !== "awaiting_payment" && (
-        <p className="mt-6 rounded-2xl bg-white px-4 py-3 text-sm font-medium text-ink-800">
-          {order.paid
-            ? order.table_label
-              ? "Paid. Your food comes to your table, and you can leave when you're done."
-              : "Paid. Collect it at the counter when it's ready."
-            : "Pay at the counter when you're done."}
+        <p className="mt-6 flex items-start gap-2.5 rounded-2xl bg-white px-4 py-3 text-sm font-medium text-ink-800">
+          {order.table_due != null && (
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-amber-500" aria-hidden="true" />
+          )}
+          <span>
+            {order.table_due != null
+              ? order.paid
+                ? `This order is paid. Your table still has ${sym}${Number(order.table_due).toFixed(2)} to pay at the counter.`
+                : `To pay at the counter: ${sym}${Number(order.table_due).toFixed(2)} for your table so far.`
+              : order.paid
+                ? order.table_label
+                  ? "Paid. Your food comes to your table, and you can leave when you're done."
+                  : "Paid. Collect it at the counter when it's ready."
+                : "Pay at the counter when you're done."}
+          </span>
         </p>
       )}
 
