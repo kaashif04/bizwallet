@@ -329,6 +329,44 @@ function CartReview({
   const due = menu.tax.sst_enabled ? null : cart.totalPrice + service;
   const charges = [service > 0 && "service charge", menu.tax.sst_enabled && "SST"].filter(Boolean);
   const payNow = pickup || payWith !== "counter";
+  const orderItems = cart.lines.map((l) => ({
+    menu_item_id: l.item.id,
+    quantity: l.quantity,
+    modifier_ids: l.selections.map((s) => s.modifierId),
+  }));
+
+  // Promo code, for orders paid here (at the counter, staff apply it). The server
+  // prices it exactly as the POS will (discount before service charge and SST).
+  type Quote = { code: string; label: string; subtotal: number; discount: number; service: number; sst: number; total: number };
+  const [codeInput, setCodeInput] = useState("");
+  const [promo, setPromo] = useState<Quote | null>(null);
+  const [promoBusy, setPromoBusy] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  async function applyPromo(code: string) {
+    if (!code.trim()) return;
+    setPromoBusy(true);
+    setPromoError(null);
+    const { data, error } = await supabase.rpc("guest_check_promo", {
+      p_payload: { ...(token ? { table_token: token } : { outlet_id: menu.outlet.id }), code, items: orderItems },
+    });
+    setPromoBusy(false);
+    if (error) {
+      setPromo(null);
+      return setPromoError(error.message);
+    }
+    setPromo(data as Quote);
+    setCodeInput("");
+  }
+  // The cart or how they pay changed: re-price the code, or drop it for the counter.
+  useEffect(() => {
+    if (!promo) return;
+    if (!payNow) return setPromo(null);
+    applyPromo(promo.code);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart.totalPrice, payNow]);
+  const shown = promo
+    ? { sub: Number(promo.subtotal), disc: Number(promo.discount), service: Number(promo.service), sst: Number(promo.sst), total: Number(promo.total) as number | null }
+    : { sub: cart.totalPrice, disc: 0, service, sst: 0, total: due };
   const methods = (
     [
       !pickup && (["counter", "Pay at counter", "When you're done"] as const),
@@ -348,11 +386,8 @@ function CartReview({
         customer_name: memberName ?? (name.trim() || undefined),
         note: note.trim() || undefined,
         pay_now: payNow || undefined,
-        items: cart.lines.map((l) => ({
-          menu_item_id: l.item.id,
-          quantity: l.quantity,
-          modifier_ids: l.selections.map((s) => s.modifierId),
-        })),
+        promo_code: promo?.code,
+        items: orderItems,
       },
     });
     if (error) {
@@ -504,38 +539,104 @@ function CartReview({
 
         <CartUpsell items={upsell} currency={CURRENCY} onAdd={(i) => cart.add(i, 1, [])} />
 
-        {service > 0 && (
+        {payNow && signedIn && (
+          <div className="mt-5">
+            {promo ? (
+              <div className="flex items-center gap-3 rounded-xl bg-emerald-50 px-4 py-2.5">
+                <span className="min-w-0 flex-1 text-sm">
+                  <span className="font-mono font-bold tracking-wider text-emerald-800">{promo.code}</span>
+                  <span className="text-emerald-700"> · {promo.label}</span>
+                </span>
+                <button type="button" onClick={() => setPromo(null)} className="shrink-0 text-sm font-bold text-emerald-800">
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  applyPromo(codeInput);
+                }}
+                className="flex gap-2"
+              >
+                <input
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                  placeholder="Promo code"
+                  aria-label="Promo code"
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                  className="min-w-0 flex-1 rounded-xl bg-ink-50 px-4 py-2.5 font-mono text-[15px] uppercase tracking-wider text-ink-900 shadow-pressed outline-none placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:text-ink-400"
+                />
+                <button
+                  type="submit"
+                  disabled={!codeInput.trim() || promoBusy}
+                  className="shrink-0 rounded-xl bg-ink-900 px-4 text-sm font-bold text-ink-50 transition active:scale-95 disabled:opacity-40"
+                >
+                  {promoBusy ? "…" : "Apply"}
+                </button>
+              </form>
+            )}
+            {promoError && (
+              <p role="alert" className="mt-1.5 text-xs font-semibold text-rose-700">
+                {promoError}
+              </p>
+            )}
+          </div>
+        )}
+
+        {(shown.disc > 0 || shown.service > 0) && (
           <div className="mt-5 space-y-1 text-sm text-ink-500">
             <div className="flex justify-between">
               <span>Subtotal</span>
               <span className="tabular-nums">
                 {sym}
-                {cart.totalPrice.toFixed(2)}
+                {shown.sub.toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span>Service charge ({Number(menu.tax.service_charge_rate)}%)</span>
-              <span className="tabular-nums">
-                {sym}
-                {service.toFixed(2)}
-              </span>
-            </div>
+            {shown.disc > 0 && (
+              <div className="flex justify-between font-semibold text-emerald-700">
+                <span>Promo {promo?.code}</span>
+                <span className="tabular-nums">
+                  −{sym}
+                  {shown.disc.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {shown.service > 0 && (
+              <div className="flex justify-between">
+                <span>Service charge ({Number(menu.tax.service_charge_rate)}%)</span>
+                <span className="tabular-nums">
+                  {sym}
+                  {shown.service.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {shown.sst > 0 && (
+              <div className="flex justify-between">
+                <span>SST</span>
+                <span className="tabular-nums">
+                  {sym}
+                  {shown.sst.toFixed(2)}
+                </span>
+              </div>
+            )}
           </div>
         )}
-        <div className={`flex items-baseline justify-between ${service > 0 ? "mt-2" : "mt-5"}`}>
-          <span className="text-sm text-ink-600">{due !== null ? "Total" : "Subtotal"}</span>
+        <div className={`flex items-baseline justify-between ${shown.disc > 0 || shown.service > 0 ? "mt-2" : "mt-5"}`}>
+          <span className="text-sm text-ink-600">{shown.total !== null ? "Total" : "Subtotal"}</span>
           <span className="text-2xl font-bold tabular-nums text-ink-900">
             {sym}
-            {(due ?? cart.totalPrice).toFixed(2)}
+            {(shown.total ?? shown.sub).toFixed(2)}
           </span>
         </div>
         <p className="mt-1 text-xs text-ink-500">
-          {due === null && `${charges.join(" and ")} added to the total. `}
+          {shown.total === null && `${charges.join(" and ")} added to the total. `}
           {pickup
             ? "Paid before it's made. The kitchen starts once you've paid."
             : payNow
               ? "Pay now and you can leave when you're done eating."
-              : "Pay at the counter when you're done."}
+              : "Pay at the counter when you're done. Have a promo code? Give it to staff when you pay."}
         </p>
 
         {!pickup && !signedIn && (
@@ -612,7 +713,7 @@ function CartReview({
             : error
               ? "Try again"
               : payNow
-                ? `Pay${due !== null ? ` ${sym}${due.toFixed(2)}` : ""} and place order`
+                ? `Pay${shown.total !== null ? ` ${sym}${shown.total.toFixed(2)}` : ""} and place order`
                 : "Place order"}
         </button>
         <button
