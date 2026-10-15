@@ -46,6 +46,7 @@ export type GuestOrderStatus = {
     unit_price: number;
     modifier_delta: number;
     modifier_summary: string;
+    added_by_staff?: boolean; // put on the bill by staff in BizPos
   }[];
   // Items staff voided from this order (the rest of the order goes ahead).
   cancelled_items?: { name: string; quantity: number; options: string | null; reason: string | null; at: string }[];

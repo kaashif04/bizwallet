@@ -372,6 +372,9 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
               {i.modifier_summary && (
                 <span className="block text-xs text-slate-500">{i.modifier_summary}</span>
               )}
+              {i.added_by_staff && (
+                <span className="mt-0.5 block text-xs font-semibold text-brand-700">Added by the restaurant</span>
+              )}
             </span>
             <span className="shrink-0 tabular-nums text-slate-700">
               {sym}
