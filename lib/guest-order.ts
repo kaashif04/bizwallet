@@ -177,6 +177,8 @@ export type Banner = {
   promo_code: string | null;
   action: "order" | "none";
   ends_on: string | null; // YYYY-MM-DD
+  show_from?: string | null; // "HH:MM" Malaysia time, daily window (may cross midnight); null = all day
+  show_until?: string | null;
 };
 
 // `outlets` is company-private in BizPos, so members can't read it directly.

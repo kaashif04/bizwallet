@@ -58,10 +58,10 @@ export default function GuestOrder(
         const m = data as GuestMenu;
         setMenu(m);
         outletLogos(supabase).then((logos) => setLogoUrl(logos[m.outlet.id] ?? null));
-        // This outlet's offers (guests too), shown without the "order" tap: they're already here.
+        // This outlet's offers (guests too); no "order" tap, they're already on its menu.
         supabase
           .rpc("wallet_banners", { p_outlet: m.outlet.id })
-          .then(({ data }) => setBanners(((data ?? []) as Banner[]).map((b) => ({ ...b, action: "none" }))));
+          .then(({ data }) => setBanners((data ?? []) as Banner[]));
         supabase
           .rpc("guest_menu_suggestions", { p_outlet: m.outlet.id })
           .then(({ data }) => data && setSuggestions(data as Suggestions));
@@ -207,7 +207,7 @@ export default function GuestOrder(
         intro={
           (banners.length > 0 || popular.length >= 3) && (
             <>
-              <BannerCarousel banners={banners} branches={[]} pickupOpen={false} />
+              <BannerCarousel banners={banners} branches={[]} pickupOpen={false} outletId={menu.outlet.id} browseOnly />
               <PopularRow items={popular} currency={CURRENCY} onPick={addSuggested} />
             </>
           )

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Banner, PickupOutlet } from "@/lib/guest-order";
 import { STORES_EVENT } from "./StorePicker";
@@ -9,17 +10,40 @@ import { STORES_EVENT } from "./StorePicker";
 // Owner banners and offers from BizPos: swipe (native scroll-snap), auto-
 // advance every 5s unless touched or the person prefers reduced motion.
 export default function BannerCarousel({
-  banners,
+  banners: initial,
   branches,
   pickupOpen,
   storesHref,
+  outletId,
+  browseOnly,
 }: {
   banners: Banner[];
   branches: PickupOutlet[];
   pickupOpen: boolean;
   storesHref?: string; // no store list on this page: open it there instead
+  outletId?: string; // only this outlet's banners (the menu)
+  browseOnly?: boolean; // on the menu already: no "order" tap
 }) {
   const router = useRouter();
+  // Happy-hour banners come and go: re-read when the app returns to the
+  // foreground, and when the earliest shown window ends.
+  const [banners, setBanners] = useState(initial);
+  useEffect(() => setBanners(initial), [initial]);
+  const reload = useCallback(() => {
+    createClient()
+      .rpc("wallet_banners", outletId ? { p_outlet: outletId } : {})
+      .then(({ data }) => Array.isArray(data) && setBanners(data as Banner[]));
+  }, [outletId]);
+  useEffect(() => {
+    const onShow = () => document.visibilityState === "visible" && reload();
+    document.addEventListener("visibilitychange", onShow);
+    const ends = banners.filter((b) => b.show_until).map((b) => minutesUntil(b.show_until!));
+    const t = ends.length ? window.setTimeout(reload, Math.min(...ends) * 60_000 + 5_000) : undefined;
+    return () => {
+      document.removeEventListener("visibilitychange", onShow);
+      window.clearTimeout(t);
+    };
+  }, [banners, reload]);
   const track = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
   const pausedUntil = useRef(0);
@@ -45,7 +69,7 @@ export default function BannerCarousel({
 
   const pause = () => (pausedUntil.current = Date.now() + 8000);
   const open = (b: Banner) => {
-    if (b.action !== "order") return;
+    if (b.action !== "order" || browseOnly) return;
     const branch = b.outlet_id ? branches.find((x) => x.id === b.outlet_id) : null;
     if (branch?.pickup && pickupOpen && branch.open_now !== false) return router.push(`/order/p/${branch.id}`);
     if (storesHref) {
@@ -81,14 +105,21 @@ export default function BannerCarousel({
               />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/5" />
-            {b.action === "order" && (
+            {b.action === "order" && !browseOnly && (
               <button type="button" onClick={() => open(b)} className="absolute inset-0" aria-label={`${b.title}. Order now`} />
             )}
-            {endsSoon(b.ends_on) && (
-              <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/40 px-2.5 py-1 text-2xs font-bold text-on backdrop-blur-sm">
-                Ends {endsSoon(b.ends_on)}
-              </span>
-            )}
+            <span className="pointer-events-none absolute right-3 top-3 flex gap-1.5">
+              {b.show_from && b.show_until && (
+                <span className="rounded-full bg-[#FFE3B3] px-2.5 py-1 text-2xs font-bold text-[#7A2E12]">
+                  {clock12(b.show_from)}–{clock12(b.show_until)}
+                </span>
+              )}
+              {endsSoon(b.ends_on) && (
+                <span className="rounded-full bg-black/40 px-2.5 py-1 text-2xs font-bold text-on backdrop-blur-sm">
+                  Ends {endsSoon(b.ends_on)}
+                </span>
+              )}
+            </span>
             <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4 text-on">
               {b.outlet && <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-on/80">{b.outlet}</p>}
               <p className="mt-0.5 text-xl font-bold leading-tight [text-wrap:balance]">{b.title}</p>
@@ -157,6 +188,20 @@ function PromoChip({ code }: { code: string }) {
       {!copied && <span className="font-medium normal-case tracking-normal text-on/80">Tap to copy</span>}
     </button>
   );
+}
+
+// "15:00" -> "3pm", "18:30" -> "6:30pm".
+export function clock12(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  return `${h % 12 || 12}${m ? `:${String(m).padStart(2, "0")}` : ""}${h < 12 ? "am" : "pm"}`;
+}
+
+// Minutes from now (Malaysia time) until a daily "HH:MM", wrapping past midnight.
+function minutesUntil(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map(Number);
+  const now = new Date(Date.now() + 8 * 3_600_000); // Malaysia is UTC+8 all year
+  const diff = (h * 60 + m - (now.getUTCHours() * 60 + now.getUTCMinutes()) + 1440) % 1440;
+  return diff || 1440;
 }
 
 // "5 Apr" when the offer ends within a week, else null.
