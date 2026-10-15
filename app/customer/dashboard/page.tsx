@@ -15,7 +15,7 @@ import { outletLogos, type Banner, type PickupOutlet } from "@/lib/guest-order";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function summarizeItems(items: any): string {
   if (!Array.isArray(items) || items.length === 0) return "Items";
-  const names = items.map((it) => it?.name).filter(Boolean) as string[];
+  const names = Array.from(new Set(items.map((it) => it?.name).filter(Boolean))) as string[];
   const head = names.slice(0, 2).join(", ");
   const extra = names.length > 2 ? ` +${names.length - 2}` : "";
   return head ? head + extra : "Items";
@@ -47,11 +47,12 @@ export default async function CustomerDashboardPage({
     supabase.from("members").select("full_name").eq("id", uid).maybeSingle(),
     supabase.from("wallets").select("balance, currency").eq("user_id", uid).maybeSingle(),
     supabase.rpc("wallet_my_places"),
+    // Recent bills, as in My orders: one per visit, not one per QR order.
     supabase
-      .from("guest_orders")
-      .select("id,subtotal,items,status,created_at,transaction_id,outlet_id")
+      .from("transactions")
+      .select("id,total,created_at,outlet_id")
       .eq("member_id", uid)
-      .neq("status", "rejected")
+      .neq("status", "voided")
       .order("created_at", { ascending: false })
       .limit(6),
     supabase.rpc("guest_list_outlets"),
@@ -88,14 +89,22 @@ export default async function CustomerDashboardPage({
     (named.find((b) => companyIds.includes(b.company_id)) ?? named[0])?.company_id ??
     (searchParams.rewards && places.length === 1 ? places[0].company_id : null);
   const currency = wallet?.currency ?? "MYR";
-  const recent: RecentOrder[] = (orderRows ?? []).map((o) => ({
-    id: o.id,
-    outlet: branchName.get(o.outlet_id) ?? "Restaurant",
-    items: summarizeItems(o.items),
-    total: Number(o.subtotal),
-    href: o.transaction_id ? `/customer/orders/${o.transaction_id}` : `/order/status/${o.id}`,
-    date: o.created_at,
-  }));
+  // Dish names come from the QR orders on each bill (members can't read BizPos's menu).
+  const billIds = (orderRows ?? []).map((o) => o.id);
+  const { data: rounds } = billIds.length
+    ? await supabase.from("guest_orders").select("transaction_id,items,created_at").in("transaction_id", billIds).order("created_at")
+    : { data: [] };
+  const recent: RecentOrder[] = (orderRows ?? []).map((o) => {
+    const items = (rounds ?? []).filter((g) => g.transaction_id === o.id).flatMap((g) => g.items ?? []);
+    return {
+      id: o.id,
+      outlet: branchName.get(o.outlet_id) ?? "Restaurant",
+      items: items.length ? summarizeItems(items) : "Counter order",
+      total: Number(o.total),
+      href: `/customer/orders/${o.id}`,
+      date: o.created_at,
+    };
+  });
 
   return (
     <div className="min-h-dvh bg-ink-50">
