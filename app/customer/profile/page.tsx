@@ -54,6 +54,7 @@ export default async function ProfilePage() {
         })),
         memberSince: profile?.created_at
           ? new Date(profile.created_at).toLocaleDateString("en-MY", {
+              timeZone: "Asia/Kuala_Lumpur",
               month: "long",
               year: "numeric",
             })

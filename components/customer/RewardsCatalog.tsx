@@ -224,7 +224,7 @@ function VoucherCard({ v }: { v: Voucher }) {
           {active
             ? "Active"
             : v.used_at
-              ? `Used on ${new Date(v.used_at).toLocaleDateString("en-MY", { day: "numeric", month: "short" })}`
+              ? `Used on ${new Date(v.used_at).toLocaleDateString("en-MY", { timeZone: "Asia/Kuala_Lumpur", day: "numeric", month: "short" })}`
               : "Used"}
         </span>
       </div>

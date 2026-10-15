@@ -8,9 +8,9 @@ import { SectionTitle } from "@/components/customer/ui";
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return (
-    d.toLocaleDateString("en-MY", { day: "numeric", month: "short" }) +
+    d.toLocaleDateString("en-MY", { timeZone: "Asia/Kuala_Lumpur", day: "numeric", month: "short" }) +
     ", " +
-    d.toLocaleTimeString("en-MY", { hour: "numeric", minute: "2-digit" })
+    d.toLocaleTimeString("en-MY", { timeZone: "Asia/Kuala_Lumpur", hour: "numeric", minute: "2-digit" })
   );
 }
 

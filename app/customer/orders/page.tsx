@@ -66,7 +66,7 @@ export default async function OrdersListPage() {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-bold text-ink-900">{outletName(o)}</span>
                       <span className="block truncate text-xs text-ink-500">
-                        {new Date(o.created_at).toLocaleString("en-MY", { dateStyle: "medium", timeStyle: "short" })}
+                        {new Date(o.created_at).toLocaleString("en-MY", { timeZone: "Asia/Kuala_Lumpur", dateStyle: "medium", timeStyle: "short" })}
                         {o.table_label ? ` · Table ${o.table_label}` : " · Pickup"}
                       </span>
                     </span>

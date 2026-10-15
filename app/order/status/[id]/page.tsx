@@ -326,7 +326,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         <p className="mt-5 flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm text-ink-800">
           <span className={`h-2 w-2 shrink-0 rounded-full ${paidBackAt ? "bg-emerald-500" : "bg-amber-500"}`} />
           {paidBackAt
-            ? `Refunded ${sym}${Number(order.amount_due ?? 0).toFixed(2)} on ${new Date(paidBackAt).toLocaleDateString("en-MY", { dateStyle: "medium" })}.`
+            ? `Refunded ${sym}${Number(order.amount_due ?? 0).toFixed(2)} on ${new Date(paidBackAt).toLocaleDateString("en-MY", { timeZone: "Asia/Kuala_Lumpur", dateStyle: "medium" })}.`
             : `Your ${sym}${Number(order.amount_due ?? 0).toFixed(2)} will be refunded to your bank account by the restaurant.`}
         </p>
       )}

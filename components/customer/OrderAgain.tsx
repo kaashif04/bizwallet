@@ -41,7 +41,7 @@ export default function OrderAgain({
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold text-ink-900">{o.items}</span>
               <span className="block truncate text-xs text-ink-500">
-                {o.outlet} · {new Date(o.date).toLocaleDateString("en-MY", { day: "numeric", month: "short" })}
+                {o.outlet} · {new Date(o.date).toLocaleDateString("en-MY", { timeZone: "Asia/Kuala_Lumpur", day: "numeric", month: "short" })}
               </span>
               <span className="mt-1 block text-sm font-bold text-ink-900">
                 {sym}

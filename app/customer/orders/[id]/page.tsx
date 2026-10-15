@@ -63,7 +63,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
           <div>
             <h1 className="text-lg font-bold text-slate-900">{outletName}</h1>
             <p className="text-xs text-slate-500">
-              {new Date(tx.created_at).toLocaleString("en-MY", { dateStyle: "medium", timeStyle: "short" })}
+              {new Date(tx.created_at).toLocaleString("en-MY", { timeZone: "Asia/Kuala_Lumpur", dateStyle: "medium", timeStyle: "short" })}
               {tx.table_label ? ` · Table ${tx.table_label}` : ""}
             </p>
           </div>
