@@ -91,10 +91,14 @@ export function toMenu(menu: GuestMenu): {
           }`,
   }));
 
+  const band = (g: { name: string; is_required: boolean }) =>
+    g.name.toLowerCase().includes("veg") ? 0 : g.is_required ? 1 : 2;
   const groupsByItem = Object.fromEntries(
     menu.items.map((i) => [
       i.id,
-      i.modifier_groups.map<VariantGroup>((g) => ({
+      // Same order as the POS: vegetarian first, then required, then add-ons
+      // (stable sort keeps the menu's order within each band).
+      [...i.modifier_groups].sort((a, b) => band(a) - band(b)).map<VariantGroup>((g) => ({
         id: g.id,
         label: g.name,
         required: g.is_required,
