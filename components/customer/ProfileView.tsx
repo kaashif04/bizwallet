@@ -6,7 +6,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import ProfileCompletionSheet from "./ProfileCompletionSheet";
 import AppearancePicker from "./AppearancePicker";
-import PrivacySettings from "./PrivacySettings";
 import { SectionTitle } from "./ui";
 
 export type ProfileData = {
@@ -201,7 +200,16 @@ export default function ProfileView({ data }: { data: ProfileData }) {
         <SectionTitle>Settings</SectionTitle>
         <div className="space-y-3">
           <AppearancePicker />
-          <PrivacySettings places={data.places} />
+          <Link
+            href="/customer/promotions"
+            className="flex items-center gap-3 rounded-2xl bg-white p-4 transition hover:shadow-md active:scale-[0.99]"
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-ink-900">Promotions</span>
+              <span className="block text-xs text-ink-500">{promoSummary(data.places)}</span>
+            </span>
+            <span aria-hidden="true" className="text-lg text-ink-400">›</span>
+          </Link>
         </div>
       </section>
 
@@ -233,6 +241,13 @@ export default function ProfileView({ data }: { data: ProfileData }) {
       </AnimatePresence>
     </div>
   );
+}
+
+// "All stores", "2 of 5 stores" or "Off": who may send offers.
+function promoSummary(places: ProfileData["places"]): string {
+  if (!places.length) return "Choose who can send you offers";
+  const n = places.filter((p) => p.consent).length;
+  return n === 0 ? "Offers from stores: off" : n === places.length ? "Offers from all your stores" : `Offers from ${n} of ${places.length} stores`;
 }
 
 function Row({

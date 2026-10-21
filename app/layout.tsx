@@ -12,10 +12,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F2EFE9" },
-    { media: "(prefers-color-scheme: dark)", color: "#121110" },
-  ],
+  themeColor: "#F2EFE9", // light by default, whatever the phone's setting
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -27,12 +24,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={body.variable} suppressHydrationWarning>
+    <html lang="en" className={body.variable} data-theme="light" suppressHydrationWarning>
       <head>
-        {/* Apply the saved Appearance before paint, so there's no flash. */}
+        {/* Light unless a signed-in customer picked Dark or Auto (Profile > Appearance).
+            Applied before paint, so there's no flash. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`,
+            __html: `try{var t=localStorage.getItem("theme"),r=document.documentElement;if(t==="dark")r.dataset.theme="dark";else if(t==="auto")delete r.dataset.theme}catch(e){}`,
           }}
         />
       </head>

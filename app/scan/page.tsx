@@ -35,7 +35,7 @@ export default function ScanPage() {
         </div>
 
         <p className="mt-5 text-center text-xs text-slate-500">
-          Your order goes straight to the kitchen. Pay at the counter when you&apos;re done.
+          Order from your phone, then pay in the app or at the counter.
         </p>
       </div>
     </main>

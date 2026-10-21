@@ -4,18 +4,19 @@ import { useEffect, useState } from "react";
 
 type Theme = "auto" | "light" | "dark";
 const OPTIONS: { value: Theme; label: string }[] = [
-  { value: "auto", label: "Auto" },
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
+  { value: "auto", label: "Auto" },
 ];
 
 // Saved on this device only; the inline script in app/layout.tsx applies it
-// before paint. Auto follows the phone's setting.
+// before paint. Light is the default (also for guests ordering by QR); Auto
+// follows the phone's setting.
 export default function AppearancePicker() {
-  const [theme, setTheme] = useState<Theme>("auto");
+  const [theme, setTheme] = useState<Theme>("light");
   useEffect(() => {
     const t = document.documentElement.dataset.theme;
-    if (t === "light" || t === "dark") setTheme(t);
+    setTheme(t === "dark" ? "dark" : t === "light" ? "light" : "auto");
   }, []);
 
   const choose = (t: Theme) => {
@@ -24,7 +25,7 @@ export default function AppearancePicker() {
     if (t === "auto") delete root.dataset.theme;
     else root.dataset.theme = t;
     try {
-      if (t === "auto") localStorage.removeItem("theme");
+      if (t === "light") localStorage.removeItem("theme");
       else localStorage.setItem("theme", t);
     } catch {}
   };

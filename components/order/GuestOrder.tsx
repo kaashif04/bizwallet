@@ -246,7 +246,6 @@ export default function GuestOrder(
             token={props.token}
             onlinePay={props.onlinePay ?? true}
             pointsPerRm={loyalty?.pointsPerRm ?? null}
-            company={loyalty?.company ?? null}
             upsell={goesWith(cart.lines.map((l) => l.item), suggestions, oneTap, 4)}
             onClose={() => setReviewing(false)}
             onPlaced={(id, paid) => {
@@ -269,7 +268,6 @@ function CartReview({
   onlinePay,
   upsell,
   pointsPerRm,
-  company,
   onClose,
   onPlaced,
 }: {
@@ -278,7 +276,6 @@ function CartReview({
   onlinePay: boolean;
   upsell: MenuItem[];
   pointsPerRm: number | null;
-  company: string | null;
   onClose: () => void;
   onPlaced: (id: string, paid?: boolean) => void;
 }) {
@@ -439,7 +436,7 @@ function CartReview({
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-title"
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[90dvh] max-w-md overflow-y-auto overscroll-contain rounded-t-sheet bg-white px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 shadow-sheet"
+        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[90dvh] max-w-md overflow-y-auto overscroll-contain rounded-t-sheet bg-white px-5 pt-5 shadow-sheet"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
@@ -686,7 +683,6 @@ function CartReview({
             <span>
               This order earns{" "}
               <strong className="font-bold">{Math.floor(cart.totalPrice * pointsPerRm).toLocaleString()} points</strong>
-              {company ? ` at ${company}` : ""}
               {memberName ? "." : " with a free BizWallet account. You can join after you order."}
             </span>
           </p>
@@ -698,11 +694,13 @@ function CartReview({
           </p>
         )}
 
+        {/* Pinned to the bottom of the sheet, however long the order gets. */}
+        <div className="sticky bottom-0 -mx-5 mt-5 bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_16px_-12px_rgb(0_0_0/0.18)]">
         <button
           type="button"
           onClick={place}
           disabled={placing}
-          className="mt-5 h-14 w-full rounded-full bg-brand-600 px-5 text-base font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
+          className="h-14 w-full rounded-full bg-brand-600 px-5 text-base font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
         >
           {placing
             ? payNow
@@ -716,13 +714,7 @@ function CartReview({
                 ? `Pay${shown.total !== null ? ` ${sym}${shown.total.toFixed(2)}` : ""} and place order`
                 : "Place order"}
         </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-2 h-12 w-full rounded-full text-[15px] font-bold text-slate-700 transition hover:bg-slate-100"
-        >
-          Keep browsing
-        </button>
+        </div>
       </motion.div>
     </>
   );
