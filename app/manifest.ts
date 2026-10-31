@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "BizWallet",
     short_name: "BizWallet",
     description: "Order from your table, pay at the counter, earn points every visit.",
-    start_url: "/customer/dashboard",
+    start_url: "/",
     display: "standalone",
     background_color: "#F2EFE9",
     theme_color: "#F2EFE9",

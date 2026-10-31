@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
 import { outletLogos } from "@/lib/guest-order";
 import BranchLogo from "@/components/order/BranchLogo";
+import { rememberPlace } from "@/lib/place";
 
 type Receipt = {
   outlet: { id: string; name: string; company_id: string };
@@ -41,6 +42,7 @@ export default function ReceiptClaimPage({ params }: { params: { code: string } 
       ]);
       if (error) return setError(error.message);
       let rec = data as Receipt;
+      rememberPlace(rec.outlet.id);
       setSignedIn(!!auth.user);
       outletLogos(supabase).then((l) => setLogo(l[rec.outlet.id] ?? null));
       if (auth.user && rec.state === "ready") {
@@ -106,7 +108,7 @@ export default function ReceiptClaimPage({ params }: { params: { code: string } 
                   your next visit.
                 </p>
                 <Link
-                  href={`/customer/dashboard?rewards=${r.outlet.company_id}`}
+                  href={`/s/${r.outlet.id}?rewards=1`}
                   className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
                 >
                   See my rewards

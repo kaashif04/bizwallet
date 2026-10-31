@@ -3,12 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { HomeIcon, BagIcon, WalletIcon, UserIcon } from "./icons";
+import { HomeIcon, UserIcon } from "./icons";
 
 const items = [
-  { href: "/customer/dashboard", label: "Home", icon: HomeIcon },
-  { href: "/customer/order", label: "Order", icon: BagIcon },
-  { href: "/customer/wallet", label: "Wallet", icon: WalletIcon },
+  { href: "/customer/dashboard", label: "Places", icon: HomeIcon },
   { href: "/customer/profile", label: "Profile", icon: UserIcon },
 ];
 

@@ -135,10 +135,10 @@ export default function GuestOrder(
         <h1 className="mt-5 text-2xl font-semibold text-slate-900">Can&apos;t order here right now</h1>
         <p className="mt-2 max-w-xs text-sm text-slate-600">{loadError}</p>
         <Link
-          href="/customer/dashboard"
+          href={props.token ? `/order/t/${props.token}` : `/s/${props.outletId}`}
           className="mt-6 rounded-full bg-brand-600 px-6 py-3 text-[15px] font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
         >
-          Go to my wallet
+          Back to the restaurant
         </Link>
       </main>
     );
@@ -198,7 +198,7 @@ export default function GuestOrder(
       )}
       <MenuView
         title={menu.outlet.name}
-        homeHref={props.token && `/order/t/${props.token}`}
+        homeHref={props.token ? `/order/t/${props.token}` : `/s/${props.outletId}`}
         subtitle={menu.table ? `Table ${menu.table.label}` : "Pickup order"}
         logoUrl={logoUrl}
         account={account}
@@ -296,21 +296,11 @@ function CartReview({
         setSignedIn(!!data);
         setMemberName(data?.full_name?.trim() || null);
       });
-    supabase
-      .from("wallets")
-      .select("balance")
-      .maybeSingle()
-      .then(({ data }) => {
-        const b = Number(data?.balance ?? 0);
-        setBalance(b);
-        if (pickup && b > 0 && b >= (due ?? cart.totalPrice)) setPayWith("wallet");
-      });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on open
   }, [supabase]);
-  // Pickup is paid first (wallet or FPX); dine-in may pay now or at the counter.
+  // Pickup is paid first (FPX); dine-in may pay now or at the counter.
   const [signedIn, setSignedIn] = useState(false);
-  const [balance, setBalance] = useState(0);
-  const [payWith, setPayWith] = useState<"counter" | "wallet" | "fpx">(token ? "counter" : "fpx");
+  const [payWith, setPayWith] = useState<"counter" | "fpx">(token ? "counter" : "fpx");
   const [note, setNote] = useState("");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -368,10 +358,9 @@ function CartReview({
   const methods = (
     [
       !pickup && (["counter", "Pay at counter", "When you're done"] as const),
-      balance > 0 && (["wallet", "Wallet credit", `${sym}${balance.toFixed(2)} available`] as const),
       onlinePay && (["fpx", "Online banking", "FPX"] as const),
     ] as const
-  ).filter((m) => !!m) as (readonly ["counter" | "wallet" | "fpx", string, string])[];
+  ).filter((m) => !!m) as (readonly ["counter" | "fpx", string, string])[];
 
   async function place() {
     setPlacing(true);
@@ -397,15 +386,6 @@ function CartReview({
     if (data.status !== "awaiting_payment") return onPlaced(data.id);
 
     // Paying now (pickup always): the kitchen only sees it once paid.
-    if (payWith === "wallet") {
-      const { error: payError } = await supabase.rpc("wallet_pay_order", {
-        p_id: data.id,
-        p_claim_token: data.claim_token,
-      });
-      // Short after SST/rounding, or any hiccup: the order page offers FPX too.
-      if (!payError) return onPlaced(data.id, true);
-      return onPlaced(data.id);
-    }
     const res = await fetch("/api/pay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -705,9 +685,7 @@ function CartReview({
         >
           {placing
             ? payNow
-              ? payWith === "wallet"
-                ? "Paying…"
-                : "Opening payment…"
+              ? "Opening payment…"
               : "Sending…"
             : error
               ? "Try again"

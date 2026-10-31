@@ -1,10 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { PLACE_COOKIE, placeHome } from "@/lib/place";
 
 // Route protection + session refresh.
 //
-//  - Signed out on /customer/* or /                  -> /login
-//  - Signed-in member on / or /login                 -> dashboard (or ?redirect)
+//  - Signed out on /customer/*                       -> /login
+//  - Signed out on /                                 -> the last restaurant's page, else /login
+//  - Signed-in member on / or /login                 -> ?redirect, else the last restaurant's page, else places
 //  - Signed in without a member row (BizPos staff)   -> /login?account=staff
 //
 // BizWallet is customer-only; managers use the BizPos dashboard.
@@ -43,6 +45,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+  const home = placeHome(request.cookies.get(PLACE_COOKIE)?.value);
   // Pickup is paid online, so it needs an account (table QR ordering doesn't).
   const isCustomerArea = path.startsWith("/customer") || path.startsWith("/order/p/");
 
@@ -57,7 +60,7 @@ export async function middleware(request: NextRequest) {
   // Not signed in -> bounce to login (remembering where they wanted to go).
   if (!user) {
     if (isCustomerArea) return redirectTo(`/login?redirect=${encodeURIComponent(path)}`);
-    if (path === "/") return redirectTo("/login");
+    if (path === "/") return redirectTo(home.startsWith("/s/") ? home : "/login");
     return response;
   }
 
@@ -74,7 +77,7 @@ export async function middleware(request: NextRequest) {
     }
     if (path === "/" || path === "/login") {
       const next = request.nextUrl.searchParams.get("redirect");
-      return redirectTo(next?.startsWith("/") && !next.startsWith("//") ? next : "/customer/dashboard");
+      return redirectTo(next?.startsWith("/") && !next.startsWith("//") ? next : home);
     }
   }
 

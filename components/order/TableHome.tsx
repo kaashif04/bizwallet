@@ -14,6 +14,7 @@ import {
 } from "@/lib/guest-order";
 import { SectionTitle } from "@/components/customer/ui";
 import AccountChip from "./AccountChip";
+import { rememberPlace } from "@/lib/place";
 import BranchLogo from "./BranchLogo";
 
 type Me = { name: string | null; points: number; joined: boolean; vouchers: number } | "guest" | null;
@@ -61,6 +62,7 @@ export default function TableHome({ token }: { token: string }) {
   useEffect(() => {
     load().then(async (h) => {
       if (!h) return;
+      rememberPlace(h.outlet.id);
       outletLogos(supabase).then((l) => setLogo(l[h.outlet.id] ?? null));
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) return setMe("guest");
@@ -189,7 +191,7 @@ export default function TableHome({ token }: { token: string }) {
             <span aria-hidden="true" className="text-ink-400">›</span>
           </Link>
 
-          <Points me={me} companyId={home.outlet.company_id} signIn={signIn} />
+          <Points me={me} outletId={home.outlet.id} signIn={signIn} />
 
           {home.wifi && <Wifi name={home.wifi.name} password={home.wifi.password} />}
 
@@ -397,7 +399,7 @@ function CallStaff({
   );
 }
 
-function Points({ me, companyId, signIn }: { me: Me; companyId: string; signIn: string }) {
+function Points({ me, outletId, signIn }: { me: Me; outletId: string; signIn: string }) {
   if (!me) return null;
   if (me === "guest") {
     return (
@@ -417,7 +419,7 @@ function Points({ me, companyId, signIn }: { me: Me; companyId: string; signIn: 
         Your points here
       </SectionTitle>
       <Link
-        href={`/customer/dashboard?rewards=${companyId}`}
+        href={`/s/${outletId}?rewards=1`}
         className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 transition hover:bg-ink-100"
       >
         <Star />

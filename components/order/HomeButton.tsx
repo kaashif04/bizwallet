@@ -1,8 +1,7 @@
 import Link from "next/link";
 
-// Way out of the ordering flow to the wallet home. Guests land on sign-in,
-// which brings them back home afterwards.
-// At a table it goes back to the table's start page instead.
+// Way out of the ordering flow: the table's start page or the restaurant's page
+// when known, else the member's places (guests land on sign-in).
 export default function HomeButton({ href = "/customer/dashboard" }: { href?: string }) {
   return (
     <Link

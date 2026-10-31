@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SectionTitle } from "./ui";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import RewardsCatalog from "./RewardsCatalog";
 import BranchLogo from "@/components/order/BranchLogo";
@@ -17,18 +17,19 @@ export default function MyPlaces({
   vouchers,
   logos,
   userId,
-  pickupOpen,
   openCompany,
+  title = "My points",
 }: {
   places: Place[];
   rewards: Record<string, Reward[]>;
   vouchers: Record<string, Voucher[]>;
   logos: Record<string, string>;
   userId: string;
-  pickupOpen: boolean;
   openCompany?: string | null; // a rewards notification was tapped: open that company's rewards
+  title?: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [points, setPoints] = useState<Record<string, number>>(() =>
     Object.fromEntries(places.map((p) => [p.company_id, p.points_balance ?? 0]))
   );
@@ -49,23 +50,21 @@ export default function MyPlaces({
         </span>
         <h2 className="mt-4 font-bold text-ink-900">No places yet</h2>
         <p className="mx-auto mt-1 max-w-[30ch] text-sm text-ink-500">
-          Scan a table QR or pick a restaurant in Order to start earning.
+          Scan the QR on your table or receipt to start earning at that restaurant.
         </p>
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <Link href="/scan" className="rounded-full bg-brand-600 py-3 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700">
-            Scan table QR
-          </Link>
-          <Link href="/customer/order" className="rounded-full bg-ink-50 py-3 text-sm font-bold text-ink-800 shadow-well transition hover:bg-ink-100">
-            Pick a restaurant
-          </Link>
-        </div>
+        <Link
+          href="/scan"
+          className="mt-5 block rounded-full bg-brand-600 py-3 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700"
+        >
+          Scan a QR
+        </Link>
       </section>
     );
   }
 
   return (
     <section>
-      <SectionTitle>My points</SectionTitle>
+      <SectionTitle>{title}</SectionTitle>
       <div className="space-y-4">
         {places.map((p, i) => {
           const pts = points[p.company_id] ?? 0;
@@ -160,9 +159,9 @@ export default function MyPlaces({
                     className="divide-y divide-ink-100 overflow-hidden"
                   >
                     {p.branches.map((b) => {
-                      const canPickup = b.pickup && pickupOpen && b.open_now !== false;
                       return (
-                        <li key={b.id} className="flex items-center gap-3 px-4 py-3">
+                        <li key={b.id}>
+                          <Link href={`/s/${b.id}`} className="flex items-center gap-3 px-4 py-3 transition hover:bg-ink-50">
                           <BranchLogo name={b.name} logoUrl={logos[b.id]} className="h-10 w-10 rounded-xl text-base" />
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-bold text-ink-900">{b.name}</span>
@@ -173,11 +172,7 @@ export default function MyPlaces({
                               </span>
                             )}
                           </span>
-                          <Link
-                            href={canPickup ? `/order/p/${b.id}` : `/scan?at=${encodeURIComponent(b.name)}`}
-                            className="shrink-0 rounded-full bg-brand-600 px-3.5 py-2 text-xs font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
-                          >
-                            {canPickup ? "Order pickup" : "Dine in"}
+                          <span aria-hidden="true" className="text-ink-400">›</span>
                           </Link>
                         </li>
                       );
@@ -219,7 +214,7 @@ export default function MyPlaces({
             onClose={() => {
               setOpen(null);
               // Clear ?rewards so the same notification can open it again.
-              if (openCompany) router.replace("/customer/dashboard", { scroll: false });
+              if (openCompany) router.replace(pathname, { scroll: false });
             }}
             points={points[open.company_id] ?? 0}
             userId={userId}

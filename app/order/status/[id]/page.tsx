@@ -80,29 +80,6 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
     refresh();
   }
 
-  // Wallet credit can pay an unpaid pickup too.
-  const [balance, setBalance] = useState(0);
-  const awaiting = order?.status === "awaiting_payment";
-  useEffect(() => {
-    if (!awaiting) return;
-    supabase
-      .from("wallets")
-      .select("balance")
-      .maybeSingle()
-      .then(({ data }) => setBalance(Number(data?.balance ?? 0)));
-  }, [supabase, awaiting]);
-
-  async function payFromWallet() {
-    setPaying(true);
-    setError(null);
-    const { error } = await supabase.rpc("wallet_pay_order", { p_id: params.id, p_claim_token: claimToken });
-    setPaying(false);
-    if (error) return setError(error.message);
-    setArrival("paid");
-    window.setTimeout(() => setArrival(null), 2200);
-    refresh();
-  }
-
   async function pay() {
     setPaying(true);
     setError(null);
@@ -261,8 +238,16 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         )}
       </AnimatePresence>
       <span className="flex items-center gap-2">
-        {/* A table order's home is the table's start page. */}
-        <HomeButton href={menuPath?.startsWith("/order/t/") ? menuPath.replace(/\/menu$/, "") : undefined} />
+        {/* Home is the table's start page, or the restaurant's page for pickup. */}
+        <HomeButton
+          href={
+            menuPath?.startsWith("/order/t/")
+              ? menuPath.replace(/\/menu$/, "")
+              : menuPath?.startsWith("/order/p/")
+                ? menuPath.replace("/order/p/", "/s/")
+                : undefined
+          }
+        />
         <span className="rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-bold text-brand-700">
           {order.table_label ? `Table ${order.table_label}` : "Pickup order"}
         </span>
@@ -288,26 +273,11 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
               ? "The payment wasn't completed. Nothing was charged and the kitchen hasn't started."
               : "The kitchen starts once you've paid."}
           </p>
-          {balance >= Number(order.amount_due ?? Infinity) && (
-            <button
-              type="button"
-              onClick={payFromWallet}
-              disabled={paying}
-              className="mt-4 h-12 w-full rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
-            >
-              {`Pay ${sym}${Number(order.amount_due ?? 0).toFixed(2)} from wallet`}
-              <span className="ml-1 font-normal text-on/80">({sym}{balance.toFixed(2)})</span>
-            </button>
-          )}
           <button
             type="button"
             onClick={pay}
             disabled={paying}
-            className={`h-12 w-full rounded-full text-sm font-bold transition active:scale-[0.97] disabled:opacity-60 ${
-              balance >= Number(order.amount_due ?? Infinity)
-                ? "mt-2 bg-ink-50 text-ink-800 shadow-well hover:bg-ink-100"
-                : "mt-4 bg-brand-600 text-on shadow-sm hover:bg-brand-700"
-            }`}
+            className="mt-4 h-12 w-full rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
           >
             {paying ? "One moment…" : `Pay ${sym}${Number(order.amount_due ?? 0).toFixed(2)} with FPX`}
           </button>
@@ -360,7 +330,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         onClick={() => {
           if (menuPath) window.location.assign(menuPath);
           else if (window.history.length > 1) window.history.back();
-          else window.location.assign("/customer/order");
+          else window.location.assign("/customer/dashboard");
         }}
         className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-5 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
       >

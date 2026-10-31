@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Banner, PickupOutlet } from "@/lib/guest-order";
-import { STORES_EVENT } from "./StorePicker";
 
 // Owner banners and offers from BizPos: swipe (native scroll-snap), auto-
 // advance every 5s unless touched or the person prefers reduced motion.
@@ -13,15 +12,13 @@ export default function BannerCarousel({
   banners: initial,
   branches,
   pickupOpen,
-  storesHref,
   outletId,
   browseOnly,
 }: {
   banners: Banner[];
   branches: PickupOutlet[];
   pickupOpen: boolean;
-  storesHref?: string; // no store list on this page: open it there instead
-  outletId?: string; // only this outlet's banners (the menu)
+  outletId?: string; // only this outlet's banners (its menu or home page)
   browseOnly?: boolean; // on the menu already: no "order" tap
 }) {
   const router = useRouter();
@@ -70,12 +67,9 @@ export default function BannerCarousel({
   const pause = () => (pausedUntil.current = Date.now() + 8000);
   const open = (b: Banner) => {
     if (b.action !== "order" || browseOnly) return;
-    const branch = b.outlet_id ? branches.find((x) => x.id === b.outlet_id) : null;
-    if (branch?.pickup && pickupOpen && branch.open_now !== false) return router.push(`/order/p/${branch.id}`);
-    if (storesHref) {
-      return router.push(`${storesHref}?${b.outlet_id ? `store=${b.outlet_id}` : `company=${b.company_id}`}`);
-    }
-    window.dispatchEvent(new CustomEvent(STORES_EVENT, { detail: { outletId: b.outlet_id, companyId: b.company_id } }));
+    // A company-wide offer shown at one restaurant is about that restaurant.
+    const branch = branches.find((x) => x.id === (b.outlet_id ?? outletId));
+    if (branch?.pickup && pickupOpen && branch.open_now !== false) router.push(`/order/p/${branch.id}`);
   };
 
   return (

@@ -48,10 +48,7 @@ export default async function OrdersListPage() {
         <SectionTitle>Past orders</SectionTitle>
         {orders.length === 0 ? (
           <div className="rounded-2xl bg-white p-10 text-center text-sm text-ink-500">
-            No orders yet.{" "}
-            <Link href="/customer/order" className="font-bold text-brand-700">
-              Start one ›
-            </Link>
+            No orders yet. Scan the QR on your table to order.
           </div>
         ) : (
           <ul className="divide-y divide-ink-100 overflow-hidden rounded-2xl bg-white">
