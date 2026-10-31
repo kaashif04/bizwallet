@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-
-type Method = "email" | "phone";
 
 // Where to land after auth: the ?redirect= set by middleware or the guest
 // order page, same-origin paths only.
@@ -18,14 +15,10 @@ export default function CustomerLogin() {
   const router = useRouter();
   const [supabase] = useState(() => createClient());
 
-  const [method, setMethod] = useState<Method>("email");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,25 +94,6 @@ export default function CustomerLogin() {
     setInfo("Password reset link sent — check your email.");
   }
 
-  // --- MOCK phone OTP (UI only, per Phase 2 scope) ---------------------------
-  function handleSendOtp(e: React.FormEvent) {
-    e.preventDefault();
-    reset();
-    if (phone.replace(/\D/g, "").length < 8)
-      return setError("Enter a valid phone number.");
-    // TODO (backend): await supabase.auth.signInWithOtp({ phone })
-    setOtpSent(true);
-    setInfo("Demo: a 6-digit code would be sent via SMS.");
-  }
-
-  function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    reset();
-    if (otp.length !== 6) return setError("Enter the 6-digit code.");
-    // TODO (backend): await supabase.auth.verifyOtp({ phone, token: otp, type: "sms" })
-    setInfo("Demo: OTP verified ✓ — wire up Supabase phone auth to finish sign-in.");
-  }
-
   return (
     <div className="rounded-2xl bg-white p-6 shadow-md sm:p-8">
       {/* Brand */}
@@ -154,155 +128,71 @@ export default function CustomerLogin() {
         <div className="h-px flex-1 bg-slate-200" />
       </div>
 
-      {/* Method toggle */}
-      <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
-        {(["email", "phone"] as Method[]).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => {
-              setMethod(m);
-              reset();
-            }}
-            className="relative rounded-lg py-2 text-sm font-medium capitalize text-slate-600 transition"
-          >
-            {method === m && (
-              <motion.span
-                layoutId="customer-method-pill"
-                className="absolute inset-0 rounded-lg bg-white shadow-sm"
-                transition={{ type: "spring", stiffness: 400, damping: 32 }}
-              />
-            )}
-            <span
-              className={`relative z-10 ${
-                method === m ? "text-slate-900" : ""
-              }`}
-            >
-              {m}
-            </span>
-          </button>
-        ))}
-      </div>
-
       {/* Banners */}
       {error && <Banner tone="error">{error}</Banner>}
       {info && <Banner tone="info">{info}</Banner>}
 
       {/* Email / password */}
-      {method === "email" && (
-        <form
-          onSubmit={mode === "signup" ? handleEmailSignUp : handleEmailLogin}
-          className="space-y-3"
-        >
-          {mode === "signup" && (
-            <Field
-              label="Full name"
-              type="text"
-              autoComplete="name"
-              placeholder="Your name"
-              value={fullName}
-              onChange={setFullName}
-              required
-            />
-          )}
+      <form
+        onSubmit={mode === "signup" ? handleEmailSignUp : handleEmailLogin}
+        className="space-y-3"
+      >
+        {mode === "signup" && (
           <Field
-            label="Email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={setEmail}
+            label="Full name"
+            type="text"
+            autoComplete="name"
+            placeholder="Your name"
+            value={fullName}
+            onChange={setFullName}
             required
           />
-          <Field
-            label="Password"
-            type="password"
-            autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            placeholder="••••••••"
-            value={password}
-            onChange={setPassword}
-            required
-          />
-          {mode === "signin" && (
-            <button
-              type="button"
-              onClick={handleForgotPassword}
-              className="-mt-1 block w-full text-right text-xs font-medium text-slate-500 transition hover:text-brand-600"
-            >
-              Forgot password?
-            </button>
-          )}
-          <PrimaryButton loading={loading}>
-            {mode === "signup" ? "Create account" : "Sign in"}
-          </PrimaryButton>
+        )}
+        <Field
+          label="Email"
+          type="email"
+          autoComplete="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={setEmail}
+          required
+        />
+        <Field
+          label="Password"
+          type="password"
+          autoComplete={mode === "signup" ? "new-password" : "current-password"}
+          placeholder="••••••••"
+          value={password}
+          onChange={setPassword}
+          required
+        />
+        {mode === "signin" && (
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            className="-mt-1 block w-full text-right text-xs font-medium text-slate-500 transition hover:text-brand-600"
+          >
+            Forgot password?
+          </button>
+        )}
+        <PrimaryButton loading={loading}>
+          {mode === "signup" ? "Create account" : "Sign in"}
+        </PrimaryButton>
 
-          <p className="pt-1 text-center text-sm text-slate-500">
-            {mode === "signup" ? "Already have an account? " : "New to BizWallet? "}
-            <button
-              type="button"
-              onClick={() => {
-                setMode((m) => (m === "signup" ? "signin" : "signup"));
-                reset();
-              }}
-              className="font-semibold text-brand-600 hover:text-brand-700"
-            >
-              {mode === "signup" ? "Sign in" : "Create an account"}
-            </button>
-          </p>
-        </form>
-      )}
-
-      {/* Phone OTP (mocked) */}
-      {method === "phone" && (
-        <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-3">
-          <Field
-            label="Phone number"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            placeholder="+60 12 345 6789"
-            value={phone}
-            onChange={setPhone}
-            disabled={otpSent}
-            required
-          />
-
-          {otpSent && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-            >
-              <Field
-                label="Verification code"
-                type="text"
-                inputMode="numeric"
-                placeholder="6-digit code"
-                value={otp}
-                onChange={(v) => setOtp(v.replace(/\D/g, "").slice(0, 6))}
-                required
-              />
-            </motion.div>
-          )}
-
-          <PrimaryButton loading={loading}>
-            {otpSent ? "Verify & continue" : "Send code"}
-          </PrimaryButton>
-
-          {otpSent && (
-            <button
-              type="button"
-              onClick={() => {
-                setOtpSent(false);
-                setOtp("");
-                reset();
-              }}
-              className="w-full text-center text-xs font-medium text-slate-500 hover:text-slate-700"
-            >
-              Use a different number
-            </button>
-          )}
-        </form>
-      )}
+        <p className="pt-1 text-center text-sm text-slate-500">
+          {mode === "signup" ? "Already have an account? " : "New to BizWallet? "}
+          <button
+            type="button"
+            onClick={() => {
+              setMode((m) => (m === "signup" ? "signin" : "signup"));
+              reset();
+            }}
+            className="font-semibold text-brand-600 hover:text-brand-700"
+          >
+            {mode === "signup" ? "Sign in" : "Create an account"}
+          </button>
+        </p>
+      </form>
     </div>
   );
 }
