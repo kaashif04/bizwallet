@@ -46,6 +46,15 @@ export type TableHome = {
 };
 export type TableCall = { kind: "staff" | "bill"; at: string };
 
+// Today's game board at the table's outlet (guest_game_board / guest_game_submit).
+export type GameBoard = {
+  table: string; // this table's label
+  best: number | null; // this table's best today
+  rank: number | null;
+  tables: number; // tables on the board today
+  top: { table: string; score: number }[]; // top 10
+};
+
 export type GuestOrderStatus = {
   id: string;
   // cancelled: accepted, then staff voided every item (or the whole bill) in BizPos

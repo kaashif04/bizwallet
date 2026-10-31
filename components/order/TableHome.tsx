@@ -173,6 +173,22 @@ export default function TableHome({ token }: { token: string }) {
 
           <CallStaff token={token} calls={home.calls} onCalled={load} />
 
+          <Link
+            href={`/order/t/${token}/play`}
+            className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 transition hover:bg-ink-100"
+          >
+            <span className="flex h-10 w-10 shrink-0 flex-col-reverse items-center justify-center gap-0.5 rounded-full bg-brand-50" aria-hidden="true">
+              <span className="h-1.5 w-5 rounded-sm bg-brand-600" />
+              <span className="h-1.5 w-4 rounded-sm bg-brand-500" />
+              <span className="h-1.5 w-3 rounded-sm bg-brand-400" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-ink-900">{orders.length > 0 ? "Play while you wait" : "Play Stack"}</span>
+              <span className="block text-xs text-ink-500">Get Table {home.table.label} on today&apos;s leaderboard</span>
+            </span>
+            <span aria-hidden="true" className="text-ink-400">›</span>
+          </Link>
+
           <Points me={me} companyId={home.outlet.company_id} signIn={signIn} />
 
           {home.wifi && <Wifi name={home.wifi.name} password={home.wifi.password} />}
