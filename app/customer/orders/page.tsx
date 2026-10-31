@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import BottomNav from "@/components/customer/BottomNav";
 import { currencySymbol } from "@/lib/format";
 import { outletNames } from "@/lib/guest-order";
 import ActiveOrders from "@/components/customer/ActiveOrders";
@@ -83,7 +82,6 @@ export default async function OrdersListPage() {
           </ul>
         )}
       </div>
-      <BottomNav />
     </div>
   );
 }

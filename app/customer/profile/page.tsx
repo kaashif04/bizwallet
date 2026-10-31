@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import BottomNav from "@/components/customer/BottomNav";
 import { PageHeader, screen } from "@/components/customer/ui";
 import ProfileView, { type ProfileData } from "@/components/customer/ProfileView";
 import { storeNames, type Place } from "@/lib/places";
@@ -73,12 +72,10 @@ export default async function ProfilePage() {
   return (
     <div className="min-h-dvh bg-ink-50">
       <div className={screen}>
-        <PageHeader title="Profile" />
+        <PageHeader title="Profile" back="/customer/dashboard" />
 
         <ProfileView data={data} />
       </div>
-
-      <BottomNav />
     </div>
   );
 }

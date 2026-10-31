@@ -3,21 +3,25 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { billplzEnabled } from "@/lib/billplz";
 import { currencySymbol } from "@/lib/format";
-import { openLabel } from "@/lib/hours";
+import { DAYS, clock, openLabel } from "@/lib/hours";
 import { outletLogos, type Banner, type PickupOutlet } from "@/lib/guest-order";
 import type { Place, Reward, Voucher } from "@/lib/places";
 import BranchLogo from "@/components/order/BranchLogo";
 import BannerCarousel from "@/components/order/BannerCarousel";
 import RememberPlace from "@/components/order/RememberPlace";
-import AccountChip from "@/components/order/AccountChip";
-import MyPlaces from "@/components/customer/MyPlaces";
+import ItemMark from "@/components/order/ItemMark";
+import PointsCard from "@/components/store/PointsCard";
 import { SectionTitle } from "@/components/customer/ui";
 
 type Store = PickupOutlet & { ordering: boolean };
+type Dish = { id: string; name: string; price: number; image_url: string | null; times?: number };
+
+const sym = currencySymbol("MYR");
+const money = (n: number) => `${sym}${Number(n).toFixed(2)}`;
 
 // A restaurant's own home: what customers reach from its table QR, receipt QR
-// or the link the owner shares. Order, offers, and (signed in) points, rewards
-// and past orders here. ?rewards=1 opens the rewards sheet.
+// or the link the owner shares. Order, offers, dishes, and (signed in) points,
+// rewards and past orders here. ?rewards=1 opens the rewards sheet.
 export default async function StorePage({
   params,
   searchParams,
@@ -27,26 +31,32 @@ export default async function StorePage({
 }) {
   if (!/^[0-9a-f-]{36}$/i.test(params.outletId)) notFound();
   const supabase = createClient();
-  const [{ data }, logos, { data: bannerData }, { data: auth }] = await Promise.all([
+  const [{ data }, logos, { data: bannerData }, { data: dishData }, { data: auth }] = await Promise.all([
     supabase.rpc("guest_store", { p_outlet: params.outletId }),
     outletLogos(supabase),
     supabase.rpc("wallet_banners", { p_outlet: params.outletId }),
+    supabase.rpc("guest_store_dishes", { p_outlet: params.outletId }),
     supabase.auth.getUser(),
   ]);
   const store = data as Store | null;
   if (!store) notFound();
+  const dishes = (dishData ?? { popular: [], mine: [] }) as { popular: Dish[]; mine: Dish[] };
 
   const user = auth.user;
-  const { data: member } = user ? await supabase.from("members").select("full_name").maybeSingle() : { data: null };
-  const [{ data: placeData }, { data: rewardRows }, { data: voucherRows }, { data: orders }] = member
+  const [{ data: member }, { data: rewardRows }, { data: program }] = await Promise.all([
+    user ? supabase.from("members").select("full_name").maybeSingle() : Promise.resolve({ data: null }),
+    supabase
+      .from("loyalty_rewards")
+      .select("id,company_id,name,description,points_cost,kind,value")
+      .eq("is_active", true)
+      .eq("company_id", store.company_id)
+      .order("points_cost"),
+    supabase.from("loyalty_programs").select("is_enabled,points_per_rm").eq("company_id", store.company_id).maybeSingle(),
+  ]);
+  const rewards = (rewardRows ?? []) as Reward[];
+  const [{ data: placeData }, { data: voucherRows }, { data: orders }] = member
     ? await Promise.all([
         supabase.rpc("wallet_my_places"),
-        supabase
-          .from("loyalty_rewards")
-          .select("id,company_id,name,description,points_cost,kind,value")
-          .eq("is_active", true)
-          .eq("company_id", store.company_id)
-          .order("points_cost"),
         supabase
           .from("vouchers")
           .select("id,company_id,code,title,created_at,status,kind,value,used_at")
@@ -61,34 +71,64 @@ export default async function StorePage({
           .eq("outlet_id", store.id)
           .neq("status", "voided")
           .order("created_at", { ascending: false })
-          .limit(10),
+          .limit(3),
       ])
-    : [{ data: null }, { data: null }, { data: null }, { data: null }];
+    : [{ data: null }, { data: null }, { data: null }];
   const place = ((placeData ?? []) as Place[]).find((p) => p.company_id === store.company_id) ?? null;
+  const loyaltyOn = program?.is_enabled !== false;
 
-  const pickupOpen = billplzEnabled();
-  const canPickup = store.pickup && pickupOpen;
-  // Malaysia wall-clock time, for "opens tomorrow 10:00" on a UTC server.
+  const canPickup = store.pickup && billplzEnabled();
+  // Malaysia wall-clock time, for "opens tomorrow 10am" on a UTC server.
   const klNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
   const status = openLabel(store.open_now, store.today, store.hours, klNow);
-  const sym = currencySymbol("MYR");
+  const todayIdx = (klNow.getDay() + 6) % 7; // Monday = 0
   const here = `/s/${store.id}`;
+  const signIn = `/login?redirect=${encodeURIComponent(here)}`;
+  const dishHref = canPickup ? `/order/p/${store.id}` : null;
+
+  const actions = [
+    canPickup && { href: `/order/p/${store.id}`, label: "Order", icon: "M5 8h14l-1 12H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2" },
+    store.ordering && {
+      href: `/scan?at=${encodeURIComponent(store.name)}`,
+      label: "Dine in",
+      icon: "M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 8h3v3H8zM13 13h3v3h-3z",
+    },
+    store.maps_url && { href: store.maps_url, label: "Directions", icon: "M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12ZM12 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z", external: true },
+    store.phone && {
+      href: `tel:${store.phone.replace(/\s/g, "")}`,
+      label: "Call",
+      icon: "M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z",
+    },
+  ].filter(Boolean) as { href: string; label: string; icon: string; external?: boolean }[];
 
   return (
     <div className="min-h-dvh bg-ink-50">
       <RememberPlace outletId={store.id} />
-      <main className="mx-auto max-w-md pb-16">
+      <main className={`mx-auto max-w-md ${canPickup ? "pb-[calc(7rem+env(safe-area-inset-bottom))]" : "pb-16"}`}>
+        {/* Cover, logo, name, open now */}
         <header className="relative">
-          <div className="relative h-56 overflow-hidden bg-brand-100">
+          <div className="relative h-60 overflow-hidden bg-brand-100">
             {store.cover_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={store.cover_url} alt="" className="h-full w-full object-cover" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10" />
-            <div className="absolute inset-x-0 top-0 flex justify-end px-4 pt-[max(1rem,env(safe-area-inset-top))]">
-              <AccountChip
-                state={member ? { points: place?.points_balance ?? 0, joined: !!place } : "guest"}
-              />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/10" />
+            <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))]">
+              {member ? (
+                <Link
+                  href="/customer/dashboard"
+                  className="flex h-9 items-center gap-1 rounded-full bg-white/90 pl-2.5 pr-3.5 text-xs font-bold text-ink-900 shadow-sm backdrop-blur transition hover:bg-white"
+                >
+                  <span aria-hidden="true">‹</span> Your places
+                </Link>
+              ) : (
+                <span />
+              )}
+              {!member && (
+                <Link href={signIn} className="rounded-full bg-white px-3.5 py-2 text-xs font-bold text-ink-900 shadow-sm transition hover:bg-brand-100">
+                  Sign in
+                </Link>
+              )}
             </div>
           </div>
           <div className="px-4">
@@ -97,10 +137,12 @@ export default async function StorePage({
               logoUrl={logos[store.id]}
               className="relative -mt-10 h-20 w-20 rounded-3xl text-3xl shadow-md ring-4 ring-ink-50"
             />
-            <h1 className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">{store.name}</h1>
-            {store.tagline && <p className="mt-1 text-sm text-ink-500">{store.tagline}</p>}
+            <h1 className="mt-3 text-[1.875rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">
+              {member?.full_name ? `Hi ${member.full_name.trim().split(/\s+/)[0]}, welcome back` : store.name}
+            </h1>
+            <p className="mt-1 text-sm text-ink-500">{member?.full_name ? store.name : store.tagline}</p>
             {status && (
-              <p className="mt-2 flex items-center gap-1.5 text-sm text-ink-700">
+              <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-ink-700">
                 <span className={`h-2 w-2 rounded-full ${status.open ? "bg-emerald-500" : "bg-ink-400"}`} aria-hidden="true" />
                 {status.text}
               </p>
@@ -109,85 +151,74 @@ export default async function StorePage({
         </header>
 
         <div className="mt-5 space-y-8 px-4">
-          {/* Order */}
-          {store.ordering && (
-            <div className={`grid gap-3 ${canPickup ? "grid-cols-2" : ""}`}>
-              {canPickup && (
-                <Link
-                  href={`/order/p/${store.id}`}
-                  className="flex h-14 items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+          {actions.length > 0 && (
+            <nav aria-label="Quick actions" className="grid grid-cols-4 gap-2">
+              {actions.map((a) => (
+                <a
+                  key={a.label}
+                  href={a.href}
+                  {...(a.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  className="flex flex-col items-center gap-1.5 rounded-2xl py-2 text-xs font-bold text-ink-800 transition active:scale-95"
                 >
-                  Order pickup
-                </Link>
-              )}
-              <Link
-                href={`/scan?at=${encodeURIComponent(store.name)}`}
-                className={`flex h-14 items-center justify-center rounded-full text-base font-bold transition active:scale-[0.97] ${
-                  canPickup ? "bg-white text-ink-900 shadow-sm hover:bg-ink-100" : "bg-brand-600 text-on shadow-sm hover:bg-brand-700"
-                }`}
-              >
-                At a table? Scan
-              </Link>
-            </div>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm">
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d={a.icon} />
+                    </svg>
+                  </span>
+                  {a.label}
+                </a>
+              ))}
+            </nav>
           )}
+
+          {/* Points: the member's card, or what joining gets you */}
+          {loyaltyOn &&
+            (member && place ? (
+              <PointsCard
+                place={place}
+                rewards={rewards}
+                vouchers={(voucherRows ?? []) as Voucher[]}
+                userId={user!.id}
+                open={!!searchParams.rewards}
+              />
+            ) : (
+              <JoinCard
+                signedIn={!!member}
+                signIn={signIn}
+                perRm={Number(program?.points_per_rm ?? 1)}
+                rewards={rewards.slice(0, 3)}
+              />
+            ))}
 
           {(bannerData ?? []).length > 0 && (
-            <BannerCarousel banners={bannerData as Banner[]} branches={[store]} pickupOpen={pickupOpen} outletId={store.id} />
+            <section>
+              <SectionTitle>Offers</SectionTitle>
+              <BannerCarousel banners={bannerData as Banner[]} branches={[store]} pickupOpen={canPickup} outletId={store.id} />
+            </section>
           )}
 
-          {/* Points and rewards here */}
-          {!member ? (
-            <Link
-              href={`/login?redirect=${encodeURIComponent(here)}`}
-              className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 transition hover:bg-ink-100"
-            >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-                <svg viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor" aria-hidden="true">
-                  <path d="M10 1.5l2.5 5.2 5.7.8-4.1 4 1 5.6L10 14.4l-5.1 2.7 1-5.6-4.1-4 5.7-.8L10 1.5Z" />
-                </svg>
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-bold text-ink-900">Collect points here</span>
-                <span className="block text-xs text-ink-500">Sign in or join free to see your points, rewards and orders.</span>
-              </span>
-              <span className="text-sm font-bold text-brand-700">Sign in</span>
-            </Link>
-          ) : place ? (
-            <MyPlaces
-              places={[place]}
-              rewards={{ [store.company_id]: (rewardRows ?? []) as Reward[] }}
-              vouchers={{ [store.company_id]: (voucherRows ?? []) as Voucher[] }}
-              logos={logos}
-              userId={user!.id}
-              openCompany={searchParams.rewards ? store.company_id : null}
-              title="Your points here"
-            />
-          ) : (
-            <p className="rounded-2xl bg-white px-4 py-3.5 text-sm text-ink-600">
-              Your first order or receipt here starts your points.
-            </p>
-          )}
+          {dishes.mine.length > 0 && <DishRail title="Your usuals" dishes={dishes.mine} href={dishHref} mine />}
+          {dishes.popular.length > 0 && <DishRail title="Popular here" dishes={dishes.popular} href={dishHref} />}
 
           {member && (orders ?? []).length > 0 && (
             <section>
-              <SectionTitle>Your orders here</SectionTitle>
+              <SectionTitle href="/customer/orders" action="All orders">
+                Your recent orders
+              </SectionTitle>
               <ul className="divide-y divide-ink-100 overflow-hidden rounded-2xl bg-white">
                 {orders!.map((o) => (
                   <li key={o.id}>
                     <Link href={`/customer/orders/${o.id}`} className="flex items-center gap-3 px-4 py-3.5 transition hover:bg-ink-50">
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-bold text-ink-900">
-                          {new Date(o.created_at).toLocaleString("en-MY", { timeZone: "Asia/Kuala_Lumpur", dateStyle: "medium", timeStyle: "short" })}
+                          {new Date(o.created_at).toLocaleDateString("en-MY", { timeZone: "Asia/Kuala_Lumpur", weekday: "short", day: "numeric", month: "short" })}
                         </span>
                         <span className="block truncate text-xs text-ink-500">
                           {o.table_label ? `Table ${o.table_label}` : "Counter or pickup"}
                           {o.status === "open" ? " · Open bill" : ""}
                         </span>
                       </span>
-                      <span className="shrink-0 text-sm font-semibold tabular-nums text-ink-900">
-                        {sym}
-                        {Number(o.total).toFixed(2)}
-                      </span>
+                      <span className="shrink-0 text-sm font-semibold tabular-nums text-ink-900">{money(o.total)}</span>
                       <span aria-hidden="true" className="text-ink-400">›</span>
                     </Link>
                   </li>
@@ -196,39 +227,145 @@ export default async function StorePage({
             </section>
           )}
 
-          {/* Visit */}
-          {(store.address || store.phone || store.maps_url) && (
+          {/* Hours and location */}
+          {(store.hours || store.address) && (
             <section>
-              <SectionTitle>Visit</SectionTitle>
-              <div className="divide-y divide-ink-100 rounded-2xl bg-white">
-                {store.address && <p className="px-4 py-3.5 text-sm text-ink-700">{store.address}</p>}
-                {(store.maps_url || store.phone) && (
-                  <div className="flex gap-2 px-4 py-3">
-                    {store.maps_url && (
-                      <a
-                        href={store.maps_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-full bg-ink-100 px-4 py-2 text-sm font-bold text-ink-900 transition hover:bg-ink-200"
-                      >
-                        Directions
-                      </a>
-                    )}
-                    {store.phone && (
-                      <a
-                        href={`tel:${store.phone.replace(/\s/g, "")}`}
-                        className="rounded-full bg-ink-100 px-4 py-2 text-sm font-bold text-ink-900 transition hover:bg-ink-200"
-                      >
-                        Call
-                      </a>
-                    )}
-                  </div>
+              <SectionTitle>Hours &amp; location</SectionTitle>
+              <div className="divide-y divide-ink-100 overflow-hidden rounded-2xl bg-white">
+                {store.hours && (
+                  <details className="group">
+                    <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3.5 text-sm">
+                      <span className="font-bold text-ink-900">
+                        Today{" "}
+                        <span className="font-normal text-ink-600">
+                          {store.hours[todayIdx] ? `${clock(store.hours[todayIdx]!.open)} – ${clock(store.hours[todayIdx]!.close)}` : "Closed"}
+                        </span>
+                      </span>
+                      <span aria-hidden="true" className="text-ink-400 transition group-open:rotate-90">›</span>
+                    </summary>
+                    <ul className="px-4 pb-3.5 text-sm">
+                      {store.hours.map((d, i) => (
+                        <li key={i} className={`flex justify-between py-1 ${i === todayIdx ? "font-bold text-ink-900" : "text-ink-600"}`}>
+                          <span>{DAYS[i]}</span>
+                          <span className="tabular-nums">{d ? `${clock(d.open)} – ${clock(d.close)}` : "Closed"}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+                {store.address && (
+                  <a
+                    href={store.maps_url ?? `https://maps.google.com/?q=${encodeURIComponent(store.address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-4 py-3.5 text-sm text-ink-700 transition hover:bg-ink-50"
+                  >
+                    <span className="min-w-0 flex-1">{store.address}</span>
+                    <span className="shrink-0 font-bold text-brand-700">Map ›</span>
+                  </a>
                 )}
               </div>
             </section>
           )}
         </div>
       </main>
+
+      {canPickup && (
+        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <Link
+            href={`/order/p/${store.id}`}
+            className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97]"
+          >
+            Order pickup
+          </Link>
+        </div>
+      )}
     </div>
+  );
+}
+
+function JoinCard({
+  signedIn,
+  signIn,
+  perRm,
+  rewards,
+}: {
+  signedIn: boolean;
+  signIn: string;
+  perRm: number;
+  rewards: Reward[];
+}) {
+  return (
+    <section className="overflow-hidden rounded-3xl bg-white">
+      <div className="p-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">Rewards here</p>
+        <h2 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-ink-900">
+          Earn {perRm === 1 ? "1 point" : `${perRm} points`} for every {sym}1
+        </h2>
+        <p className="mt-1 text-sm text-ink-500">
+          {signedIn ? "Your first order or receipt here starts your points." : "Free to join. Scan your receipt or order here to collect."}
+        </p>
+      </div>
+      {rewards.length > 0 && (
+        <ul className="divide-y divide-ink-100 border-t border-ink-100">
+          {rewards.map((r) => (
+            <li key={r.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+              <span className="font-semibold text-ink-900">{r.name}</span>
+              <span className="shrink-0 tabular-nums text-ink-500">{r.points_cost.toLocaleString()} pts</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {!signedIn && (
+        <div className="p-4 pt-1">
+          <Link
+            href={signIn}
+            className="flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+          >
+            Join free or sign in
+          </Link>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function DishRail({ title, dishes, href, mine }: { title: string; dishes: Dish[]; href: string | null; mine?: boolean }) {
+  return (
+    <section>
+      <SectionTitle href={href ?? undefined} action="Order">
+        {title}
+      </SectionTitle>
+      <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+        {dishes.map((d) => {
+          const card = (
+            <>
+              {d.image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={d.image_url} alt="" className="aspect-square w-full rounded-2xl object-cover" loading="lazy" />
+              ) : (
+                <ItemMark name={d.name} className="aspect-square w-full rounded-2xl text-3xl" />
+              )}
+              <span className="mt-2 block line-clamp-2 text-sm font-bold leading-snug text-ink-900">{d.name}</span>
+              <span className="block text-xs text-ink-500">
+                {money(d.price)}
+                {mine && d.times && d.times > 1 ? ` · ordered ${d.times}×` : ""}
+              </span>
+            </>
+          );
+          return (
+            <li key={d.id} className="w-32 shrink-0 snap-start">
+              {href ? (
+                <Link href={href} className="block transition active:scale-[0.97]">
+                  {card}
+                </Link>
+              ) : (
+                card
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

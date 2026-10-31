@@ -8,7 +8,7 @@ export function clock(hhmm: string): string {
   return `${h12}${m ? `:${String(m).padStart(2, "0")}` : ""}${suffix}`;
 }
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+export const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const minutes = (hhmm: string) => {
   const [h, m] = hhmm.split(":").map(Number);
   return h * 60 + m;

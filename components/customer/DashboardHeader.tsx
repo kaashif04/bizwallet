@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import NotificationBell from "./NotificationBell";
 
@@ -27,17 +28,17 @@ export default function DashboardHeader({
       transition={{ duration: 0.2 }}
       className="flex items-center justify-between"
     >
-      <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-base font-bold text-ink-700 shadow-sm">
+      <Link href="/customer/profile" aria-label="Profile" className="flex items-center gap-3 rounded-full pr-3 transition active:scale-[0.98]">
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-base font-bold text-ink-700 shadow-sm">
           {initial}
-        </div>
+        </span>
         <div>
           <p className="text-xs text-ink-500">{greeting}</p>
           <h1 className="text-xl leading-tight text-ink-900">
             {name}
           </h1>
         </div>
-      </div>
+      </Link>
 
       <NotificationBell />
     </motion.header>

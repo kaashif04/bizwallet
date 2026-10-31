@@ -4,12 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import QrScanner from "@/components/order/QrScanner";
 
-// Dine-in: scan the table QR, land on that table's menu. Public, so guests can use it too.
+// Scan a table, receipt or restaurant QR and open it. Public, so guests can use it too.
 export default function ScanPage() {
   const router = useRouter();
   const [at, setAt] = useState<string | null>(null);
   useEffect(() => setAt(new URLSearchParams(window.location.search).get("at")), []);
-  const onToken = useCallback((token: string) => router.replace(`/order/t/${encodeURIComponent(token)}`), [router]);
+  const onPath = useCallback((path: string) => router.replace(path), [router]);
 
   return (
     <main className="min-h-dvh bg-ink-50">
@@ -25,18 +25,17 @@ export default function ScanPage() {
           </svg>
         </button>
 
-        <h1 className="mt-5 text-[2rem] font-semibold leading-tight text-slate-900">Scan your table</h1>
+        <h1 className="mt-5 text-[2rem] font-semibold leading-tight text-slate-900">{at ? "Scan your table" : "Scan a QR"}</h1>
         <p className="mt-2 text-sm text-slate-600">
-          {at ? `At ${at}? ` : ""}Point your camera at the QR code on the table. The menu opens straight away.
+          {at
+            ? `At ${at}? Point your camera at the QR code on the table. The menu opens straight away.`
+            : "Point your camera at the QR on your table to order, or on your receipt to collect points."}
         </p>
 
         <div className="mt-6">
-          <QrScanner onToken={onToken} />
+          <QrScanner onPath={onPath} />
         </div>
 
-        <p className="mt-5 text-center text-xs text-slate-500">
-          Order from your phone, then pay in the app or at the counter.
-        </p>
       </div>
     </main>
   );

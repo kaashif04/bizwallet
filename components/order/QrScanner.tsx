@@ -2,17 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// Table QR codes printed from BizPos encode <BIZWALLET_URL>/order/t/<token>.
-export function tableTokenFrom(text: string): string | null {
-  const m = text.match(/\/order\/t\/([^/?#\s]+)/);
-  return m ? decodeURIComponent(m[1]) : null;
+// BizPos prints <BIZWALLET_URL>/order/t/<token> on tables, /r/<code> on receipts,
+// and owners share /s/<outlet>. Returns that path, whatever host the code names.
+export function bizwalletPathFrom(text: string): string | null {
+  const m = text.match(/\/(order\/t|r|s)\/([^/?#\s]+)/);
+  return m ? `/${m[1]}/${encodeURIComponent(decodeURIComponent(m[2]))}` : null;
 }
 
 type BarcodeDetectorLike = { detect: (src: CanvasImageSource) => Promise<{ rawValue: string }[]> };
 
 // Camera QR scanner. Uses the browser's BarcodeDetector where it exists
 // (Android Chrome) and jsQR elsewhere (iPhone Safari has no detector).
-export default function QrScanner({ onToken }: { onToken: (token: string) => void }) {
+export default function QrScanner({ onPath }: { onPath: (path: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [wrongCode, setWrongCode] = useState(false);
@@ -34,8 +35,8 @@ export default function QrScanner({ onToken }: { onToken: (token: string) => voi
         const name = (e as Error)?.name;
         setError(
           name === "NotAllowedError"
-            ? "Camera access is off. Allow it in your browser settings, or scan the table QR with your phone's camera app."
-            : "Couldn't open the camera. Scan the table QR with your phone's camera app instead."
+            ? "Camera access is off. Allow it in your browser settings, or scan the QR with your phone's camera app."
+            : "Couldn't open the camera. Scan the QR with your phone's camera app instead."
         );
         return;
       }
@@ -65,11 +66,11 @@ export default function QrScanner({ onToken }: { onToken: (token: string) => voi
             text = jsQR(img.data, img.width, img.height, { inversionAttempts: "dontInvert" })?.data ?? null;
           }
           if (text) {
-            const token = tableTokenFrom(text);
-            if (token) {
+            const path = bizwalletPathFrom(text);
+            if (path) {
               navigator.vibrate?.(20);
               stopped = true;
-              onToken(token);
+              onPath(path);
               return;
             }
             setWrongCode(true);
@@ -85,7 +86,7 @@ export default function QrScanner({ onToken }: { onToken: (token: string) => voi
       cancelAnimationFrame(raf);
       stream?.getTracks().forEach((t) => t.stop());
     };
-  }, [onToken]);
+  }, [onPath]);
 
   if (error) {
     return (
@@ -104,7 +105,7 @@ export default function QrScanner({ onToken }: { onToken: (token: string) => voi
       </div>
       {wrongCode && (
         <p className="absolute inset-x-4 bottom-4 rounded-2xl bg-white/95 px-4 py-2.5 text-center text-sm font-medium text-slate-800">
-          That isn&apos;t a table QR. Point at the code on your table.
+          That isn&apos;t a BizWallet QR. Point at the code on your table or receipt.
         </p>
       )}
     </div>

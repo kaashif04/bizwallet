@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import BottomNav from "@/components/customer/BottomNav";
 import PromotionSettings from "@/components/customer/PromotionSettings";
 import { PageHeader, screen } from "@/components/customer/ui";
 import { outletLogos } from "@/lib/guest-order";
@@ -32,7 +31,6 @@ export default async function PromotionsPage() {
         <PageHeader title="Promotions" subtitle="Choose who can send you offers. Change it any time." back="/customer/profile" />
         <PromotionSettings userId={user!.id} news={member?.marketing_consent ?? false} stores={stores} />
       </div>
-      <BottomNav />
     </div>
   );
 }
