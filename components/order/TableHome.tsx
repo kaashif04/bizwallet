@@ -169,9 +169,9 @@ export default function TableHome({ token }: { token: string }) {
         </header>
 
         <div className="mt-5 space-y-8 px-4">
-          {orders.length > 0 && <YourTable orders={orders} />}
+          {orders.length > 0 && <YourTable orders={orders} canCallBill={!home.hide?.bill} />}
 
-          <CallStaff token={token} calls={home.calls} onCalled={load} />
+          <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />
 
           <Link
             href={`/order/t/${token}/play`}
@@ -193,7 +193,21 @@ export default function TableHome({ token }: { token: string }) {
 
           {home.wifi && <Wifi name={home.wifi.name} password={home.wifi.password} />}
 
-          <Feedback token={token} reviewUrl={home.review_url} />
+          {!home.hide?.feedback ? (
+            <Feedback token={token} reviewUrl={home.review_url} canCallStaff={!home.hide?.staff} />
+          ) : (
+            home.review_url && (
+              <a
+                href={home.review_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-ink-900 transition hover:bg-ink-100"
+              >
+                Review us on Google
+                <span aria-hidden="true" className="text-ink-400">›</span>
+              </a>
+            )
+          )}
         </div>
       </main>
 
@@ -224,7 +238,7 @@ const KITCHEN: Record<string, [string, number]> = {
 };
 
 // After ordering: each round's progress, and what's left to pay.
-function YourTable({ orders }: { orders: GuestOrderStatus[] }) {
+function YourTable({ orders, canCallBill }: { orders: GuestOrderStatus[]; canCallBill: boolean }) {
   const sym = currencySymbol("MYR");
   const money = (n: number | null) => `${sym}${Number(n ?? 0).toFixed(2)}`;
   const unpaid = orders.find((o) => o.status === "awaiting_payment");
@@ -296,7 +310,9 @@ function YourTable({ orders }: { orders: GuestOrderStatus[] }) {
           <div className="flex items-center justify-between gap-3 px-4 py-3.5">
             <span className="min-w-0">
               <span className="block text-sm font-bold text-ink-900">To pay at the counter</span>
-              <span className="block text-xs text-ink-500">Tap Ask for the bill when you&apos;re ready</span>
+              <span className="block text-xs text-ink-500">
+                {canCallBill ? "Tap Ask for the bill when you're ready" : "When you're done"}
+              </span>
             </span>
             <span className="shrink-0 text-lg font-bold tabular-nums text-ink-900">{money(due)}</span>
           </div>
@@ -315,7 +331,17 @@ const ago = (at: string) => {
   return m < 1 ? "just now" : `${m} min ago`;
 };
 
-function CallStaff({ token, calls, onCalled }: { token: string; calls: TableCall[]; onCalled: () => void }) {
+function CallStaff({
+  token,
+  calls,
+  hide,
+  onCalled,
+}: {
+  token: string;
+  calls: TableCall[];
+  hide?: Home["hide"];
+  onCalled: () => void;
+}) {
   const [supabase] = useState(() => createClient());
   const [busy, setBusy] = useState<TableCall["kind"] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -329,15 +355,18 @@ function CallStaff({ token, calls, onCalled }: { token: string; calls: TableCall
     onCalled();
   }
 
+  const buttons = (
+    [
+      ["staff", "Call staff", "M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6ZM10 19a2 2 0 0 0 4 0"],
+      ["bill", "Ask for the bill", "M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6"],
+    ] as const
+  ).filter(([kind]) => !hide?.[kind]);
+  if (!buttons.length) return null;
+
   return (
     <section>
-      <div className="grid grid-cols-2 gap-3">
-        {(
-          [
-            ["staff", "Call staff", "M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6ZM10 19a2 2 0 0 0 4 0"],
-            ["bill", "Ask for the bill", "M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6"],
-          ] as const
-        ).map(([kind, label, icon]) => {
+      <div className={`grid gap-3 ${buttons.length > 1 ? "grid-cols-2" : ""}`}>
+        {buttons.map(([kind, label, icon]) => {
           const sent = calls.find((c) => c.kind === kind);
           return (
             <button
@@ -458,7 +487,7 @@ function Wifi({ name, password }: { name: string; password: string | null }) {
 
 // Every rating goes privately to the owner first; then everyone, whatever they
 // rated, may also post on Google (sending only happy diners there breaks Google's rules).
-function Feedback({ token, reviewUrl }: { token: string; reviewUrl: string | null }) {
+function Feedback({ token, reviewUrl, canCallStaff }: { token: string; reviewUrl: string | null; canCallStaff: boolean }) {
   const [supabase] = useState(() => createClient());
   const key = `bw_feedback:${token}`;
   const [rating, setRating] = useState(0);
@@ -494,7 +523,7 @@ function Feedback({ token, reviewUrl }: { token: string; reviewUrl: string | nul
         {sent ? (
           <div>
             <p className="text-sm font-bold text-ink-900">Thank you. The owner reads every note.</p>
-            {rating > 0 && rating <= 2 && (
+            {canCallStaff && rating > 0 && rating <= 2 && (
               <p className="mt-1 text-sm text-ink-500">Want it sorted now? Tap Call staff and we&apos;ll come over.</p>
             )}
             {reviewUrl && (

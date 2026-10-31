@@ -43,6 +43,7 @@ export type TableHome = {
   wifi: { name: string; password: string | null } | null;
   review_url: string | null; // Google review link, else the maps link
   calls: TableCall[]; // open "call staff" / "bill" requests, newest first
+  hide?: { staff: boolean; bill: boolean; feedback: boolean }; // owner's switches in BizPos
 };
 export type TableCall = { kind: "staff" | "bill"; at: string };
 
