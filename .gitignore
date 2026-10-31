@@ -21,3 +21,7 @@ next-env.d.ts
 
 # vercel
 .vercel
+.env*
+
+# graphify code graph (Autopilot)
+graphify-out/
