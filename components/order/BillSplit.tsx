@@ -139,7 +139,9 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
               arrival === "paid" ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"
             }`}
           >
-            {arrival === "paid" ? "Payment received. Thank you!" : "The payment wasn't completed. Nothing was charged."}
+            {arrival === "paid"
+              ? "Payment received. Points for your share are in your account."
+              : "The payment wasn't completed. Nothing was charged."}
           </motion.p>
         )}
       </AnimatePresence>
@@ -324,7 +326,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
                   ? mode === "items"
                     ? "Tick what you had"
                     : "Someone is paying the rest"
-                  : `Pay ${money(amount)} with FPX`}
+                  : `Pay ${money(amount)} · earn points`}
             </button>
           )}
         </div>
