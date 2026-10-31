@@ -47,6 +47,27 @@ export type TableHome = {
 };
 export type TableCall = { kind: "staff" | "bill"; at: string };
 
+// The table's open bill as the phones at the table see it (guest_table_bill).
+export type BillShare = { mode: "all" } | { mode: "equal"; of: number } | { mode: "items"; items: string[] };
+export type TableBill =
+  | { table: string; open: false }
+  | {
+      table: string;
+      open: true;
+      id: string;
+      subtotal: number;
+      discount: number;
+      service_charge: number;
+      sst: number;
+      rounding: number;
+      total: number;
+      paid: number; // paid in the app
+      remaining: number;
+      held: number; // someone is at the payment page right now
+      items: { id: string; name: string; quantity: number; line_total: number; options: string | null; paid: boolean }[];
+      payments: { amount: number; at: string; share: BillShare; mine: boolean }[];
+    };
+
 // Today's game board at the table's outlet (guest_game_board / guest_game_submit).
 export type GameBoard = {
   table: string; // this table's label

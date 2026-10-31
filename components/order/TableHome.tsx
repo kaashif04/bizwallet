@@ -9,6 +9,7 @@ import {
   outletLogos,
   tableOrders,
   type GuestOrderStatus,
+  type TableBill,
   type TableCall,
   type TableHome as Home,
 } from "@/lib/guest-order";
@@ -26,7 +27,7 @@ const finished = (o: GuestOrderStatus) =>
 
 // The table QR start page: the restaurant's welcome, Start order, call staff /
 // ask for the bill, Wi-Fi, feedback, and the diner's points here once signed in.
-export default function TableHome({ token }: { token: string }) {
+export default function TableHome({ token, billSplit = false }: { token: string; billSplit?: boolean }) {
   const [supabase] = useState(() => createClient());
   const [home, setHome] = useState<Home | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +37,13 @@ export default function TableHome({ token }: { token: string }) {
 
   // This phone's rounds at this table. Finished ones drop off 3 hours after ordering,
   // so the page is a plain start page again on the next visit.
+  // The table's open bill, whoever ordered it (counter or app).
+  const [billLeft, setBillLeft] = useState<number | null>(null);
   const loadOrders = useCallback(async () => {
+    supabase.rpc("guest_table_bill", { p_token: token }).then(({ data }) => {
+      const b = data as TableBill | null;
+      setBillLeft(b?.open ? Number(b.remaining) : null);
+    });
     const mine = tableOrders(token);
     const res = await Promise.all(
       mine.map(async (o) => {
@@ -172,6 +179,24 @@ export default function TableHome({ token }: { token: string }) {
 
         <div className="mt-5 space-y-8 px-4">
           {orders.length > 0 && <YourTable orders={orders} canCallBill={!home.hide?.bill} />}
+
+          {billLeft !== null && billLeft > 0 && (
+            <Link
+              href={`/order/t/${token}/bill`}
+              className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 shadow-sm transition hover:bg-ink-100 active:scale-[0.99]"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600" aria-hidden="true">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6" />
+                </svg>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-ink-900">Your bill · {currencySymbol("MYR")}{billLeft.toFixed(2)} left</span>
+                <span className="block text-xs text-ink-500">{billSplit ? "Pay it all or split it with your table" : "See everything on your table's bill"}</span>
+              </span>
+              <span className="shrink-0 text-sm font-bold text-brand-700">{billSplit ? "Pay ›" : "View ›"}</span>
+            </Link>
+          )}
 
           <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />
 
