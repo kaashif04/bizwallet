@@ -4,13 +4,24 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { outletLogos, type TableCall, type TableHome as Home } from "@/lib/guest-order";
-import ActiveOrders from "@/components/customer/ActiveOrders";
+import { currencySymbol } from "@/lib/format";
+import {
+  outletLogos,
+  tableOrders,
+  type GuestOrderStatus,
+  type TableCall,
+  type TableHome as Home,
+} from "@/lib/guest-order";
 import { SectionTitle } from "@/components/customer/ui";
 import AccountChip from "./AccountChip";
 import BranchLogo from "./BranchLogo";
 
 type Me = { name: string | null; points: number; joined: boolean; vouchers: number } | "guest" | null;
+
+// Finished: nothing more will happen to it, and nothing is owed on it.
+const finished = (o: GuestOrderStatus) =>
+  o.status === "cancelled" ||
+  (o.status === "accepted" && o.paid && o.table_due == null && ["ready", "served"].includes(o.kitchen_status ?? ""));
 
 // The table QR start page: the restaurant's welcome, Start order, call staff /
 // ask for the bill, Wi-Fi, feedback, and the diner's points here once signed in.
@@ -20,6 +31,22 @@ export default function TableHome({ token }: { token: string }) {
   const [error, setError] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
   const [me, setMe] = useState<Me>(null);
+  const [orders, setOrders] = useState<GuestOrderStatus[]>([]);
+
+  // This phone's rounds at this table. Finished ones drop off 3 hours after ordering,
+  // so the page is a plain start page again on the next visit.
+  const loadOrders = useCallback(async () => {
+    const mine = tableOrders(token);
+    const res = await Promise.all(
+      mine.map(async (o) => {
+        const { data } = await supabase.rpc("guest_order_status", { p_id: o.id, p_claim_token: o.claimToken });
+        const s = data as GuestOrderStatus | null;
+        if (!s || s.status === "rejected" || (finished(s) && Date.now() - o.at > 3 * 3_600_000)) return null;
+        return s;
+      })
+    );
+    setOrders(res.filter((o): o is GuestOrderStatus => !!o));
+  }, [supabase, token]);
 
   const load = useCallback(
     () =>
@@ -57,6 +84,15 @@ export default function TableHome({ token }: { token: string }) {
     });
   }, [supabase, load]);
 
+  // Follow the kitchen and the bill while anything is still going on.
+  const live = orders.some((o) => !finished(o));
+  useEffect(() => {
+    loadOrders();
+    if (!live) return;
+    const t = window.setInterval(loadOrders, 10_000);
+    return () => window.clearInterval(t);
+  }, [loadOrders, live]);
+
   // While staff have an open call, check back so it clears when they pick it up.
   const open = (home?.calls.length ?? 0) > 0;
   useEffect(() => {
@@ -65,10 +101,14 @@ export default function TableHome({ token }: { token: string }) {
     return () => window.clearInterval(t);
   }, [open, load]);
   useEffect(() => {
-    const onShow = () => document.visibilityState === "visible" && load();
+    const onShow = () => {
+      if (document.visibilityState !== "visible") return;
+      load();
+      loadOrders();
+    };
     document.addEventListener("visibilitychange", onShow);
     return () => document.removeEventListener("visibilitychange", onShow);
-  }, [load]);
+  }, [load, loadOrders]);
 
   if (error) {
     return (
@@ -129,8 +169,7 @@ export default function TableHome({ token }: { token: string }) {
         </header>
 
         <div className="mt-5 space-y-8 px-4">
-          {/* An order on the go here: one tap to follow it. */}
-          <ActiveOrders names={{}} outletId={home.outlet.id} variant="pill" />
+          {orders.length > 0 && <YourTable orders={orders} />}
 
           <CallStaff token={token} calls={home.calls} onCalled={load} />
 
@@ -149,7 +188,7 @@ export default function TableHome({ token }: { token: string }) {
             href={menuHref}
             className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97]"
           >
-            Start order
+            {orders.length > 0 ? "Order more" : "Start order"}
           </Link>
         ) : (
           <p className="rounded-full bg-white py-4 text-center text-sm font-semibold text-ink-700 shadow-lg">
@@ -158,6 +197,100 @@ export default function TableHome({ token }: { token: string }) {
         )}
       </div>
     </div>
+  );
+}
+
+const KITCHEN: Record<string, [string, number]> = {
+  queued: ["Sent to the kitchen", 0],
+  preparing: ["Being prepared", 1],
+  ready: ["Ready", 2],
+  served: ["Served", 2],
+};
+
+// After ordering: each round's progress, and what's left to pay.
+function YourTable({ orders }: { orders: GuestOrderStatus[] }) {
+  const sym = currencySymbol("MYR");
+  const money = (n: number | null) => `${sym}${Number(n ?? 0).toFixed(2)}`;
+  const unpaid = orders.find((o) => o.status === "awaiting_payment");
+  // Every round at a table goes on one bill; the newest round knows it best.
+  const due = [...orders].reverse().find((o) => o.table_due != null)?.table_due ?? null;
+  const allPaid = !unpaid && due == null && orders.every((o) => o.paid || o.status === "cancelled");
+
+  return (
+    <section>
+      <SectionTitle>Your table</SectionTitle>
+      <div className="divide-y divide-ink-100 rounded-2xl bg-white">
+        {orders.map((o, i) => {
+          const [label, step] =
+            o.status === "awaiting_payment"
+              ? ["Waiting for your payment", -1]
+              : o.status === "pending"
+                ? ["Waiting for the restaurant", -1]
+                : o.status === "cancelled"
+                  ? ["Cancelled by the restaurant", -1]
+                  : KITCHEN[o.kitchen_status ?? "queued"];
+          const count = o.items.reduce((n, it) => n + it.quantity, 0);
+          return (
+            <Link key={o.id} href={`/order/status/${o.id}`} className="block px-4 py-3.5 transition hover:bg-ink-50">
+              <span className="flex items-center gap-3">
+                <span
+                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                    o.status === "cancelled" ? "bg-ink-300" : step === 2 ? "bg-emerald-500" : step < 0 ? "bg-amber-500" : "bg-brand-500"
+                  }`}
+                  aria-hidden="true"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold text-ink-900">{label}</span>
+                  <span className="block truncate text-xs text-ink-500">
+                    {orders.length > 1 ? `Round ${i + 1} · ` : ""}
+                    {count} item{count === 1 ? "" : "s"}
+                    {o.paid ? " · Paid" : ""}
+                  </span>
+                </span>
+                <span aria-hidden="true" className="text-ink-400">›</span>
+              </span>
+              {o.status !== "cancelled" && (
+                <span className="mt-2.5 grid grid-cols-3 gap-1.5" aria-hidden="true">
+                  {[0, 1, 2].map((n) => (
+                    <span key={n} className="h-1.5 overflow-hidden rounded-full bg-ink-100">
+                      <motion.span
+                        className="block h-full rounded-full bg-marple"
+                        initial={false}
+                        animate={{ width: n <= step ? "100%" : "0%" }}
+                        transition={{ duration: 0.4, delay: n * 0.05 }}
+                      />
+                    </span>
+                  ))}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+        {unpaid ? (
+          <div className="p-4">
+            <Link
+              href={`/order/status/${unpaid.id}`}
+              className="flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+            >
+              Pay {money(unpaid.amount_due)}
+            </Link>
+            <p className="mt-2 text-center text-xs text-ink-500">The kitchen starts once you&apos;ve paid.</p>
+          </div>
+        ) : due != null ? (
+          <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-ink-900">To pay at the counter</span>
+              <span className="block text-xs text-ink-500">Tap Ask for the bill when you&apos;re ready</span>
+            </span>
+            <span className="shrink-0 text-lg font-bold tabular-nums text-ink-900">{money(due)}</span>
+          </div>
+        ) : (
+          allPaid && (
+            <p className="px-4 py-3.5 text-sm font-medium text-ink-800">All paid. Leave whenever you&apos;re ready.</p>
+          )
+        )}
+      </div>
+    </section>
   );
 }
 

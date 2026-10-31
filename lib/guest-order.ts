@@ -47,6 +47,7 @@ export type TableHome = {
 export type TableCall = { kind: "staff" | "bill"; at: string };
 
 export type GuestOrderStatus = {
+  id: string;
   // cancelled: accepted, then staff voided every item (or the whole bill) in BizPos
   status: "awaiting_payment" | "pending" | "accepted" | "rejected" | "cancelled";
   amount_due: number | null;
@@ -139,8 +140,26 @@ export function saveClaimToken(id: string, claimToken: string, menuPath: string)
   try {
     localStorage.setItem(key(id), claimToken);
     localStorage.setItem(`${key(id)}:menu`, menuPath);
+    localStorage.setItem(`${key(id)}:at`, String(Date.now()));
   } catch {
     // Private mode: the status page will say it can't find the order.
+  }
+}
+
+// Orders this phone placed from this table's menu in the last 12 hours, oldest first.
+export function tableOrders(token: string): { id: string; claimToken: string; at: number }[] {
+  try {
+    const out = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const id = /^bw_guest_order:(.+):menu$/.exec(localStorage.key(i) ?? "")?.[1];
+      if (!id || localStorage.getItem(`${key(id)}:menu`) !== `/order/t/${token}/menu`) continue;
+      const at = Number(localStorage.getItem(`${key(id)}:at`));
+      const claimToken = localStorage.getItem(key(id));
+      if (claimToken && at && Date.now() - at < 12 * 3_600_000) out.push({ id, claimToken, at });
+    }
+    return out.sort((a, b) => a.at - b.at);
+  } catch {
+    return [];
   }
 }
 

@@ -261,7 +261,8 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         )}
       </AnimatePresence>
       <span className="flex items-center gap-2">
-        <HomeButton />
+        {/* A table order's home is the table's start page. */}
+        <HomeButton href={menuPath?.startsWith("/order/t/") ? menuPath.replace(/\/menu$/, "") : undefined} />
         <span className="rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-bold text-brand-700">
           {order.table_label ? `Table ${order.table_label}` : "Pickup order"}
         </span>
