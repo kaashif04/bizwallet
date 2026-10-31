@@ -136,7 +136,7 @@ export default function GuestOrder(
         <p className="mt-2 max-w-xs text-sm text-slate-600">{loadError}</p>
         <Link
           href={props.token ? `/order/t/${props.token}` : `/s/${props.outletId}`}
-          className="mt-6 rounded-full bg-brand-600 px-6 py-3 text-[15px] font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+          className="mt-6 rounded-lg bg-brand-600 px-6 py-3 text-[15px] font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
         >
           Back to the restaurant
         </Link>
@@ -681,7 +681,7 @@ function CartReview({
           type="button"
           onClick={place}
           disabled={placing}
-          className="h-14 w-full rounded-full bg-brand-600 px-5 text-base font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
+          className="h-14 w-full rounded-lg bg-brand-600 px-5 text-base font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
         >
           {placing
             ? payNow

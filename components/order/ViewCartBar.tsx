@@ -28,7 +28,7 @@ export default function ViewCartBar({
           <button
             type="button"
             onClick={onClick}
-            className="relative flex h-14 w-full items-center justify-between overflow-hidden rounded-full bg-brand-600 pl-2 pr-6 text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+            className="relative flex h-14 w-full items-center justify-between overflow-hidden rounded-lg bg-brand-600 pl-2 pr-6 text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
           >
             {/* A shine sweeps across each time something is added. */}
             <motion.span
@@ -45,7 +45,7 @@ export default function ViewCartBar({
                 initial={{ scale: 1.5 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 500, damping: 18 }}
-                className="flex h-10 min-w-[2.5rem] items-center justify-center rounded-full bg-white px-2 text-base font-bold text-brand-700"
+                className="flex h-10 min-w-[2.5rem] items-center justify-center rounded-lg bg-white px-2 text-base font-bold text-brand-700"
               >
                 {totalItems}
               </motion.span>

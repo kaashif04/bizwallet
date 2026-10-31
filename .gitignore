@@ -25,3 +25,7 @@ next-env.d.ts
 
 # graphify code graph (Autopilot)
 graphify-out/
+
+# Impeccable screenshots and mocks (local review only)
+.impeccable/review/
+.impeccable/mocks/

@@ -178,7 +178,7 @@ export default function AddToCartSheet({
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="font-bold text-ink-900">{g.label}</h3>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-2xs font-bold transition-colors ${
+                    className={`rounded-lg px-2 py-0.5 text-2xs font-bold transition-colors ${
                       shakeId === g.id
                         ? "bg-rose-50 text-rose-700"
                         : g.required
@@ -287,7 +287,7 @@ export default function AddToCartSheet({
           <button
             type="button"
             onClick={handleAddClick}
-            className={`flex h-12 flex-1 items-center justify-between rounded-full px-5 text-[15px] font-bold transition active:scale-[0.97] ${
+            className={`flex h-12 flex-1 items-center justify-between rounded-lg px-5 text-[15px] font-bold transition active:scale-[0.97] ${
               unmetGroup
                 ? "bg-slate-100 text-slate-600"
                 : "bg-brand-600 text-on shadow-sm hover:bg-brand-700"

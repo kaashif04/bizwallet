@@ -29,14 +29,12 @@ export default function DashboardHeader({
       className="flex items-center justify-between"
     >
       <Link href="/customer/profile" aria-label="Profile" className="flex items-center gap-3 rounded-full pr-3 transition active:scale-[0.98]">
-        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-base font-bold text-ink-700 shadow-sm">
+        <span className="pad flex h-11 w-11 items-center justify-center rounded-full bg-brand-600 text-base font-extrabold text-on">
           {initial}
         </span>
         <div>
           <p className="text-xs text-ink-500">{greeting}</p>
-          <h1 className="text-xl leading-tight text-ink-900">
-            {name}
-          </h1>
+          <h1 className="pad text-xl font-extrabold leading-tight text-ink-900">{name.trim().split(/\s+/)[0]}</h1>
         </div>
       </Link>
 

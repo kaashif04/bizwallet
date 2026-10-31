@@ -1,44 +1,45 @@
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 
-// "Soft System", shared with BizEazy Hub and BizEazy Staff (~/BizEazy/DESIGN.md).
-// Ivory paper, charcoal ink, one Marple accent (crimson to cream), mint/amber/coral for status,
-// depth from paired light/shade shadows. Change the Hub first, then copy here.
+// "Order chit": BizWallet's own world (no longer the BizEazy Soft System).
+// Every screen is the restaurant's order pad: warm-white paper chits on a cool
+// laminate tabletop, carbon-blue ink, a pink carbon-copy band, stamp red for state.
+// See DESIGN.md.
 
 type Ramp = Record<string | number, string>;
 
-// Ink: ivory paper to charcoal. Text is charcoal, never black.
+// Ink: laminate tabletop to charcoal. ink-50 is the table; text is ink-900.
 const ink = {
-  50: "#F2EFE9", 100: "#E9E5DD", 200: "#DCD6CB", 300: "#C4BDB0", 400: "#9C958A", 500: "#6A645B",
-  600: "#544F48", 700: "#3E3A35", 800: "#2A2825", 900: "#1C1B19", 950: "#121110",
+  50: "#E7EAEE", 100: "#DCE0E6", 200: "#C9CFD8", 300: "#AAB2BE", 400: "#858E9C", 500: "#5E6675",
+  600: "#4A5160", 700: "#363C48", 800: "#252A33", 900: "#171A21", 950: "#0E1015",
 };
-// Marple: crimson CA2851, coral FF6766, apricot FFB173, cream FFE3B3.
-// 600 (crimson) is the button colour: ivory text on it is 5.8:1.
-const marple = {
-  50: "#FFF6EA", 100: "#FFE3B3", 200: "#FFCB98", 300: "#FFB173", 400: "#FF6766", 500: "#E8454F",
-  600: "#CA2851", 700: "#A81E43", 800: "#861737", 900: "#64112A", 950: "#3D0A1A",
+// Carbon blue: the copy-paper ink. 600 is the button (paper text on it is 9:1).
+const carbon = {
+  50: "#EEF0FB", 100: "#DCE1F7", 200: "#B9C3EF", 300: "#8E9DE2", 400: "#6476D3", 500: "#3F52BE",
+  600: "#2A3A9E", 700: "#223085", 800: "#1B266A", 900: "#141C4F", 950: "#0C1133",
 };
-const emerald = { 50: "#E6FAF3", 100: "#C2F2E1", 500: "#00A877", 600: "#008A62", 700: "#006E4F" };
-const amber = { 50: "#FFF7E6", 100: "#FFEBC2", 200: "#FFD98A", 300: "#FFC24D", 500: "#F09A00", 700: "#9A5C00", 800: "#7A4800" };
-const rose = { 50: "#FFF1F0", 100: "#FFDEDB", 200: "#FFBCB6", 400: "#FF6257", 500: "#F04438", 600: "#D92D20", 700: "#B42318" };
+const emerald = { 50: "#E6F6EE", 100: "#C6EBD8", 500: "#1E9E5E", 600: "#17844E", 700: "#11693E" };
+const amber = { 50: "#FFF6E3", 100: "#FDE8BC", 200: "#F9D47E", 300: "#F2B940", 500: "#D98E00", 700: "#8F5B00", 800: "#6F4600" };
+const rose = { 50: "#FDEEF0", 100: "#FAD6DB", 200: "#F3AEB8", 400: "#E2566B", 500: "#D33049", 600: "#C8102E", 700: "#A10C25" };
+// The pink carbon-copy band and the rubber stamp.
+const paper = { band: "#F5CDD5", stamp: "#C8102E", rule: "#D6DDEF" };
 
-// Dark mode (the Hub's night palette): night ground, charcoal cards, light
-// ink. Tints become dark washes and the -700/-800 text shades turn light,
-// so one class reads right in both modes. Follows the phone's setting.
+// Night: carbon-paper chits on a near-black table, luminous carbon ink.
 const dark: Record<string, Ramp> = {
   ink: {
-    50: "#121110", 100: "#2A2825", 200: "#3E3A35", 300: "#544F48", 400: "#6A645B", 500: "#9C958A",
-    600: "#C4BDB0", 700: "#DCD6CB", 800: "#E9E5DD", 900: "#F2EFE9", 950: "#FBFAF7",
+    50: "#0D1015", 100: "#1E232C", 200: "#2A303B", 300: "#3A4150", 400: "#5A6272", 500: "#8C95A5",
+    600: "#AEB6C4", 700: "#CBD1DB", 800: "#DFE3EA", 900: "#EEF1F5", 950: "#F8F9FB",
   },
   brand: {
-    50: "#2A1619", 100: "#3A1B20", 200: "#4D2129", 300: "#6A2735", 400: "#FFB173", 500: "#FF6766",
-    600: "#D63558", 700: "#FF8A7A", 800: "#FFB173", 900: "#FFCB98", 950: "#FFE3B3",
+    50: "#161C33", 100: "#1C2442", 200: "#26305A", 300: "#34428A", 400: "#8C9CFF", 500: "#A3B1FF",
+    600: "#4C5FE0", 700: "#A9B6FF", 800: "#C4CDFF", 900: "#DCE1FF", 950: "#EEF1FF",
   },
-  emerald: { 50: "#0D2A21", 100: "#123A2D", 500: "#12C48C", 600: "#4AD6A7", 700: "#4AD6A7" },
-  amber: { 50: "#2E2108", 100: "#3D2C0A", 200: "#5C3600", 300: "#FFC24D", 500: "#FFB020", 700: "#FFC24D", 800: "#FFD98A" },
-  rose: { 50: "#33130F", 100: "#451109", 200: "#7A271A", 400: "#FF8F86", 500: "#FF6257", 600: "#FF8F86", 700: "#FF8F86" },
+  emerald: { 50: "#0E2419", 100: "#133222", 500: "#3CCB82", 600: "#5BD99A", 700: "#5BD99A" },
+  amber: { 50: "#2B2008", 100: "#3A2B0A", 200: "#5C3E00", 300: "#F2B940", 500: "#FFB52E", 700: "#F7C65C", 800: "#F9D47E" },
+  rose: { 50: "#2E1218", 100: "#40161F", 200: "#6E2232", 400: "#FF8094", 500: "#FF5C6C", 600: "#FF7A88", 700: "#FF8D99" },
+  paper: { band: "#3B2531", stamp: "#FF5C6C", rule: "#2A3352" },
 };
-const light: Record<string, Ramp> = { ink, brand: marple, emerald, amber, rose };
+const light: Record<string, Ramp> = { ink, brand: carbon, emerald, amber, rose, paper };
 
 const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(" ");
 const vars = (pal: Record<string, Ramp>, card: string) => ({
@@ -62,20 +63,22 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
+        // Archivo carries everything; pad headers and totals use its expanded width (.pad).
         sans: ["var(--font-body)", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
-        // One family carries everything; display is kept as an alias.
         display: ["var(--font-body)", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       backgroundImage: {
-        marple: "linear-gradient(90deg, #CA2851, #FF6766 45%, #FFB173 80%, #FFE3B3)",
-        "marple-card": "linear-gradient(135deg, #CA2851 0%, #E8454F 50%, #FF6766 80%, #FFB173 100%)",
+        // Old gradient names, now solid carbon ink (progress fills, legacy cards).
+        marple: "linear-gradient(rgb(var(--brand-600)), rgb(var(--brand-600)))",
+        "marple-card": "linear-gradient(rgb(var(--brand-600)), rgb(var(--brand-600)))",
       },
       fontSize: { "2xs": ["0.6875rem", "1.09rem"] },
       colors: {
-        // bg-white is the card surface (charcoal in dark mode); text-on is the
-        // fixed ivory for text on crimson, the gradient and photos.
+        // bg-white is chit paper (carbon paper at night); text-on is paper-white
+        // for text on carbon-blue buttons and photos.
         white: "rgb(var(--card) / <alpha-value>)",
-        on: "#FBFAF7",
+        on: "#FFFDF8",
+        paper: themed("paper"),
         ink: themed("ink"),
         slate: themed("ink"),
         gray: themed("ink"),
@@ -90,25 +93,27 @@ const config: Config = {
         sky: themed("brand"),
         berry: themed("rose"),
       },
+      // Paper is cut, not moulded: small radii.
       borderRadius: {
-        lg: "0.75rem",
-        xl: "1rem",
-        "2xl": "1.5rem",
-        "3xl": "1.5rem",
-        sheet: "1.25rem",
+        lg: "0.375rem",
+        xl: "0.5rem",
+        "2xl": "0.5rem",
+        "3xl": "0.625rem",
+        sheet: "0.875rem",
       },
+      // Paper lifted off the table: offset, soft, one light from above.
       boxShadow: {
-        xs: `-1px -1px 2px ${hl}, 1px 1px 3px ${sh}`,
-        sm: `-3px -3px 8px ${hl}, 4px 4px 10px ${sh}`,
-        DEFAULT: `-3px -3px 8px ${hl}, 4px 4px 10px ${sh}`,
-        md: `-5px -5px 12px ${hl}, 6px 6px 16px ${sh}`,
-        lg: `-8px -8px 20px ${hl}, 10px 10px 26px ${sh}`,
-        xl: `-10px -10px 28px ${hl}, 16px 16px 40px ${sh}`,
-        "2xl": `-10px -10px 28px ${hl}, 16px 16px 40px ${sh}`,
-        glass: `-10px -10px 28px ${hl}, 16px 16px 40px ${sh}`,
-        pressed: `inset 2px 2px 5px ${sh}, inset -2px -2px 5px ${hl}`,
-        well: `inset 1px 1px 3px ${sh}, inset -1px -1px 3px ${hl}`,
-        sheet: "0 -10px 40px -12px rgb(42 32 22 / 0.22)",
+        xs: `0 1px 2px ${sh}`,
+        sm: `0 1px 0 ${hl}, 0 2px 4px -1px ${sh}, 0 8px 18px -10px ${sh}`,
+        DEFAULT: `0 1px 0 ${hl}, 0 2px 4px -1px ${sh}, 0 8px 18px -10px ${sh}`,
+        md: `0 2px 4px -1px ${sh}, 0 12px 24px -12px ${sh}`,
+        lg: `0 4px 8px -2px ${sh}, 0 18px 36px -16px ${sh}`,
+        xl: `0 6px 12px -4px ${sh}, 0 24px 48px -20px ${sh}`,
+        "2xl": `0 6px 12px -4px ${sh}, 0 24px 48px -20px ${sh}`,
+        glass: `0 6px 12px -4px ${sh}, 0 24px 48px -20px ${sh}`,
+        pressed: `inset 0 0 0 1px rgb(var(--ink-200))`,
+        well: `inset 0 0 0 1px rgb(var(--ink-200))`,
+        sheet: `0 -8px 32px -12px ${sh}`,
       },
       transitionTimingFunction: {
         DEFAULT: "cubic-bezier(0.22, 1, 0.36, 1)",
@@ -123,16 +128,16 @@ const config: Config = {
     // (html[data-theme], set before paint in app/layout.tsx).
     plugin(({ addBase }) => {
       const darkVars = {
-        ...vars({ ...light, ...dark }, "#1C1B19"),
-        "--nm-hl": "rgb(255 255 255 / 0.035)",
-        "--nm-sh": "rgb(0 0 0 / 0.55)",
+        ...vars({ ...light, ...dark }, "#171B23"),
+        "--nm-hl": "rgb(255 255 255 / 0.04)",
+        "--nm-sh": "rgb(0 0 0 / 0.6)",
         "color-scheme": "dark",
       };
       addBase({
         ":root": {
-          ...vars(light, "#FBFAF7"),
-          "--nm-hl": "rgb(255 255 255 / 0.85)",
-          "--nm-sh": "rgb(122 104 78 / 0.2)",
+          ...vars(light, "#FFFDF8"),
+          "--nm-hl": "rgb(255 255 255 / 0.9)",
+          "--nm-sh": "rgb(23 32 56 / 0.18)",
           "color-scheme": "light",
         },
         "@media (prefers-color-scheme: dark)": { ':root:not([data-theme="light"])': darkVars },

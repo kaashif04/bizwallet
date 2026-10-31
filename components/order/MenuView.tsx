@@ -71,7 +71,7 @@ export default function MenuView({
         <div className="flex items-center justify-between gap-3 px-5 pt-[max(1rem,env(safe-area-inset-top))]">
           <span className="flex items-center gap-2">
             <HomeButton href={homeHref} />
-            <span className="rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-bold text-brand-700">
+            <span className="rounded-lg bg-brand-50 px-2.5 py-1 text-2xs font-bold text-brand-700">
               {subtitle}
             </span>
           </span>
@@ -89,7 +89,7 @@ export default function MenuView({
               type="button"
               onClick={() => jumpTo(c)}
               aria-current={active === c ? "true" : undefined}
-              className={`relative whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`relative whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                 active === c
                   ? "text-on"
                   : "bg-white text-slate-600 shadow-sm hover:text-slate-900"
@@ -216,7 +216,7 @@ function MenuItemCard({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.4, opacity: 0 }}
               transition={{ type: "spring", stiffness: 600, damping: 26 }}
-              className="flex h-9 min-w-[2.25rem] items-center justify-center rounded-full bg-brand-50 px-2 text-sm font-bold text-brand-700 shadow-well"
+              className="flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg bg-brand-50 px-2 text-sm font-bold text-brand-700 shadow-well"
               aria-label={`${count} in cart`}
             >
               {count}

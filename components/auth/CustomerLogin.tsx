@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { rememberedHome } from "@/lib/place";
+import { Chit, PadLabel } from "@/components/ui/chit";
+import BranchLogo from "@/components/order/BranchLogo";
+import { outletLogos } from "@/lib/guest-order";
 
 // Where to land after auth: the ?redirect= set by middleware or the guest
 // order page (same-origin paths only), else the restaurant they came from.
@@ -17,6 +20,16 @@ export default function CustomerLogin() {
   const [supabase] = useState(() => createClient());
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  // The restaurant they came from leads the card (BizWallet is only the mark).
+  const [place, setPlace] = useState<{ name: string; logo: string | null } | null>(null);
+  useEffect(() => {
+    const id = rememberedHome().match(/^\/s\/(.+)$/)?.[1];
+    if (!id) return;
+    Promise.all([supabase.rpc("guest_store", { p_outlet: id }), outletLogos(supabase)]).then(([{ data }, logos]) => {
+      const s = data as { name: string } | null;
+      if (s) setPlace({ name: s.name, logo: logos[id] ?? null });
+    });
+  }, [supabase]);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -96,18 +109,33 @@ export default function CustomerLogin() {
   }
 
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-md sm:p-8">
-      {/* Brand */}
-      <div className="mb-7 text-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="BizWallet" className="mx-auto h-14 w-14 rounded-2xl shadow-md" />
-        <h1 className="mt-5 text-2xl tracking-[-0.03em] text-ink-900">
-          Welcome to BizWallet
+    <Chit
+      band={
+        <div className="flex items-center gap-3">
+          {place ? (
+            <BranchLogo name={place.name} logoUrl={place.logo} className="h-10 w-10 rounded-lg text-base" />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/logo.svg" alt="" className="h-10 w-10 rounded-lg" />
+          )}
+          <span className="min-w-0">
+            <PadLabel>{mode === "signup" ? "Join free" : "Sign in"}</PadLabel>
+            <span className="block truncate text-sm font-bold text-ink-900">{place ? place.name : "BizWallet"}</span>
+          </span>
+        </div>
+      }
+    >
+    <div className="p-5 sm:p-6">
+      <div className="mb-6">
+        <h1 className="pad text-2xl font-extrabold leading-tight text-ink-900">
+          {mode === "signup" ? "Start your card" : "Welcome back"}
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-ink-500">
           {mode === "signup"
-            ? "Free account. Earn points at every restaurant you visit."
-            : "Sign in to your wallet and rewards"}
+            ? place
+              ? `Collect points at ${place.name} on every bill.`
+              : "Collect points at the restaurants you visit."
+            : "Your points, rewards and orders."}
         </p>
       </div>
 
@@ -115,7 +143,7 @@ export default function CustomerLogin() {
       <button
         type="button"
         onClick={handleGoogle}
-        className="flex w-full items-center justify-center gap-3 rounded-full border-2 border-slate-100 bg-white px-4 py-3 text-[15px] font-bold text-slate-800 transition hover:bg-slate-50 active:scale-[0.98]"
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-ink-200 bg-white px-4 py-3 text-[15px] font-bold text-ink-900 transition hover:bg-ink-50 active:scale-[0.98]"
       >
         <GoogleIcon />
         Continue with Google
@@ -195,6 +223,7 @@ export default function CustomerLogin() {
         </p>
       </form>
     </div>
+    </Chit>
   );
 }
 
@@ -219,7 +248,7 @@ function Field({
         {...props}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-brand-400 focus:bg-white disabled:text-slate-400"
+        className="w-full rounded-lg border border-ink-200 bg-white px-4 py-3 text-[15px] text-ink-900 outline-none transition placeholder:text-ink-400 focus:border-brand-600 disabled:text-ink-400"
       />
     </label>
   );
@@ -236,7 +265,7 @@ function PrimaryButton({
     <button
       type="submit"
       disabled={loading}
-      className="mt-1 flex w-full items-center justify-center rounded-full bg-brand-600 px-4 py-3.5 text-base font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+      className="mt-1 flex w-full items-center justify-center rounded-lg bg-brand-600 px-4 py-3.5 text-base font-bold text-on transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {loading ? <Spinner /> : children}
     </button>

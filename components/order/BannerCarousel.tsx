@@ -166,7 +166,7 @@ function PromoChip({ code }: { code: string }) {
           // Clipboard blocked: the code is on screen to type.
         }
       }}
-      className="pointer-events-auto relative mt-2.5 inline-flex h-8 items-center gap-1.5 rounded-full border border-dashed border-on/70 bg-white/15 px-3 text-xs font-bold tracking-wider text-on backdrop-blur-sm"
+      className="pointer-events-auto relative mt-2.5 inline-flex h-8 items-center gap-1.5 rounded-lg border border-dashed border-on/70 bg-white/15 px-3 text-xs font-bold tracking-wider text-on backdrop-blur-sm"
     >
       <AnimatePresence mode="wait" initial={false}>
         <motion.span

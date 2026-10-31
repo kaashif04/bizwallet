@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
 import { outletLogos } from "@/lib/guest-order";
 import BranchLogo from "@/components/order/BranchLogo";
+import { Chit, PadLabel, Stamp } from "@/components/ui/chit";
 import { rememberPlace } from "@/lib/place";
 
 type Receipt = {
@@ -70,96 +71,113 @@ export default function ReceiptClaimPage({ params }: { params: { code: string } 
 
   return (
     <main className="min-h-dvh bg-ink-50">
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-10">
-        {!r && !error && <div className="h-80 animate-pulse rounded-3xl bg-white" aria-busy="true" />}
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-10">
+        {!r && !error && <div className="h-96 animate-pulse rounded-xl bg-white" aria-busy="true" />}
         {!r && error && (
-          <div className="rounded-3xl bg-white p-6 text-center">
-            <h1 className="text-xl font-semibold text-ink-900">Couldn&apos;t open this receipt</h1>
-            <p className="mt-2 text-sm text-ink-600">{error}</p>
-          </div>
+          <Chit band={<PadLabel>Receipt</PadLabel>}>
+            <div className="p-5">
+              <h1 className="pad text-xl font-extrabold text-ink-900">Couldn&apos;t open this receipt</h1>
+              <p className="mt-2 text-sm text-ink-600">{error}</p>
+            </div>
+          </Chit>
         )}
         {r && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="rounded-3xl bg-white p-6 text-center"
-          >
-            <BranchLogo name={r.outlet.name} logoUrl={logo} className="mx-auto h-16 w-16 rounded-2xl text-2xl shadow-sm" />
-            <p className="mt-3 text-sm font-semibold text-ink-700">{r.outlet.name}</p>
-            <p className="mt-0.5 text-xs text-ink-500">
-              {sym}
-              {Number(r.total).toFixed(2)} ·{" "}
-              {new Date(r.paid_at).toLocaleString("en-MY", { timeZone: "Asia/Kuala_Lumpur", dateStyle: "medium", timeStyle: "short" })}
-            </p>
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}>
+            <Chit
+              band={
+                <div className="flex items-center gap-3">
+                  <BranchLogo name={r.outlet.name} logoUrl={logo} className="h-10 w-10 rounded-lg text-base" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold text-ink-900">{r.outlet.name}</span>
+                    <span className="block text-xs text-ink-700">
+                      {new Date(r.paid_at).toLocaleString("en-MY", { timeZone: "Asia/Kuala_Lumpur", dateStyle: "medium", timeStyle: "short" })}
+                    </span>
+                  </span>
+                </div>
+              }
+            >
+              <div className="ruled px-5">
+                <div className="flex justify-between py-3.5 text-sm">
+                  <span className="text-ink-600">Bill paid</span>
+                  <span className="pad font-bold text-ink-900">
+                    {sym}
+                    {Number(r.total).toFixed(2)}
+                  </span>
+                </div>
+                <div className="relative py-6">
+                  <PadLabel>{r.state === "mine" ? "Added to your card" : "Points on this receipt"}</PadLabel>
+                  <p className="pad mt-1 text-6xl font-extrabold leading-none text-brand-700">{r.points.toLocaleString()}</p>
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                    {r.state === "mine" ? (
+                      <Stamp ok thump className="!text-sm">
+                        Collected
+                      </Stamp>
+                    ) : r.state === "claimed" ? (
+                      <Stamp className="!text-sm">Taken</Stamp>
+                    ) : r.state === "expired" ? (
+                      <Stamp className="!text-sm">Expired</Stamp>
+                    ) : r.state === "void" ? (
+                      <Stamp className="!text-sm">Void</Stamp>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
 
-            {r.state === "mine" ? (
-              <>
-                <span className="mx-auto mt-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                  <svg viewBox="0 0 48 48" className="h-9 w-9" fill="none" stroke="currentColor" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <motion.path d="M12 25l8 8 16-17" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.4, delay: 0.15 }} />
-                  </svg>
-                </span>
-                <h1 className="mt-4 text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">
-                  {r.points.toLocaleString()} points added
-                </h1>
-                <p className="mt-1 text-sm text-ink-500">
-                  {balance != null ? `You now have ${balance.toLocaleString()} points here.` : "They're in your wallet."} Redeem rewards on
-                  your next visit.
-                </p>
-                <Link
-                  href={`/s/${r.outlet.id}?rewards=1`}
-                  className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
-                >
-                  See my rewards
-                </Link>
-              </>
-            ) : r.state === "ready" ? (
-              <>
-                <p className="mt-6 text-sm font-semibold text-ink-500">You&apos;ve earned</p>
-                <h1 className="text-5xl font-bold tabular-nums tracking-[-0.03em] text-ink-900">{r.points.toLocaleString()}</h1>
-                <p className="text-sm font-semibold text-ink-500">points</p>
-                {error && <p role="alert" className="mt-4 text-sm text-rose-700">{error}</p>}
-                {signedIn === false && (
+              <div className="total-rule mx-5 py-5">
+                {r.state === "mine" ? (
                   <>
+                    <p className="text-sm text-ink-600">
+                      {balance != null ? `You now have ${balance.toLocaleString()} points here. ` : ""}Redeem rewards on your next visit.
+                    </p>
                     <Link
-                      href={back}
-                      className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+                      href={`/s/${r.outlet.id}?rewards=1`}
+                      className="mt-4 flex h-12 w-full items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-on transition hover:bg-brand-700 active:scale-[0.98]"
                     >
-                      Sign in or join free to collect
+                      See my rewards
                     </Link>
-                    <p className="mt-2 text-xs text-ink-500">Expires in {left(r.expires_at)}</p>
+                  </>
+                ) : r.state === "ready" ? (
+                  <>
+                    {error && <p role="alert" className="mb-3 text-sm text-rose-700">{error}</p>}
+                    {signedIn === false && (
+                      <>
+                        <Link
+                          href={back}
+                          className="flex h-12 w-full items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-on transition hover:bg-brand-700 active:scale-[0.98]"
+                        >
+                          Sign in or join free to collect
+                        </Link>
+                        <p className="mt-2 text-center text-xs text-ink-500">Expires in {left(r.expires_at)}</p>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-bold text-ink-900">
+                      {r.state === "claimed"
+                        ? "These points were already collected."
+                        : r.state === "expired"
+                          ? "Points can be collected for 12 hours after paying."
+                          : r.state === "unpaid"
+                            ? "This bill isn't paid yet. Scan again after paying."
+                            : "This bill was cancelled."}
+                    </p>
+                    <p className="mt-1 text-sm text-ink-600">
+                      {r.state === "expired" ? "Join now and you'll earn on your next visit." : "Ask our staff if something looks wrong."}
+                    </p>
+                    {signedIn === false && r.state === "expired" && (
+                      <Link
+                        href={back}
+                        className="mt-4 flex h-12 w-full items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-on transition hover:bg-brand-700 active:scale-[0.98]"
+                      >
+                        Join free
+                      </Link>
+                    )}
                   </>
                 )}
-              </>
-            ) : (
-              <>
-                <h1 className="mt-6 text-xl font-semibold text-ink-900">
-                  {r.state === "claimed"
-                    ? "These points were already collected"
-                    : r.state === "expired"
-                      ? "This receipt has expired"
-                      : r.state === "unpaid"
-                        ? "This bill isn't paid yet"
-                        : "This bill was cancelled"}
-                </h1>
-                <p className="mt-2 text-sm text-ink-600">
-                  {r.state === "expired"
-                    ? "Points can be collected for 12 hours after paying. Join now and you'll earn on your next visit."
-                    : r.state === "unpaid"
-                      ? "Scan again after paying."
-                      : "Ask our staff if something looks wrong."}
-                </p>
-                {signedIn === false && r.state === "expired" && (
-                  <Link
-                    href={back}
-                    className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
-                  >
-                    Join free
-                  </Link>
-                )}
-              </>
-            )}
+              </div>
+            </Chit>
+            <p className="mt-6 text-center text-xs text-ink-400">Powered by BizWallet</p>
           </motion.div>
         )}
       </div>

@@ -8,12 +8,15 @@ export function PageHeader({ title, subtitle, back }: { title: string; subtitle?
       {back && (
         <Link
           href={back}
-          className="-ml-2 mb-2 inline-flex h-9 items-center gap-1 rounded-full px-2 text-sm font-bold text-brand-700 transition hover:bg-brand-50"
+          className="-ml-2 mb-2 inline-flex h-9 items-center gap-1 rounded-lg px-2 text-sm font-bold text-brand-700 transition hover:bg-brand-50"
         >
-          <span aria-hidden="true">‹</span> Back
+          <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M10 3 5 8l5 5" />
+          </svg>
+          Back
         </Link>
       )}
-      <h1 className="text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">{title}</h1>
+      <h1 className="pad text-[1.75rem] font-bold leading-tight text-ink-900">{title}</h1>
       {subtitle && <p className="mt-1 text-sm text-ink-500">{subtitle}</p>}
     </header>
   );
@@ -21,8 +24,8 @@ export function PageHeader({ title, subtitle, back }: { title: string; subtitle?
 
 export function SectionTitle({ children, href, action = "See all" }: { children: React.ReactNode; href?: string; action?: string }) {
   return (
-    <div className="mb-3 flex items-end justify-between px-1">
-      <h2 className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">{children}</h2>
+    <div className="mb-3 flex items-baseline justify-between px-1">
+      <h2 className="pad text-[1.0625rem] font-bold leading-tight text-ink-900">{children}</h2>
       {href && (
         <Link href={href} className="text-sm font-bold text-brand-700 hover:underline">
           {action}

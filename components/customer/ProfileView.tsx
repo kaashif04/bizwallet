@@ -104,7 +104,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
                   type="button"
                   onClick={save}
                   disabled={saving}
-                  className="h-9 rounded-full bg-brand-600 px-4 text-sm font-bold text-on disabled:opacity-60"
+                  className="h-9 rounded-lg bg-brand-600 px-4 text-sm font-bold text-on disabled:opacity-60"
                 >
                   {saving ? "Saving…" : "Save"}
                 </button>
@@ -114,7 +114,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
                     setEditing(false);
                     setDraft(name);
                   }}
-                  className="h-9 rounded-full px-3 text-sm font-bold text-ink-600 hover:bg-ink-50"
+                  className="h-9 rounded-lg px-3 text-sm font-bold text-ink-600 hover:bg-ink-50"
                 >
                   Cancel
                 </button>
@@ -130,7 +130,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
                   setDraft(name);
                   setEditing(true);
                 }}
-                className="-ml-2 mt-1 inline-flex h-8 items-center gap-1.5 rounded-full px-2 text-sm font-bold text-brand-700 transition hover:bg-brand-50"
+                className="-ml-2 mt-1 inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-sm font-bold text-brand-700 transition hover:bg-brand-50"
               >
                 <PencilIcon />
                 Edit name
@@ -163,7 +163,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
           <button
             type="button"
             onClick={() => setShowCompletionSheet(true)}
-            className="mt-4 w-full rounded-full bg-brand-600 px-4 py-2.5 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.98]"
+            className="mt-4 w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.98]"
           >
             Add details
           </button>

@@ -14,7 +14,7 @@ html {
 
 body {
   @apply bg-ink-50 text-ink-900 antialiased;
-  letter-spacing: -0.011em;
+  letter-spacing: -0.005em;
   /* Money everywhere: digits line up in balances, prices and ledgers. */
   font-variant-numeric: tabular-nums;
   caret-color: rgb(var(--brand-600));
@@ -37,8 +37,8 @@ h2 {
   text-wrap: balance;
 }
 
-/* Soft System relief (BizEazy Hub): cards are raised off the paper, fields
-   are pressed into it. Base layer, so any shadow utility still wins. */
+/* Paper chits lift off the table; fields are ruled into the paper.
+   Base layer, so any shadow utility still wins. */
 :where(.bg-white.rounded-2xl, .bg-white.rounded-3xl) {
   box-shadow: theme("boxShadow.sm");
 }
@@ -46,12 +46,103 @@ h2 {
   box-shadow: theme("boxShadow.pressed");
 }
 
+/* Pad lettering: Archivo expanded, for chit headers, table numbers and totals. */
+.pad {
+  font-stretch: 125%;
+  letter-spacing: -0.01em;
+}
+.pad-label {
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* A chit: paper torn off the pad along its perforation. The shadow sits on the
+   wrapper (drop-shadow follows the torn edge); the paper carries the mask. */
+.chit {
+  filter: drop-shadow(0 1px 1px rgb(23 32 56 / 0.08)) drop-shadow(0 8px 14px rgb(23 32 56 / 0.12));
+}
+[data-theme="dark"] .chit {
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.5)) drop-shadow(0 10px 18px rgb(0 0 0 / 0.45));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .chit {
+    filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.5)) drop-shadow(0 10px 18px rgb(0 0 0 / 0.45));
+  }
+}
+.chit-paper {
+  background: rgb(var(--card));
+  border-radius: 0 0 0.5rem 0.5rem;
+  -webkit-mask:
+    radial-gradient(circle 3.5px at 7px 0, #0000 96%, #000) 0 0 / 14px 7px repeat-x,
+    linear-gradient(#000, #000) 0 7px / 100% calc(100% - 7px) no-repeat;
+  mask:
+    radial-gradient(circle 3.5px at 7px 0, #0000 96%, #000) 0 0 / 14px 7px repeat-x,
+    linear-gradient(#000, #000) 0 7px / 100% calc(100% - 7px) no-repeat;
+}
+/* The pink carbon copy's header band. */
+.chit-band {
+  background: rgb(var(--paper-band));
+}
+/* The pad's printed rules between lines. */
+.ruled > * + * {
+  border-top: 1px solid rgb(var(--paper-rule));
+}
+/* Totals sit under a double rule, as written on the pad. */
+.total-rule {
+  border-top: 3px double rgb(var(--brand-600) / 0.55);
+}
+
+/* Rubber stamp: state, never decoration. */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.2em 0.6em;
+  border: 2px solid rgb(var(--paper-stamp));
+  outline: 1px solid rgb(var(--paper-stamp) / 0.7);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+  color: rgb(var(--paper-stamp));
+  font-stretch: 125%;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: rotate(-7deg);
+  opacity: 0.92;
+}
+.stamp-ok {
+  --paper-stamp: var(--emerald-600);
+}
+.stamp-thump {
+  animation: stamp-thump 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes stamp-thump {
+  0% {
+    transform: rotate(-14deg) scale(1.7);
+    opacity: 0;
+    filter: blur(2px);
+  }
+  60% {
+    transform: rotate(-6deg) scale(0.96);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: rotate(-7deg) scale(1);
+    opacity: 0.92;
+  }
+}
+
 p {
   text-wrap: pretty;
 }
 
 ::selection {
-  background: rgb(var(--brand-400) / 0.3);
+  background: rgb(var(--brand-200));
   color: rgb(var(--ink-950));
 }
 
