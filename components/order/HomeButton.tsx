@@ -2,10 +2,11 @@ import Link from "next/link";
 
 // Way out of the ordering flow to the wallet home. Guests land on sign-in,
 // which brings them back home afterwards.
-export default function HomeButton() {
+// At a table it goes back to the table's start page instead.
+export default function HomeButton({ href = "/customer/dashboard" }: { href?: string }) {
   return (
     <Link
-      href="/customer/dashboard"
+      href={href}
       aria-label="Home"
       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-slate-800 shadow-sm transition hover:bg-brand-100 active:scale-90"
     >

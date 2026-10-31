@@ -19,7 +19,9 @@ export default function MenuView({
   currency,
   onItemClick,
   intro,
+  homeHref,
 }: {
+  homeHref?: string;
   title: string;
   subtitle: string;
   logoUrl?: string | null;
@@ -68,7 +70,7 @@ export default function MenuView({
       <div className="sticky top-0 z-20 border-b border-slate-200/60 bg-ink-50/90 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3 px-5 pt-[max(1rem,env(safe-area-inset-top))]">
           <span className="flex items-center gap-2">
-            <HomeButton />
+            <HomeButton href={homeHref} />
             <span className="rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-bold text-brand-700">
               {subtitle}
             </span>

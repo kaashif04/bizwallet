@@ -198,6 +198,7 @@ export default function GuestOrder(
       )}
       <MenuView
         title={menu.outlet.name}
+        homeHref={props.token && `/order/t/${props.token}`}
         subtitle={menu.table ? `Table ${menu.table.label}` : "Pickup order"}
         logoUrl={logoUrl}
         account={account}

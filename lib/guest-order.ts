@@ -33,6 +33,19 @@ export type GuestMenu = {
   }[];
 };
 
+// The table QR start page (guest_table_home).
+export type TableHome = {
+  outlet: { id: string; name: string; company_id: string };
+  table: { id: string; label: string };
+  ordering: boolean; // online ordering switched on in BizPos
+  cover_url: string | null;
+  tagline: string | null;
+  wifi: { name: string; password: string | null } | null;
+  review_url: string | null; // Google review link, else the maps link
+  calls: TableCall[]; // open "call staff" / "bill" requests, newest first
+};
+export type TableCall = { kind: "staff" | "bill"; at: string };
+
 export type GuestOrderStatus = {
   // cancelled: accepted, then staff voided every item (or the whole bill) in BizPos
   status: "awaiting_payment" | "pending" | "accepted" | "rejected" | "cancelled";
