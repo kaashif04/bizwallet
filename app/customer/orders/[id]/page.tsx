@@ -18,7 +18,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: tx }, { data: lines }, { data: rounds }, outletNameMap] = await Promise.all([
+  const [{ data: tx }, { data: lines }, { data: itemNames }, outletNameMap] = await Promise.all([
     supabase
       .from("transactions")
       .select("id,status,subtotal,sst_amount,service_charge,total,table_label,created_at,outlet_id")
@@ -30,20 +30,14 @@ export default async function OrderDetailPage({ params }: { params: { id: string
       .select("id,menu_item_id,quantity,line_total,modifier_summary,kitchen_status")
       .eq("transaction_id", params.id)
       .order("created_at"),
-    // Item names: members can't read BizPos menu_items, but guest orders
-    // snapshot them. POS-only lines fall back to "Item".
-    supabase.from("guest_orders").select("items").eq("transaction_id", params.id),
+    // Members can't read BizPos menu_items; this returns the names on their own bill.
+    supabase.rpc("wallet_order_item_names", { p_transaction_id: params.id }),
     outletNames(supabase),
   ]);
 
   if (!tx) notFound();
 
-  const names = new Map<string, string>();
-  for (const r of rounds ?? []) {
-    for (const i of (r.items ?? []) as { menu_item_id: string; name: string }[]) {
-      names.set(i.menu_item_id, i.name);
-    }
-  }
+  const names = new Map(Object.entries((itemNames ?? {}) as Record<string, string>));
 
   const outletName = outletNameMap.get(tx.outlet_id) ?? "Restaurant";
   const sym = currencySymbol("MYR");
