@@ -36,7 +36,7 @@ export type Booking = {
 };
 
 // What this phone remembers about a booking, for "My bookings".
-export type SavedBooking = { token: string; code: string; outlet: string; when: string; party: number; phone?: string; billId?: string };
+export type SavedBooking = { token: string; code: string; outlet: string; when: string; party: number; phone?: string };
 
 const KL = "Asia/Kuala_Lumpur";
 export const bookingMoney = (n: number) => `RM${Number(n).toFixed(0)}`;

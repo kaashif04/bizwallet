@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { billplzEnabled, createBill, getBill } from "@/lib/billplz";
 import { BOOKING_TOKEN, confirmBookingBill } from "@/lib/booking-payment";
 
@@ -10,7 +11,7 @@ export async function POST(request: Request) {
   if (!billplzEnabled()) {
     return NextResponse.json({ error: "Online payment isn't set up yet. Please call the restaurant to book." }, { status: 503 });
   }
-  const { token, mobile, bill_id } = await request.json().catch(() => ({}));
+  const { token, mobile } = await request.json().catch(() => ({}));
   if (typeof token !== "string" || !BOOKING_TOKEN.test(token)) {
     return NextResponse.json({ error: "Booking not found." }, { status: 404 });
   }
@@ -23,16 +24,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "This slot was released. Please pick another time." }, { status: 410 });
   }
 
+  const bills = createAdminClient().from("wallet_booking_bills");
+  // The bill already made for this booking, from any phone: send the guest back to
+  // it (or say it's paid), so one booking never has two live bills.
+  const reuse = async (billId: string) => {
+    if ((await confirmBookingBill(billId)).paid) return NextResponse.json({ paid: true });
+    return NextResponse.json({ url: (await getBill(billId)).url });
+  };
+
   try {
-    // A bill made earlier for this booking (the guest closed Billplz and came back):
-    // reuse it, so one booking never has two live bills.
-    if (typeof bill_id === "string" && bill_id) {
-      const old = await getBill(bill_id);
-      if (old.reference_1 === token) {
-        if ((await confirmBookingBill(old.id)).paid) return NextResponse.json({ paid: true });
-        return NextResponse.json({ url: old.url, bill_id: old.id });
-      }
-    }
+    const { data: old } = await bills.select("bill_id").eq("token", token).maybeSingle();
+    if (old) return await reuse(old.bill_id);
 
     const { data: auth } = await supabase.auth.getUser();
     const email = auth.user?.email ?? undefined;
@@ -52,7 +54,14 @@ export async function POST(request: Request) {
       redirectUrl: `${origin}/api/booking/billplz/return?token=${encodeURIComponent(token)}`,
       reference: token,
     });
-    return NextResponse.json({ url: bill.url, bill_id: bill.id });
+    // Two phones at the same moment: the first bill saved wins, the other is never shown.
+    const { error: dup } = await bills.insert({ token, bill_id: bill.id });
+    if (dup?.code === "23505") {
+      const { data: won } = await bills.select("bill_id").eq("token", token).single();
+      if (won) return await reuse(won.bill_id);
+    }
+    if (dup) throw new Error(dup.message);
+    return NextResponse.json({ url: bill.url });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 502 });
   }

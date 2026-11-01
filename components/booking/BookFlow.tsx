@@ -130,10 +130,7 @@ export default function BookFlow({ outletId }: { outletId?: string }) {
       body: JSON.stringify({ token: b.token, mobile: phone.trim() }),
     });
     const body = await res.json().catch(() => ({}));
-    if (body.url) {
-      rememberBooking({ ...saved, billId: body.bill_id });
-      return window.location.assign(body.url);
-    }
+    if (body.url) return window.location.assign(body.url);
     router.push(`/booking/${b.token}`);
   }
 

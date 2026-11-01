@@ -67,13 +67,10 @@ export default function BookingStatus({ token, justPaid }: { token: string; just
     const res = await fetch("/api/booking/pay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, mobile, bill_id: saved?.billId }),
+      body: JSON.stringify({ token, mobile }),
     });
     const body = await res.json().catch(() => ({}));
-    if (body.url && b) {
-      rememberBooking({ token, code: b.code, outlet: b.outlet.name, when: b.when, party: b.party, billId: body.bill_id });
-      return window.location.assign(body.url);
-    }
+    if (body.url) return window.location.assign(body.url);
     setBusy(false);
     if (body.paid) return load();
     if (res.status === 400) setNeedPhone(true);
