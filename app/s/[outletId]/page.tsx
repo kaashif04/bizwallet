@@ -135,7 +135,7 @@ export default async function StorePage({
             <BranchLogo
               name={store.name}
               logoUrl={logos[store.id]}
-              className="relative -mt-10 h-20 w-20 rounded-3xl text-3xl shadow-md ring-4 ring-ink-50"
+              className="relative -mt-10 h-20 w-20 rounded-[1.5rem] text-3xl shadow-md ring-4 ring-ink-50"
             />
             <h1 className="mt-3 text-[1.875rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">
               {member?.full_name ? `Hi ${member.full_name.trim().split(/\s+/)[0]}, welcome back` : store.name}

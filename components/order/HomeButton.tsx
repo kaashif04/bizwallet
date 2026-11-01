@@ -7,7 +7,7 @@ export default function HomeButton({ href = "/customer/dashboard" }: { href?: st
     <Link
       href={href}
       aria-label="Home"
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-slate-800 shadow-sm transition hover:bg-brand-100 active:scale-90"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-slate-800 shadow-sm transition hover:bg-brand-100 active:scale-90"
     >
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M4 11l8-7 8 7" />

@@ -11,6 +11,7 @@ export type GuestMenu = {
     sst_rate: number;
     service_charge_enabled: boolean;
     service_charge_rate: number;
+    rounding_step?: number | null; // the bill is rounded up to this step (e.g. 0.05)
   };
   categories: { id: string; name: string }[];
   items: {
@@ -66,6 +67,8 @@ export type TableBill =
       held: number; // someone is at the payment page right now
       items: { id: string; name: string; quantity: number; line_total: number; options: string | null; paid: boolean }[];
       payments: { amount: number; at: string; share: BillShare; mine: boolean }[];
+      // Who ordered what. Missing until the server has it: then nobody counts as "others".
+      rounds?: { id: string; who: string | null; mine: boolean; items: { name: string; quantity: number; options: string | null }[] }[];
     };
 
 // Today's game board at the table's outlet (guest_game_board / guest_game_submit).

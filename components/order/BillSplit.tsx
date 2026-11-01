@@ -1,33 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
-import type { BillShare, TableBill } from "@/lib/guest-order";
+import { tableOrders, type BillShare, type TableBill } from "@/lib/guest-order";
 import HomeButton from "./HomeButton";
 
 const sym = currencySymbol("MYR");
 const money = (n: number) => `${sym}${Number(n).toFixed(2)}`;
+// Money is worked in whole sen: 45.10 * 100 is 4510.000000000001 in floating point.
+const sen = (n: number) => Math.round(Number(n) * 100);
 type Mode = BillShare["mode"];
 
-// Pay or split the table's open bill: all of what's left, an equal share, or
-// the items you had. The server sets the amount; this only previews it. Every
-// phone at the table refreshes, so everyone sees what's paid and what's left.
+// The table's open bill. Everyone at the table sees everyone's orders and picks
+// what to pay: their own items (or anyone else's), the rest, or, when more than
+// one person ordered, an equal share. The server sets the amount; this only
+// previews it. Every phone refreshes, so everyone sees what's paid and what's left.
 export default function BillSplit({ token, canPay }: { token: string; canPay: boolean }) {
   const [supabase] = useState(() => createClient());
   const [bill, setBill] = useState<TableBill | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
-  const [mode, setMode] = useState<Mode>("equal");
-  const [of, setOfState] = useState(2);
-  // Join the table's split: once someone paid 1 of 4, the next phone starts at 4.
-  const ofTouched = useRef(false);
-  const setOf = (f: (n: number) => number) => {
-    ofTouched.current = true;
-    setOfState(f);
-  };
+  const [chosen, setMode] = useState<Mode>("items");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [paying, setPaying] = useState(false);
   const [arrival, setArrival] = useState<"paid" | "unpaid" | null>(null);
@@ -65,8 +61,6 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
   // Items someone else just paid for drop out of my selection.
   useEffect(() => {
     if (!bill?.open) return;
-    const split = [...bill.payments].reverse().find((p) => p.share.mode === "equal")?.share;
-    if (split?.mode === "equal" && !ofTouched.current) setOfState(split.of);
     setPicked((s) => new Set(Array.from(s).filter((id) => bill.items.some((i) => i.id === id && !i.paid))));
   }, [bill]);
 
@@ -86,24 +80,39 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
           <p className="mt-2 text-sm text-ink-500">
             {arrival === "paid" ? "Your payment closed the bill. Enjoy the rest of your day." : "Once you've ordered, your bill shows up here."}
           </p>
+          {arrival !== "paid" && (
+            <Link href={`${back}/menu`} className="mt-4 inline-flex h-11 items-center rounded-full bg-brand-600 px-6 text-sm font-bold text-on transition active:scale-95">
+              Start order
+            </Link>
+          )}
         </div>
       </Shell>
     );
   }
 
-  const left = Math.max(0, bill.remaining - bill.held);
-  const ratio = bill.subtotal > 0 ? bill.total / bill.subtotal : 1;
-  const amount = Math.min(
-    left,
-    mode === "all"
-      ? left
-      : mode === "equal"
-        ? Math.ceil((bill.total * 100) / of) / 100
-        : Math.round(bill.items.filter((i) => picked.has(i.id)).reduce((n, i) => n + Number(i.line_total), 0) * ratio * 100) / 100
-  );
+  const left = Math.max(0, sen(bill.remaining) - sen(bill.held)) / 100;
+  // People at the table: me (if I ordered) plus each other named diner or unnamed round.
+  const myRounds = new Set(tableOrders(token).map((o) => o.id));
+  const rounds = bill.rounds ?? [];
+  const others = rounds.filter((r) => !r.mine && !myRounds.has(r.id));
+  const people =
+    new Set(others.filter((r) => r.who).map((r) => r.who!.toLowerCase())).size +
+    others.filter((r) => !r.who).length +
+    (rounds.length > others.length ? 1 : 0);
+  // One person ordered: nothing to split, just pay. Equal shares need a table of 2 or more.
+  const multi = people >= 2;
+  const mode: Mode = multi ? chosen : "all";
+  const of = Math.min(20, Math.max(2, people));
+  const shareSen = Math.ceil(sen(bill.total) / of);
+  const pickedSen = bill.items.filter((i) => picked.has(i.id)).reduce((n, i) => n + sen(i.line_total), 0);
+  // Items carry their part of service charge, tax and rounding: x total / subtotal, as the server does.
+  const itemsSen = sen(bill.subtotal) > 0 ? Math.round((pickedSen * sen(bill.total)) / sen(bill.subtotal) + 1e-9) : pickedSen;
+  const amount = Math.min(left, (mode === "all" ? sen(left) : mode === "equal" ? shareSen : itemsSen) / 100);
+  const tooSmall = amount > 0 && amount < 1 && amount < left;
   const equalPaid = bill.payments.filter((p) => p.share.mode === "equal" && p.share.of === of).length;
   const pct = bill.total > 0 ? Math.min(100, (bill.paid / bill.total) * 100) : 0;
   const share: BillShare = mode === "equal" ? { mode, of } : mode === "items" ? { mode, items: Array.from(picked) } : { mode };
+  const ratio = sen(bill.subtotal) > 0 ? bill.total / bill.subtotal : 1;
 
   async function pay() {
     setPaying(true);
@@ -173,15 +182,35 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
         )}
       </section>
 
+      {multi && (
+        <section className="mt-4 rounded-3xl bg-white p-5">
+          <h2 className="text-sm font-bold text-ink-900">Who ordered what</h2>
+          <ul className="mt-3 space-y-3">
+            {rounds.map((r, n) => (
+              <li key={r.id}>
+                <p className="text-xs font-semibold text-ink-500">
+                  {r.mine || myRounds.has(r.id) ? "You" : r.who ?? `Diner ${n + 1}`}
+                </p>
+                <p className="mt-0.5 text-sm text-ink-800">
+                  {r.items.map((it) => `${it.quantity} × ${it.name}`).join(", ")}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-ink-500">Pick your own items, or pay for someone else&apos;s. Whatever you pay is taken off the bill for everyone.</p>
+        </section>
+      )}
+
       {bill.remaining > 0 && (
         <>
           {/* How to pay */}
+          {multi && (
           <div role="radiogroup" aria-label="How to pay" className="mt-6 grid grid-cols-3 gap-1 rounded-full bg-ink-100 p-1">
             {(
               [
+                ["items", "Pick items"],
                 ["equal", "Split equally"],
-                ["items", "My items"],
-                ["all", "Pay all"],
+                ["all", "Pay the rest"],
               ] as const
             ).map(([m, label]) => (
               <button
@@ -199,30 +228,18 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
               </button>
             ))}
           </div>
+          )}
 
           {mode === "equal" && (
             <section className="mt-4 rounded-3xl bg-white p-5">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-ink-900">How many people?</span>
-                <span className="flex items-center gap-3">
-                  <Step label="Fewer people" onClick={() => setOf((n) => Math.max(2, n - 1))} disabled={of <= 2}>
-                    −
-                  </Step>
-                  <span className="w-6 text-center text-xl font-semibold tabular-nums text-ink-900" aria-live="polite">
-                    {of}
-                  </span>
-                  <Step label="More people" onClick={() => setOf((n) => Math.min(20, n + 1))} disabled={of >= 20}>
-                    +
-                  </Step>
-                </span>
-              </div>
+              <p className="text-sm font-bold text-ink-900">Split between the {of} people who ordered</p>
               <div className="mt-4 flex gap-1.5" aria-hidden="true">
                 {Array.from({ length: of }, (_, i) => (
                   <span key={i} className={`h-2 flex-1 rounded-full ${i < equalPaid ? "bg-emerald-500" : "bg-ink-100"}`} />
                 ))}
               </div>
               <p className="mt-2 text-xs text-ink-500">
-                {equalPaid > 0 ? `${equalPaid} of ${of} shares paid. ` : ""}Each share is {money(Math.ceil((bill.total * 100) / of) / 100)}.
+                {equalPaid > 0 ? `${equalPaid} of ${of} shares paid. ` : ""}Each share is {money(shareSen / 100)}.
               </p>
             </section>
           )}
@@ -262,7 +279,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
             </ul>
           )}
           {mode === "items" && ratio !== 1 && (
-            <p className="mt-2 px-1 text-xs text-ink-500">Includes your part of the service charge, tax and rounding.</p>
+            <p className="mt-2 px-1 text-xs text-ink-500">Includes their part of the service charge, tax and rounding.</p>
           )}
         </>
       )}
@@ -317,7 +334,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
             <button
               type="button"
               onClick={pay}
-              disabled={paying || amount <= 0 || signedIn === null}
+              disabled={paying || amount <= 0 || tooSmall || signedIn === null}
               className="h-14 w-full rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-50"
             >
               {paying
@@ -326,7 +343,9 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
                   ? mode === "items"
                     ? "Tick what you had"
                     : "Someone is paying the rest"
-                  : `Pay ${money(amount)} · earn points`}
+                  : tooSmall
+                    ? "The smallest payment is RM1.00"
+                    : `Pay ${money(amount)} · earn points`}
             </button>
           )}
         </div>
@@ -357,19 +376,5 @@ function Row({ label, n }: { label: string; n: number }) {
       <span>{label}</span>
       <span className="tabular-nums">{money(n)}</span>
     </div>
-  );
-}
-
-function Step({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled: boolean; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      disabled={disabled}
-      className="flex h-10 w-10 items-center justify-center rounded-full bg-ink-100 text-xl font-bold text-ink-900 transition active:scale-90 disabled:opacity-40"
-    >
-      {children}
-    </button>
   );
 }

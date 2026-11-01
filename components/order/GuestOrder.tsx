@@ -52,7 +52,10 @@ export default function GuestOrder(
   // The bottom bar's cart button (or ?cart=1 from another page) opens the order.
   useEffect(() => {
     const open = () => setReviewing(true);
-    if (location.search.includes("cart=1")) open();
+    if (location.search.includes("cart=1")) {
+      history.replaceState(history.state, "", location.pathname);
+      open();
+    }
     window.addEventListener("bw:cart", open);
     return () => window.removeEventListener("bw:cart", open);
   }, []);
@@ -133,7 +136,7 @@ export default function GuestOrder(
   if (loadError) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-6 text-center">
-        <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-brand-700 shadow-md">
+        <span className="flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white text-brand-700 shadow-md">
           <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9Z" />
             <path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17M8 3v2M12 3v2" />
@@ -317,9 +320,15 @@ function CartReview({
   // the same way); SST depends on which dishes carry it, so then it's confirmed at payment.
   const service =
     !pickup && menu.tax.service_charge_enabled
-      ? Math.round(cart.totalPrice * Number(menu.tax.service_charge_rate)) / 100
+      ? Math.round((Math.round(cart.totalPrice * 100) * Number(menu.tax.service_charge_rate)) / 100) / 100
       : 0;
-  const due = menu.tax.sst_enabled ? null : cart.totalPrice + service;
+  // BizPos rounds the bill up to the outlet's step (RM50.38 -> RM50.40): show what will be charged.
+  const stepSen = Math.round(Number(menu.tax.rounding_step ?? 0) * 100);
+  const roundUp = (n: number) => {
+    const s = Math.round(n * 100);
+    return (stepSen > 0 ? Math.ceil(s / stepSen) * stepSen : s) / 100;
+  };
+  const due = menu.tax.sst_enabled ? null : roundUp(cart.totalPrice + service);
   const charges = [service > 0 && "service charge", menu.tax.sst_enabled && "SST"].filter(Boolean);
   const payNow = pickup || payWith !== "counter";
   const orderItems = cart.lines.map((l) => ({
@@ -604,6 +613,15 @@ function CartReview({
                 </span>
               </div>
             )}
+          </div>
+        )}
+        {shown.total !== null && Math.abs(shown.total - (shown.sub - shown.disc + shown.service + shown.sst)) >= 0.005 && (
+          <div className="mt-2 flex justify-between px-0 text-sm text-ink-500">
+            <span>Rounding</span>
+            <span className="tabular-nums">
+              {sym}
+              {(shown.total - (shown.sub - shown.disc + shown.service + shown.sst)).toFixed(2)}
+            </span>
           </div>
         )}
         <div className={`flex items-baseline justify-between ${shown.disc > 0 || shown.service > 0 ? "mt-2" : "mt-5"}`}>

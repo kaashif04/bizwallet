@@ -32,8 +32,8 @@ export default function TableNav({ token }: { token: string }) {
     <Link
       href={href}
       aria-current={path === href ? "page" : undefined}
-      className={`flex flex-1 flex-col items-center gap-0.5 py-1 text-2xs font-semibold transition active:scale-90 ${
-        path === href ? "text-brand-700" : "text-ink-500"
+      className={`flex flex-1 flex-col items-center gap-0.5 rounded-full py-1.5 text-2xs font-semibold transition active:scale-90 ${
+        path === href ? "bg-brand-50 text-brand-700" : "text-ink-500"
       }`}
     >
       <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -48,7 +48,7 @@ export default function TableNav({ token }: { token: string }) {
       aria-label="Table"
       className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
-      <div className="flex items-center rounded-full bg-white px-3 py-2 shadow-lg">
+      <div className="flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-2 shadow-lg backdrop-blur-xl">
         {tab(home, "Home", "home")}
         {tab(menu, "Menu", "menu")}
         <button

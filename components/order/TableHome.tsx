@@ -166,7 +166,7 @@ export default function TableHome({ token, billSplit = false }: { token: string;
             <BranchLogo
               name={home.outlet.name}
               logoUrl={logo}
-              className="relative -mt-10 h-20 w-20 rounded-3xl text-3xl shadow-md ring-4 ring-ink-50"
+              className="relative -mt-10 h-20 w-20 rounded-[1.5rem] text-3xl shadow-md ring-4 ring-ink-50"
             />
             <h1 className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">
               {me && me !== "guest" && me.name ? `Welcome back, ${me.name}` : home.outlet.name}
