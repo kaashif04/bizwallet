@@ -79,7 +79,7 @@ export default function BannerCarousel({
         onPointerDown={pause}
         onTouchStart={pause}
         onScroll={(e) => setIndex(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
-        className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain rounded-2xl shadow-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain rounded-3xl shadow-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {banners.map((b, i) => (
           <div

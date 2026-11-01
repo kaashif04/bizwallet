@@ -14,7 +14,6 @@ import JoinPrompt from "./JoinPrompt";
 import { useCart } from "./cart-context";
 import MenuView from "./MenuView";
 import AddToCartSheet from "./AddToCartSheet";
-import ViewCartBar from "./ViewCartBar";
 import { useSheet } from "./useSheet";
 import ActiveOrders from "@/components/customer/ActiveOrders";
 import BannerCarousel from "./BannerCarousel";
@@ -49,6 +48,14 @@ export default function GuestOrder(
     joined: boolean;
     points: number;
   } | null>(null);
+
+  // The bottom bar's cart button (or ?cart=1 from another page) opens the order.
+  useEffect(() => {
+    const open = () => setReviewing(true);
+    if (location.search.includes("cart=1")) open();
+    window.addEventListener("bw:cart", open);
+    return () => window.removeEventListener("bw:cart", open);
+  }, []);
 
   useEffect(() => {
     supabase
@@ -227,8 +234,6 @@ export default function GuestOrder(
           />
         )}
       </AnimatePresence>
-
-      {!reviewing && <ViewCartBar currency={CURRENCY} onClick={() => setReviewing(true)} />}
 
       <AnimatePresence>
         {sheetItem && (

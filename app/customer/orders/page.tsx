@@ -55,7 +55,7 @@ export default async function OrdersListPage() {
             No orders yet. Scan the QR on your table to order.
           </div>
         ) : (
-          <ul className="divide-y divide-ink-100 overflow-hidden rounded-2xl bg-white">
+          <ul className="divide-y divide-ink-100 overflow-hidden rounded-3xl bg-white">
             {orders.map((o) => {
               const meta = STATUS_META[o.status] ?? STATUS_META.open;
               return (

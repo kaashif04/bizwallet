@@ -95,7 +95,7 @@ export function PairNudge({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 24 }}
       transition={{ type: "spring", damping: 26, stiffness: 320 }}
-      className="fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-md px-5"
+      className="fixed inset-x-0 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-md px-5"
     >
       <div className="flex items-center gap-3 rounded-2xl bg-white p-2.5 pr-3 shadow-lg ring-1 ring-ink-100">
         <Thumb item={item} className="h-12 w-12 shrink-0 rounded-xl" />

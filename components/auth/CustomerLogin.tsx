@@ -96,7 +96,7 @@ export default function CustomerLogin() {
   }
 
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-md sm:p-8">
+    <div className="rounded-3xl bg-white p-6 shadow-md sm:p-8">
       {/* Brand */}
       <div className="mb-7 text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -238,7 +238,18 @@ function PrimaryButton({
       disabled={loading}
       className="mt-1 flex w-full items-center justify-center rounded-full bg-brand-600 px-4 py-3.5 text-base font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {loading ? <Spinner /> : children}
+      {loading ? (
+        <Spinner />
+      ) : (
+        <>
+          {children}
+          <span className="ml-3 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-brand-700" aria-hidden="true">
+            <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 8h10M9 4l4 4-4 4" />
+            </svg>
+          </span>
+        </>
+      )}
     </button>
   );
 }

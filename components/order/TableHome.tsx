@@ -146,16 +146,16 @@ export default function TableHome({ token, billSplit = false }: { token: string;
 
   return (
     <div className="min-h-dvh bg-ink-50">
-      <main className="mx-auto max-w-md pb-[calc(7rem+env(safe-area-inset-bottom))]">
+      <main className="mx-auto max-w-md pb-[calc(8rem+env(safe-area-inset-bottom))]">
         {/* Cover, logo, name, table */}
         <header className="relative">
-          <div className="relative h-56 overflow-hidden bg-brand-100">
+          <div className="relative mx-3 mt-3 h-56 overflow-hidden rounded-[2rem] bg-brand-100 shadow-md">
             {home.cover_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={home.cover_url} alt="" className="h-full w-full object-cover" />
             )}
             <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10" />
-            <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))]">
+            <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-4">
               <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-ink-900 shadow-sm">
                 Table {home.table.label}
               </span>
@@ -178,6 +178,20 @@ export default function TableHome({ token, billSplit = false }: { token: string;
         </header>
 
         <div className="mt-5 space-y-8 px-4">
+          {home.ordering ? (
+            <Link
+              href={menuHref}
+              className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 pl-6 pr-2 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97]"
+            >
+              {orders.length > 0 ? "Order more" : "Start order"}
+              <span className="ml-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-brand-700" aria-hidden="true"><svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg></span>
+            </Link>
+          ) : (
+            <p className="rounded-full bg-white py-4 text-center text-sm font-semibold text-ink-700 shadow-lg">
+              Please order with our staff today
+            </p>
+          )}
+
           {orders.length > 0 && <YourTable orders={orders} canCallBill={!home.hide?.bill} />}
 
           {billLeft !== null && billLeft > 0 && (
@@ -238,21 +252,6 @@ export default function TableHome({ token, billSplit = false }: { token: string;
         </div>
       </main>
 
-      {/* Start order, within thumb reach. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        {home.ordering ? (
-          <Link
-            href={menuHref}
-            className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97]"
-          >
-            {orders.length > 0 ? "Order more" : "Start order"}
-          </Link>
-        ) : (
-          <p className="rounded-full bg-white py-4 text-center text-sm font-semibold text-ink-700 shadow-lg">
-            Please order with our staff today
-          </p>
-        )}
-      </div>
     </div>
   );
 }
