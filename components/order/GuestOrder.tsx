@@ -478,7 +478,7 @@ function CartReview({
                 <button
                   type="button"
                   onClick={() => cart.dec(l.lineId)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-800 transition active:scale-90 disabled:opacity-40"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-800 transition active:scale-90 disabled:opacity-40"
                   aria-label={`One less ${l.item.name}`}
                 >
                   −
@@ -488,7 +488,7 @@ function CartReview({
                   type="button"
                   onClick={() => cart.inc(l.lineId)}
                   disabled={l.quantity >= 50}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-800 transition active:scale-90 disabled:opacity-40"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-800 transition active:scale-90 disabled:opacity-40"
                   aria-label={`One more ${l.item.name}`}
                 >
                   +
@@ -498,36 +498,40 @@ function CartReview({
           ))}
         </ul>
 
-        {memberName ? (
+        {memberName && (
           <p className="mt-4 text-sm text-ink-500">
             Ordering as <span className="font-bold text-ink-900">{memberName}</span>
           </p>
-        ) : (
-        <label className="mt-4 block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Your name <span className="font-normal text-slate-400">(optional)</span>
-          </span>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={60}
-            autoComplete="given-name"
-            className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-[15px] outline-none transition focus:border-brand-400 focus:bg-white"
-          />
-        </label>
         )}
-        <label className="mt-3 block">
-          <span className="mb-1.5 block text-sm font-medium text-slate-700">
-            Note for the kitchen <span className="font-normal text-slate-400">(optional)</span>
-          </span>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            maxLength={200}
-            rows={2}
-            className="w-full resize-none rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-[15px] outline-none transition focus:border-brand-400 focus:bg-white"
-          />
-        </label>
+        <details className="group mt-3 rounded-2xl bg-ink-50 px-4 py-1" open={!!(note || name)}>
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-bold text-ink-800">
+            {memberName ? "Note for the kitchen" : "Your name or a note for the kitchen"}
+            <span aria-hidden="true" className="text-ink-400 transition group-open:rotate-90">›</span>
+          </summary>
+          {!memberName && (
+            <label className="block pb-3">
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">Your name</span>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={60}
+                autoComplete="given-name"
+                placeholder={token ? "Leave blank and we'll call you a Guest number" : undefined}
+                className="w-full rounded-2xl border-2 border-slate-100 bg-white px-4 py-3 text-base outline-none transition placeholder:text-ink-400 focus:border-brand-400"
+              />
+            </label>
+          )}
+          <label className="block pb-3">
+            <span className="mb-1.5 block text-sm font-medium text-slate-700">Note for the kitchen</span>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={200}
+              rows={2}
+              className="w-full resize-none rounded-2xl border-2 border-slate-100 bg-white px-4 py-3 text-base outline-none transition focus:border-brand-400"
+            />
+          </label>
+        </details>
 
         <CartUpsell items={upsell} currency={CURRENCY} onAdd={(i) => cart.add(i, 1, [])} />
 
@@ -558,7 +562,7 @@ function CartReview({
                   aria-label="Promo code"
                   autoCapitalize="characters"
                   autoComplete="off"
-                  className="min-w-0 flex-1 rounded-xl bg-ink-50 px-4 py-2.5 font-mono text-[15px] uppercase tracking-wider text-ink-900 shadow-pressed outline-none placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:text-ink-400"
+                  className="min-w-0 flex-1 rounded-xl bg-ink-50 px-4 py-2.5 font-mono text-base uppercase tracking-wider text-ink-900 shadow-pressed outline-none placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:text-ink-400"
                 />
                 <button
                   type="submit"

@@ -219,7 +219,7 @@ function Field({
         {...props}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-brand-400 focus:bg-white disabled:text-slate-400"
+        className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-brand-400 focus:bg-white disabled:text-slate-400"
       />
     </label>
   );

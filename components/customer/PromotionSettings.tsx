@@ -143,7 +143,7 @@ export default function PromotionSettings({ userId, news: initialNews, stores }:
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Search your stores"
                         aria-label="Search your stores"
-                        className="mb-3 w-full rounded-xl bg-white px-4 py-3 text-[15px] text-ink-900 outline-none placeholder:text-ink-400"
+                        className="mb-3 w-full rounded-xl bg-white px-4 py-3 text-base text-ink-900 outline-none placeholder:text-ink-400"
                       />
                     )}
                     <ul className="divide-y divide-ink-100 overflow-hidden rounded-2xl bg-white">

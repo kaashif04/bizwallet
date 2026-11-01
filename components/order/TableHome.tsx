@@ -599,7 +599,7 @@ function Feedback({ token, reviewUrl, canCallStaff }: { token: string; reviewUrl
                     rows={3}
                     placeholder={rating <= 3 ? "What could we do better? Only the owner sees this." : "Anything to add? (optional)"}
                     aria-label="Your note to the owner"
-                    className="mt-3 w-full resize-none rounded-xl bg-ink-50 px-3 py-2.5 text-[15px] text-ink-900 outline-none placeholder:text-ink-400"
+                    className="mt-3 w-full resize-none rounded-xl bg-ink-50 px-3 py-2.5 text-base text-ink-900 outline-none placeholder:text-ink-400"
                   />
                   {error && <p className="mt-2 text-sm text-rose-700">{error}</p>}
                   <button
