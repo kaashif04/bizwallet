@@ -112,7 +112,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
   const itemsSen = up(sen(bill.subtotal) > 0 ? Math.round((pickedSen * sen(bill.total)) / sen(bill.subtotal) + 1e-9) : pickedSen);
   const amount = Math.min(left, (mode === "all" ? sen(left) : mode === "equal" ? shareSen : itemsSen) / 100);
   const tooSmall = amount > 0 && amount < 1 && amount < left;
-  const equalPaid = bill.payments.filter((p) => p.share.mode === "equal" && p.share.of === of).length;
+  const equalPaid = bill.payments.filter((p) => p.share?.mode === "equal" && p.share.of === of).length;
   const pct = bill.total > 0 ? Math.min(100, (bill.paid / bill.total) * 100) : 0;
   const share: BillShare = mode === "equal" ? { mode, of } : mode === "items" ? { mode, items: Array.from(picked) } : { mode };
   const ratio = sen(bill.subtotal) > 0 ? bill.total / bill.subtotal : 1;
@@ -175,8 +175,9 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
             {bill.payments.map((p, i) => (
               <li key={i} className="flex justify-between text-ink-600">
                 <span>
-                  {p.mine ? "You" : "Someone"} paid{" "}
-                  {p.share.mode === "equal" ? `1 of ${p.share.of} shares` : p.share.mode === "items" ? "their items" : "the rest"}
+                  {p.booking
+                    ? "Booking deposit"
+                    : `${p.mine ? "You" : "Someone"} paid ${p.share?.mode === "equal" ? `1 of ${p.share.of} shares` : p.share?.mode === "items" ? "their items" : "the rest"}`}
                 </span>
                 <span className="tabular-nums">{money(p.amount)}</span>
               </li>

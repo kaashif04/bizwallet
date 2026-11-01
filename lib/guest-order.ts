@@ -67,7 +67,9 @@ export type TableBill =
       remaining: number;
       held: number; // someone is at the payment page right now
       items: { id: string; name: string; quantity: number; line_total: number; options: string | null; paid: boolean }[];
-      payments: { amount: number; at: string; share: BillShare; mine: boolean }[];
+      // booking: a booking deposit paid before the bill (taken off it), not a share.
+      payments: { amount: number; at: string; share?: BillShare; mine: boolean; booking?: boolean }[];
+      booking_credit?: number; // booking deposits already taken off this bill
       // Who ordered what. Missing until the server has it: then nobody counts as "others".
       rounds?: { id: string; who: string | null; mine: boolean; items: { name: string; quantity: number; options: string | null }[] }[];
     };

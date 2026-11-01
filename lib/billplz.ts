@@ -3,7 +3,15 @@
 // We never trust what the browser or a callback says about payment: every
 // check re-reads the bill from Billplz with our secret key.
 
-export type Bill = { id: string; url: string; paid: boolean; state: string; amount: number; paid_amount: number };
+export type Bill = {
+  id: string;
+  url: string;
+  paid: boolean;
+  state: string;
+  amount: number;
+  paid_amount: number;
+  reference_1: string | null; // what we put in reference_1 when the bill was made (a booking's token)
+};
 
 const base = () =>
   process.env.BILLPLZ_SANDBOX === "1" ? "https://www.billplz-sandbox.com/api/v3" : "https://www.billplz.com/api/v3";
@@ -22,7 +30,8 @@ async function call(path: string, init?: RequestInit): Promise<Bill> {
 }
 
 export function createBill(p: {
-  email: string;
+  email?: string; // Billplz needs an email or a mobile
+  mobile?: string;
   name: string;
   amountSen: number;
   description: string;
@@ -32,7 +41,8 @@ export function createBill(p: {
 }) {
   const form = new URLSearchParams({
     collection_id: process.env.BILLPLZ_COLLECTION_ID!,
-    email: p.email,
+    ...(p.email ? { email: p.email } : {}),
+    ...(p.mobile ? { mobile: p.mobile } : {}),
     name: p.name.slice(0, 255),
     amount: String(p.amountSen),
     description: p.description.slice(0, 200),

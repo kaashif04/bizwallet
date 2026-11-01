@@ -34,12 +34,13 @@ export default async function StorePage({
 }) {
   if (!/^[0-9a-f-]{36}$/i.test(params.outletId)) notFound();
   const supabase = createClient();
-  const [{ data }, logos, { data: bannerData }, { data: dishData }, { data: auth }] = await Promise.all([
+  const [{ data }, logos, { data: bannerData }, { data: dishData }, { data: auth }, { data: bookingCfg }] = await Promise.all([
     supabase.rpc("guest_store", { p_outlet: params.outletId }),
     outletLogos(supabase),
     supabase.rpc("wallet_banners", { p_outlet: params.outletId }),
     supabase.rpc("guest_store_dishes", { p_outlet: params.outletId }),
     supabase.auth.getUser(),
+    supabase.rpc("booking_config", { p_outlet: params.outletId }),
   ]);
   const store = data as Store | null;
   if (!store) notFound();
@@ -95,6 +96,11 @@ export default async function StorePage({
       href: `/scan?at=${encodeURIComponent(store.name)}`,
       label: "Scan table",
       icon: "M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 8h3v3H8zM13 13h3v3h-3z",
+    },
+    (bookingCfg as { enabled?: boolean } | null)?.enabled && {
+      href: `/booking?outlet=${store.id}`,
+      label: "Book a table",
+      icon: "M4 6h16v14H4zM4 10h16M8 4v4M16 4v4",
     },
     store.maps_url && { href: store.maps_url, label: "Directions", icon: "M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12ZM12 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z", external: true },
     store.phone && {
@@ -159,7 +165,7 @@ export default async function StorePage({
 
         <div className="mt-5 space-y-8 px-4">
           {actions.length > 0 && (
-            <nav aria-label="Quick actions" className="grid grid-cols-4 gap-2">
+            <nav aria-label="Quick actions" className="grid gap-2" style={{ gridTemplateColumns: `repeat(${actions.length}, minmax(0, 1fr))` }}>
               {actions.map((a) => (
                 <a
                   key={a.label}
