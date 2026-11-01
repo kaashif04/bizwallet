@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
 import type { MenuItem } from "@/lib/order-types";
-import { outletLogos, saveClaimToken, toMenu, type Banner, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
+import { guestLabel, outletLogos, saveClaimToken, toMenu, type Banner, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
 import type { AccountState } from "./AccountChip";
 import { storeNames } from "@/lib/places";
 import JoinPrompt from "./JoinPrompt";
@@ -384,7 +384,7 @@ function CartReview({
       p_payload: {
         request_id: requestId.current,
         ...(token ? { table_token: token } : { outlet_id: menu.outlet.id }),
-        customer_name: memberName ?? (name.trim() || undefined),
+        customer_name: memberName ?? (name.trim() || (token ? guestLabel() : undefined)),
         note: note.trim() || undefined,
         pay_now: payNow || undefined,
         promo_code: promo?.code,

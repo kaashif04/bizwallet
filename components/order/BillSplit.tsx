@@ -103,10 +103,13 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
   const multi = people >= 2;
   const mode: Mode = multi ? chosen : "all";
   const of = Math.min(20, Math.max(2, people));
-  const shareSen = Math.ceil(sen(bill.total) / of);
+  // Shares round up to the outlet's step (RM0.05 at most outlets), like the bill itself.
+  const step = Math.round((bill.rounding_step ?? 0) * 100);
+  const up = (n: number) => (step > 0 ? Math.ceil(n / step) * step : Math.ceil(n));
+  const shareSen = up(sen(bill.total) / of);
   const pickedSen = bill.items.filter((i) => picked.has(i.id)).reduce((n, i) => n + sen(i.line_total), 0);
   // Items carry their part of service charge, tax and rounding: x total / subtotal, as the server does.
-  const itemsSen = sen(bill.subtotal) > 0 ? Math.round((pickedSen * sen(bill.total)) / sen(bill.subtotal) + 1e-9) : pickedSen;
+  const itemsSen = up(sen(bill.subtotal) > 0 ? Math.round((pickedSen * sen(bill.total)) / sen(bill.subtotal) + 1e-9) : pickedSen);
   const amount = Math.min(left, (mode === "all" ? sen(left) : mode === "equal" ? shareSen : itemsSen) / 100);
   const tooSmall = amount > 0 && amount < 1 && amount < left;
   const equalPaid = bill.payments.filter((p) => p.share.mode === "equal" && p.share.of === of).length;

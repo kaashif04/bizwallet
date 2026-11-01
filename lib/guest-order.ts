@@ -57,6 +57,7 @@ export type TableBill =
       open: true;
       id: string;
       subtotal: number;
+      rounding_step?: number; // shares round up to this (BizPos outlet setting)
       discount: number;
       service_charge: number;
       sst: number;
@@ -177,6 +178,21 @@ export function saveClaimToken(id: string, claimToken: string, menuPath: string)
     localStorage.setItem(`${key(id)}:at`, String(Date.now()));
   } catch {
     // Private mode: the status page will say it can't find the order.
+  }
+}
+
+// "Guest 4F2A": this phone's name when the diner gives none, kept so every round it
+// orders is the same person (and the table can tell guests apart).
+export function guestLabel(): string {
+  try {
+    let id = localStorage.getItem("bw_guest_id");
+    if (!id) {
+      id = crypto.randomUUID().slice(0, 4).toUpperCase();
+      localStorage.setItem("bw_guest_id", id);
+    }
+    return `Guest ${id}`;
+  } catch {
+    return `Guest ${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
   }
 }
 
