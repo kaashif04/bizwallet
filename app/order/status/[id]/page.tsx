@@ -238,11 +238,11 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         )}
       </AnimatePresence>
       <span className="flex items-center gap-2">
-        {/* Home is the table's start page, or the restaurant's page for pickup. */}
+        {/* Home is the table's Table tab, or the restaurant's page for pickup. */}
         <HomeButton
           href={
             menuPath?.startsWith("/order/t/")
-              ? menuPath.replace(/\/menu$/, "")
+              ? menuPath.replace(/\/menu$/, "/table")
               : menuPath?.startsWith("/order/p/")
                 ? menuPath.replace("/order/p/", "/s/")
                 : undefined
@@ -330,7 +330,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         onClick={() => {
           if (menuPath) window.location.assign(menuPath);
           else if (window.history.length > 1) window.history.back();
-          else window.location.assign("/customer/dashboard");
+          else window.location.assign("/");
         }}
         className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-5 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
       >
@@ -439,7 +439,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
             Linked to your account. Points are added once the bill is paid.
           </p>
           <Link
-            href="/customer/dashboard"
+            href="/customer/dashboard?rewards=1"
             className="shrink-0 rounded-full bg-brand-600 px-4 py-2.5 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.98]"
           >
             My account

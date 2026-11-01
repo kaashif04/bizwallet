@@ -12,6 +12,7 @@ import BannerCarousel from "@/components/order/BannerCarousel";
 import RememberPlace from "@/components/order/RememberPlace";
 import ItemMark from "@/components/order/ItemMark";
 import PointsCard from "@/components/store/PointsCard";
+import NotificationBell from "@/components/customer/NotificationBell";
 import { SectionTitle } from "@/components/customer/ui";
 
 type Store = PickupOutlet & { ordering: boolean };
@@ -20,9 +21,10 @@ type Dish = { id: string; name: string; price: number; image_url: string | null;
 const sym = currencySymbol("MYR");
 const money = (n: number) => `${sym}${Number(n).toFixed(2)}`;
 
-// A restaurant's own home: what customers reach from its table QR, receipt QR
-// or the link the owner shares. Order, offers, dishes, and (signed in) points,
-// rewards and past orders here. ?rewards=1 opens the rewards sheet.
+// A restaurant's own home: what customers reach from the link the owner shares
+// or a receipt QR (a table QR opens the table's menu instead). Order, offers, dishes, and (signed in) points,
+// rewards and past orders here, and a way to scan a table for dine-in. Nothing
+// links to other restaurants. ?rewards=1 opens the rewards sheet.
 export default async function StorePage({
   params,
   searchParams,
@@ -91,7 +93,7 @@ export default async function StorePage({
     canPickup && { href: `/order/p/${store.id}`, label: "Order", icon: "M5 8h14l-1 12H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2" },
     store.ordering && {
       href: `/scan?at=${encodeURIComponent(store.name)}`,
-      label: "Dine in",
+      label: "Scan table",
       icon: "M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 8h3v3H8zM13 13h3v3h-3z",
     },
     store.maps_url && { href: store.maps_url, label: "Directions", icon: "M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12ZM12 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z", external: true },
@@ -116,19 +118,23 @@ export default async function StorePage({
             <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/10" />
             <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))]">
               {member ? (
-                <Link
-                  href="/customer/dashboard"
-                  className="flex h-9 items-center gap-1 rounded-full bg-white/90 pl-2.5 pr-3.5 text-xs font-bold text-ink-900 shadow-sm backdrop-blur transition hover:bg-white"
-                >
-                  <span aria-hidden="true">‹</span> Your places
-                </Link>
+                <>
+                  <Link
+                    href="/customer/profile"
+                    aria-label="My account"
+                    className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-base font-bold text-ink-700 shadow-sm transition hover:bg-brand-100"
+                  >
+                    {(member.full_name?.trim() || user?.email || "U").charAt(0).toUpperCase()}
+                  </Link>
+                  <NotificationBell />
+                </>
               ) : (
-                <span />
-              )}
-              {!member && (
-                <Link href={signIn} className="rounded-full bg-white px-3.5 py-2 text-xs font-bold text-ink-900 shadow-sm transition hover:bg-brand-100">
-                  Sign in
-                </Link>
+                <>
+                  <span />
+                  <Link href={signIn} className="rounded-full bg-white px-3.5 py-2 text-xs font-bold text-ink-900 shadow-sm transition hover:bg-brand-100">
+                    Sign in
+                  </Link>
+                </>
               )}
             </div>
           </div>

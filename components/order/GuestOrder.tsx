@@ -147,10 +147,10 @@ export default function GuestOrder(
         <h1 className="mt-5 text-2xl font-semibold text-slate-900">Can&apos;t order here right now</h1>
         <p className="mt-2 max-w-xs text-sm text-slate-600">{loadError}</p>
         <Link
-          href={props.token ? `/order/t/${props.token}` : `/s/${props.outletId}`}
+          href={props.token ? `/order/t/${props.token}/table` : `/s/${props.outletId}`}
           className="mt-6 rounded-full bg-brand-600 px-6 py-3 text-[15px] font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
         >
-          Back to the restaurant
+          {props.token ? "Call staff or see your table" : "Back to the restaurant"}
         </Link>
       </main>
     );
@@ -193,7 +193,12 @@ export default function GuestOrder(
   const account: AccountState = !loyalty
     ? null
     : loyalty.member
-      ? { points: loyalty.points, joined: loyalty.joined }
+      ? {
+          points: loyalty.points,
+          joined: loyalty.joined,
+          // At a table the points live on the Table tab; pickup has the restaurant page.
+          href: props.token ? `/order/t/${props.token}/table` : `/s/${menu.outlet.id}?rewards=1`,
+        }
       : "guest";
 
   return (
@@ -210,7 +215,7 @@ export default function GuestOrder(
       )}
       <MenuView
         title={menu.outlet.name}
-        homeHref={props.token ? `/order/t/${props.token}` : `/s/${props.outletId}`}
+        homeHref={props.token ? undefined : `/s/${props.outletId}`} // a table has its Table tab
         subtitle={menu.table ? `Table ${menu.table.label}` : "Pickup order"}
         logoUrl={logoUrl}
         account={account}

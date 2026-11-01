@@ -1,8 +1,7 @@
-import TableHome from "@/components/order/TableHome";
-import { billplzEnabled } from "@/lib/billplz";
+import { redirect } from "next/navigation";
 
-// Table QR codes printed from BizPos open this page: the restaurant's welcome,
-// then the menu. Works signed-out.
-export default function TablePage({ params }: { params: { token: string } }) {
-  return <TableHome token={params.token} billSplit={billplzEnabled() && process.env.BILL_SPLIT === "1"} />;
+// Table QR codes printed from BizPos open this address: straight to ordering.
+// Calling staff, the bill, the game and feedback live on the Table tab.
+export default function TableQr({ params }: { params: { token: string } }) {
+  redirect(`/order/t/${params.token}/menu`);
 }

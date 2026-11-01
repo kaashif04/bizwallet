@@ -1,30 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "./cart-context";
-import { rememberedHome } from "@/lib/place";
 
 const icons = {
-  home: "M4 11l8-7 8 7M6 10v9h4v-5h4v5h4v-9",
   menu: "M5 4v7a2 2 0 0 0 2 2v7M9 4v7M7 4v3M15 20V4c-2 1-3 4-3 7s1 3 3 3M19 4v16",
+  table: "M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6ZM10 19a2 2 0 0 0 4 0",
   bill: "M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6",
-  star: "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z",
+  play: "M5 19h14M7 15h10M9 11h6M11 7h2",
 };
 
-// The table's bottom bar: Home, Menu, a raised Cart, Bill, Account.
-// Only on the start page and the menu; the bill has its own Pay button.
+// The table's bottom bar: Menu (where the QR lands), Table (call a waiter, the
+// bill, feedback), a raised Cart, Bill, Play. Only on the menu and Table tab;
+// the bill and the game have their own buttons.
 export default function TableNav({ token }: { token: string }) {
   const path = usePathname();
   const router = useRouter();
   const { totalItems } = useCart();
-  // Rewards = this restaurant's points page (the phone remembers which one it came from).
-  const [rewards, setRewards] = useState("/customer/dashboard");
-  useEffect(() => setRewards(rememberedHome()), []);
-  const home = `/order/t/${token}`;
-  const menu = `${home}/menu`;
-  if (path !== home && path !== menu) return null;
+  const base = `/order/t/${token}`;
+  const menu = `${base}/menu`;
+  const table = `${base}/table`;
+  if (path !== menu && path !== table) return null;
 
   // Empty cart: the button just takes you to the menu to fill it.
   const openCart = () =>
@@ -54,8 +51,8 @@ export default function TableNav({ token }: { token: string }) {
       className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
       <div className="flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-2 shadow-lg backdrop-blur-xl">
-        {tab(home, "Home", "home")}
         {tab(menu, "Menu", "menu")}
+        {tab(table, "Table", "table")}
         <button
           type="button"
           onClick={openCart}
@@ -71,8 +68,8 @@ export default function TableNav({ token }: { token: string }) {
             </span>
           )}
         </button>
-        {tab(`${home}/bill`, "Bill", "bill")}
-        {tab(rewards, "Rewards", "star")}
+        {tab(`${base}/bill`, "Bill", "bill")}
+        {tab(`${base}/play`, "Play", "play")}
       </div>
     </nav>
   );

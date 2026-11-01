@@ -16,7 +16,7 @@ export default function ScanPage() {
       <div className="mx-auto max-w-md px-5 pb-12 pt-[max(1.25rem,env(safe-area-inset-top))]">
         <button
           type="button"
-          onClick={() => (window.history.length > 1 ? router.back() : router.push("/customer/dashboard"))}
+          onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-brand-100"
           aria-label="Back"
         >

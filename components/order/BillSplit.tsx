@@ -64,7 +64,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
     setPicked((s) => new Set(Array.from(s).filter((id) => bill.items.some((i) => i.id === id && !i.paid))));
   }, [bill]);
 
-  const back = `/order/t/${token}`;
+  const back = `/order/t/${token}/table`;
   if (error || !bill) {
     return (
       <Shell back={back} title="Bill">

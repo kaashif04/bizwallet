@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export type AccountState = { points: number; joined: boolean } | "guest" | null;
+export type AccountState = { points: number; joined: boolean; href: string } | "guest" | null;
 
 // The way from a table/pickup order into the wallet: points at this
 // restaurant for members, sign-in (coming back here) for guests.
@@ -20,7 +20,7 @@ export default function AccountChip({ state }: { state: AccountState }) {
 
   return (
     <Link
-      href="/customer/dashboard"
+      href={state.href}
       aria-label={state.joined ? `My account, ${state.points} points here` : "My account"}
       className="flex h-10 items-center gap-1.5 rounded-full bg-white px-3.5 text-sm font-bold text-ink-900 shadow-sm transition hover:bg-brand-100"
     >

@@ -3,20 +3,24 @@ import PromotionSettings from "@/components/customer/PromotionSettings";
 import { PageHeader, screen } from "@/components/customer/ui";
 import { outletLogos } from "@/lib/guest-order";
 import { storeNames, type Place } from "@/lib/places";
+import { currentPlace } from "@/lib/place-server";
 
-// Who may send this member offers: BizWallet itself, and each store they've joined.
+// Who may send this member offers: BizWallet itself, and the restaurant this
+// phone came from (each restaurant stands alone).
 export default async function PromotionsPage() {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const [{ data: member }, { data: placeData }, logos] = await Promise.all([
+  const [{ data: member }, { data: placeData }, logos, here] = await Promise.all([
     supabase.from("members").select("marketing_consent").eq("id", user!.id).maybeSingle(),
     supabase.rpc("wallet_my_places"),
     outletLogos(supabase),
+    currentPlace(supabase),
   ]);
 
   const stores = ((placeData ?? []) as Place[])
+    .filter((p) => p.company_id === here?.company_id)
     .map((p) => ({
       companyId: p.company_id,
       name: storeNames(p.branches.map((b) => b.name), p.company),

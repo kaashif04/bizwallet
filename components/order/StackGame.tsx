@@ -110,7 +110,7 @@ export default function StackGame({ token }: { token: string }) {
     <main className="min-h-dvh bg-ink-50">
       <div className="mx-auto max-w-md px-4 pb-12 pt-[max(1rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-3">
-          <HomeButton href={`/order/t/${token}`} />
+          <HomeButton href={`/order/t/${token}/table`} />
           <h1 className="flex-1 text-xl font-semibold tracking-[-0.02em] text-ink-900">Stack</h1>
           <span className="text-sm text-ink-500">
             {board?.table ? `Table ${board.table}` : ""}

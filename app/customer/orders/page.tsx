@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { currencySymbol } from "@/lib/format";
 import { outletNames } from "@/lib/guest-order";
+import { currentPlace } from "@/lib/place-server";
+import type { Place } from "@/lib/places";
 import ActiveOrders from "@/components/customer/ActiveOrders";
 import { PageHeader, SectionTitle, screen } from "@/components/customer/ui";
 
@@ -21,10 +23,19 @@ export default async function OrdersListPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Every bill this member took part in: linked to them, a round they ordered,
-  // or a share they paid in the app.
+  // Every bill this member took part in (linked to them, a round they ordered,
+  // or a share they paid in the app) at this phone's restaurant and its sister
+  // branches. Other restaurants stay out of sight.
   const names = outletNames(supabase);
-  const { data: rows } = await supabase.rpc("wallet_my_bills");
+  const [{ data: rows }, { data: placeData }, here] = await Promise.all([
+    supabase.rpc("wallet_my_bills"),
+    supabase.rpc("wallet_my_places"),
+    currentPlace(supabase),
+  ]);
+  const branches = new Set(
+    ((placeData ?? []) as Place[]).filter((p) => p.company_id === here?.company_id).flatMap((p) => p.branches.map((b) => b.id))
+  );
+  if (here) branches.add(here.id);
 
   const orders = (rows ?? []) as {
     id: string;
@@ -36,6 +47,7 @@ export default async function OrdersListPage() {
     you_paid: number;
     shared: boolean;
   }[];
+  const mine = orders.filter((o) => branches.has(o.outlet_id));
   const nameMap = await names;
   const outletName = (o: { outlet_id: string }) => nameMap.get(o.outlet_id) ?? "Restaurant";
   const sym = currencySymbol("MYR");
@@ -43,20 +55,20 @@ export default async function OrdersListPage() {
   return (
     <div className="min-h-dvh bg-ink-50">
       <div className={screen}>
-        <PageHeader title="My orders" subtitle="Every bill you were part of" back="/customer/profile" />
+        <PageHeader title="My orders" subtitle={here ? `Every bill at ${here.name}` : undefined} back="/customer/profile" />
 
         <div className="mb-8">
-          <ActiveOrders names={Object.fromEntries(nameMap)} />
+          <ActiveOrders names={Object.fromEntries(nameMap)} outletId={here?.id} />
         </div>
 
         <SectionTitle>Past orders</SectionTitle>
-        {orders.length === 0 ? (
+        {mine.length === 0 ? (
           <div className="rounded-2xl bg-white p-10 text-center text-sm text-ink-500">
             No orders yet. Scan the QR on your table to order.
           </div>
         ) : (
           <ul className="divide-y divide-ink-100 overflow-hidden rounded-3xl bg-white">
-            {orders.map((o) => {
+            {mine.map((o) => {
               const meta = STATUS_META[o.status] ?? STATUS_META.open;
               return (
                 <li key={o.id}>

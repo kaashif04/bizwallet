@@ -246,6 +246,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
 // "All stores", "2 of 5 stores" or "Off": who may send offers.
 function promoSummary(places: ProfileData["places"]): string {
   if (!places.length) return "Choose who can send you offers";
+  if (places.length === 1) return `Offers from ${places[0].company}: ${places[0].consent ? "on" : "off"}`;
   const n = places.filter((p) => p.consent).length;
   return n === 0 ? "Offers from stores: off" : n === places.length ? "Offers from all your stores" : `Offers from ${n} of ${places.length} stores`;
 }

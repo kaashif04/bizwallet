@@ -25,8 +25,9 @@ const finished = (o: GuestOrderStatus) =>
   o.status === "cancelled" ||
   (o.status === "accepted" && o.paid && o.table_due == null && ["ready", "served"].includes(o.kitchen_status ?? ""));
 
-// The table QR start page: the restaurant's welcome, Start order, call staff /
-// ask for the bill, Wi-Fi, feedback, and the diner's points here once signed in.
+// The Table tab (the QR itself opens the menu): call a waiter or ask for the
+// bill, this phone's rounds, the game, Wi-Fi, feedback and review, and the
+// diner's points here once signed in.
 export default function TableHome({ token, billSplit = false }: { token: string; billSplit?: boolean }) {
   const [supabase] = useState(() => createClient());
   const [home, setHome] = useState<Home | null>(null);
@@ -141,8 +142,7 @@ export default function TableHome({ token, billSplit = false }: { token: string;
     );
   }
 
-  const menuHref = `/order/t/${token}/menu`;
-  const signIn = `/login?redirect=${encodeURIComponent(`/order/t/${token}`)}`;
+  const signIn = `/login?redirect=${encodeURIComponent(`/order/t/${token}/table`)}`;
 
   return (
     <div className="min-h-dvh bg-ink-50">
@@ -159,7 +159,7 @@ export default function TableHome({ token, billSplit = false }: { token: string;
               <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-ink-900 shadow-sm">
                 Table {home.table.label}
               </span>
-              <AccountChip state={me === null ? null : me === "guest" ? "guest" : { points: me.points, joined: me.joined }} />
+              <AccountChip state={me === null ? null : me === "guest" ? "guest" : { points: me.points, joined: me.joined, href: `/s/${home.outlet.id}?rewards=1` }} />
             </div>
           </div>
           <div className="px-4">
@@ -178,19 +178,13 @@ export default function TableHome({ token, billSplit = false }: { token: string;
         </header>
 
         <div className="mt-5 space-y-8 px-4">
-          {home.ordering ? (
-            <Link
-              href={menuHref}
-              className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 pl-6 pr-2 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97]"
-            >
-              {orders.length > 0 ? "Order more" : "Start order"}
-              <span className="ml-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-brand-700" aria-hidden="true"><svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg></span>
-            </Link>
-          ) : (
-            <p className="rounded-full bg-white py-4 text-center text-sm font-semibold text-ink-700 shadow-lg">
+          {!home.ordering && (
+            <p className="rounded-full bg-white py-4 text-center text-sm font-semibold text-ink-700 shadow-sm">
               Please order with our staff today
             </p>
           )}
+
+          <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />
 
           {orders.length > 0 && <YourTable orders={orders} canCallBill={!home.hide?.bill} />}
 
@@ -211,24 +205,6 @@ export default function TableHome({ token, billSplit = false }: { token: string;
               <span className="shrink-0 text-sm font-bold text-brand-700">{billSplit ? "Pay ›" : "View ›"}</span>
             </Link>
           )}
-
-          <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />
-
-          <Link
-            href={`/order/t/${token}/play`}
-            className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 transition hover:bg-ink-100"
-          >
-            <span className="flex h-10 w-10 shrink-0 flex-col-reverse items-center justify-center gap-0.5 rounded-full bg-brand-50" aria-hidden="true">
-              <span className="h-1.5 w-5 rounded-sm bg-brand-600" />
-              <span className="h-1.5 w-4 rounded-sm bg-brand-500" />
-              <span className="h-1.5 w-3 rounded-sm bg-brand-400" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-bold text-ink-900">{orders.length > 0 ? "Play while you wait" : "Play Stack"}</span>
-              <span className="block text-xs text-ink-500">Get Table {home.table.label} on today&apos;s leaderboard</span>
-            </span>
-            <span aria-hidden="true" className="text-ink-400">›</span>
-          </Link>
 
           <Points me={me} outletId={home.outlet.id} signIn={signIn} />
 
@@ -383,7 +359,7 @@ function CallStaff({
 
   const buttons = (
     [
-      ["staff", "Call staff", "M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6ZM10 19a2 2 0 0 0 4 0"],
+      ["staff", "Call waiter", "M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6ZM10 19a2 2 0 0 0 4 0"],
       ["bill", "Ask for the bill", "M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6"],
     ] as const
   ).filter(([kind]) => !hide?.[kind]);
@@ -550,7 +526,7 @@ function Feedback({ token, reviewUrl, canCallStaff }: { token: string; reviewUrl
           <div>
             <p className="text-sm font-bold text-ink-900">Thank you. The owner reads every note.</p>
             {canCallStaff && rating > 0 && rating <= 2 && (
-              <p className="mt-1 text-sm text-ink-500">Want it sorted now? Tap Call staff and we&apos;ll come over.</p>
+              <p className="mt-1 text-sm text-ink-500">Want it sorted now? Tap Call waiter and we&apos;ll come over.</p>
             )}
             {reviewUrl && (
               <a

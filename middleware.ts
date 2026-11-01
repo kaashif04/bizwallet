@@ -6,7 +6,7 @@ import { PLACE_COOKIE, placeHome } from "@/lib/place";
 //
 //  - Signed out on /customer/*                       -> /login
 //  - Signed out on /                                 -> the last restaurant's page, else /login
-//  - Signed-in member on / or /login                 -> ?redirect, else the last restaurant's page, else places
+//  - Signed-in member on / or /login                 -> ?redirect, else the last restaurant's page, else the scanner
 //  - Signed in without a member row (BizPos staff)   -> /login?account=staff
 //
 // BizWallet is customer-only; managers use the BizPos dashboard.

@@ -75,7 +75,7 @@ export default function MenuView({
       {/* Sticky header + category chips */}
       <div className="sticky top-0 z-20 bg-ink-50/90 backdrop-blur-xl">
         <div className="flex items-center gap-3 px-5 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-          <HomeButton href={homeHref} />
+          {homeHref && <HomeButton href={homeHref} />}
           {logoUrl && <BranchLogo name={title} logoUrl={logoUrl} className="h-11 w-11 rounded-xl" />}
           <span className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-bold leading-tight text-slate-900">{title}</h1>

@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 // Way out of the ordering flow: the table's start page or the restaurant's page
-// when known, else the member's places (guests land on sign-in).
-export default function HomeButton({ href = "/customer/dashboard" }: { href?: string }) {
+// when known.
+export default function HomeButton({ href = "/" }: { href?: string }) {
   return (
     <Link
       href={href}
