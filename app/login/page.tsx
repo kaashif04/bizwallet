@@ -15,7 +15,7 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-md">
         {staff && (
-          <p role="alert" className="mb-4 rounded-xl bg-amber-50 px-5 py-4 text-sm text-amber-800">
+          <p role="alert" className="mb-4 rounded-2xl bg-amber-50 px-5 py-4 text-sm text-amber-800">
             That&apos;s a staff account. Rewards need a separate customer account: sign up below with a
             different email. Manage your business in the BizPos dashboard.
           </p>

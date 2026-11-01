@@ -1,10 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo } from "next/font/google";
+import { Inter } from "next/font/google";
 import MotionProvider from "@/components/MotionProvider";
 import "./globals.css";
 
-// Archivo: a workhorse grotesque with a width axis; pad headers and totals run expanded.
-const body = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-body" });
+const body = Inter({ subsets: ["latin"], variable: "--font-body" });
 
 export const metadata: Metadata = {
   title: { default: "BizWallet", template: "%s · BizWallet" },
@@ -13,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#E7EAEE", // the laminate table; light by default, whatever the phone's setting
+  themeColor: "#F2EFE9", // light by default, whatever the phone's setting
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

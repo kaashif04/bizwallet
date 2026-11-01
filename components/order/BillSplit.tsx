@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
 import type { BillShare, TableBill } from "@/lib/guest-order";
 import HomeButton from "./HomeButton";
-import { Chit, PadLabel, Stamp } from "@/components/ui/chit";
 
 const sym = currencySymbol("MYR");
 const money = (n: number) => `${sym}${Number(n).toFixed(2)}`;
@@ -82,7 +81,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
   if (!bill.open) {
     return (
       <Shell back={back} title={`Table ${bill.table}`}>
-        <div className="rounded-xl bg-white p-6 text-center shadow-sm">
+        <div className="rounded-3xl bg-white p-6 text-center">
           <h2 className="text-xl font-semibold text-ink-900">{arrival === "paid" ? "All paid. Thank you!" : "No open bill at this table"}</h2>
           <p className="mt-2 text-sm text-ink-500">
             {arrival === "paid" ? "Your payment closed the bill. Enjoy the rest of your day." : "Once you've ordered, your bill shows up here."}
@@ -128,7 +127,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
   }
 
   return (
-    <Shell back={back} title="Your bill" pad>
+    <Shell back={back} title={`Table ${bill.table}`} pad>
       <AnimatePresence>
         {arrival && (
           <motion.p
@@ -147,51 +146,37 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
         )}
       </AnimatePresence>
 
-      {/* The bill, as the pad has it */}
-      <Chit
-        band={
-          <div className="flex items-baseline justify-between gap-3">
-            <PadLabel>Bill · Table {bill.table}</PadLabel>
-            <span className="text-xs tabular-nums text-ink-700">of {money(bill.total)}</span>
-          </div>
-        }
-      >
-        <div className="px-4 pb-4 pt-4">
-          <div className="flex items-end justify-between gap-3">
-            <span className="text-sm font-semibold text-ink-600">Left to pay</span>
-            {bill.remaining <= 0 ? (
-              <Stamp thump>Paid</Stamp>
-            ) : (
-              <span className="pad text-[2.5rem] font-extrabold leading-none text-ink-900">{money(bill.remaining)}</span>
-            )}
-          </div>
-          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-paper-rule" aria-hidden="true">
-            <motion.div className="h-full rounded-full bg-brand-600" initial={false} animate={{ width: `${pct}%` }} transition={{ duration: 0.5 }} />
-          </div>
-          {bill.held > 0 && <p className="mt-3 text-xs font-semibold text-amber-700">Someone is paying {money(bill.held)} right now…</p>}
+      {/* What's left */}
+      <section className="rounded-3xl bg-white p-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-500">Left to pay</p>
+        <p className="mt-1 text-4xl font-semibold tabular-nums tracking-[-0.03em] text-ink-900">{money(bill.remaining)}</p>
+        <p className="mt-1 text-sm text-ink-500">
+          of {money(bill.total)}
+          {bill.paid > 0 && ` · ${money(bill.paid)} paid in the app`}
+        </p>
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-ink-100" aria-hidden="true">
+          <motion.div className="h-full rounded-full bg-marple" initial={false} animate={{ width: `${pct}%` }} transition={{ duration: 0.4 }} />
         </div>
+        {bill.held > 0 && <p className="mt-3 text-xs font-semibold text-amber-700">Someone is paying {money(bill.held)} right now…</p>}
         {bill.payments.length > 0 && (
-          <ul className="ruled total-rule mx-4">
+          <ul className="mt-4 space-y-1.5 border-t border-ink-100 pt-3 text-sm">
             {bill.payments.map((p, i) => (
-              <li key={i} className="flex items-center justify-between gap-3 py-3 text-sm">
-                <span className="min-w-0 text-ink-700">
-                  <span className="font-bold text-ink-900">{p.mine ? "You" : "Someone"}</span>{" "}
-                  {p.share.mode === "equal" ? `· 1 of ${p.share.of} shares` : p.share.mode === "items" ? "· their items" : "· the rest"}
+              <li key={i} className="flex justify-between text-ink-600">
+                <span>
+                  {p.mine ? "You" : "Someone"} paid{" "}
+                  {p.share.mode === "equal" ? `1 of ${p.share.of} shares` : p.share.mode === "items" ? "their items" : "the rest"}
                 </span>
-                <span className="flex shrink-0 items-center gap-3">
-                  <span className="pad font-bold text-ink-900">{money(p.amount)}</span>
-                  <Stamp className="!text-[0.625rem]">Paid</Stamp>
-                </span>
+                <span className="tabular-nums">{money(p.amount)}</span>
               </li>
             ))}
           </ul>
         )}
-      </Chit>
+      </section>
 
       {bill.remaining > 0 && (
         <>
           {/* How to pay */}
-          <div role="radiogroup" aria-label="How to pay" className="mt-6 grid grid-cols-3 gap-1 rounded-xl bg-ink-100 p-1">
+          <div role="radiogroup" aria-label="How to pay" className="mt-6 grid grid-cols-3 gap-1 rounded-full bg-ink-100 p-1">
             {(
               [
                 ["equal", "Split equally"],
@@ -205,10 +190,10 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
                 role="radio"
                 aria-checked={mode === m}
                 onClick={() => setMode(m)}
-                className={`relative h-10 rounded-lg text-sm font-bold transition ${mode === m ? "text-ink-900" : "text-ink-500"}`}
+                className={`relative h-10 rounded-full text-sm font-bold transition ${mode === m ? "text-ink-900" : "text-ink-500"}`}
               >
                 {mode === m && (
-                  <motion.span layoutId="bill-mode" className="absolute inset-0 rounded-lg bg-white shadow-sm" transition={{ type: "spring", stiffness: 420, damping: 34 }} />
+                  <motion.span layoutId="bill-mode" className="absolute inset-0 rounded-full bg-white shadow-sm" transition={{ type: "spring", stiffness: 420, damping: 34 }} />
                 )}
                 <span className="relative">{label}</span>
               </button>
@@ -216,14 +201,14 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
           </div>
 
           {mode === "equal" && (
-            <section className="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <section className="mt-4 rounded-3xl bg-white p-5">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-ink-900">How many people?</span>
                 <span className="flex items-center gap-3">
                   <Step label="Fewer people" onClick={() => setOf((n) => Math.max(2, n - 1))} disabled={of <= 2}>
                     −
                   </Step>
-                  <span className="pad w-7 text-center text-2xl font-extrabold text-ink-900" aria-live="polite">
+                  <span className="w-6 text-center text-xl font-semibold tabular-nums text-ink-900" aria-live="polite">
                     {of}
                   </span>
                   <Step label="More people" onClick={() => setOf((n) => Math.min(20, n + 1))} disabled={of >= 20}>
@@ -233,7 +218,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
               </div>
               <div className="mt-4 flex gap-1.5" aria-hidden="true">
                 {Array.from({ length: of }, (_, i) => (
-                  <span key={i} className={`h-2 flex-1 rounded-sm ${i < equalPaid ? "bg-brand-600" : "bg-paper-rule"}`} />
+                  <span key={i} className={`h-2 flex-1 rounded-full ${i < equalPaid ? "bg-emerald-500" : "bg-ink-100"}`} />
                 ))}
               </div>
               <p className="mt-2 text-xs text-ink-500">
@@ -243,7 +228,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
           )}
 
           {mode === "items" && (
-            <ul className="ruled mt-4 overflow-hidden rounded-xl bg-white shadow-sm">
+            <ul className="mt-4 divide-y divide-ink-100 overflow-hidden rounded-3xl bg-white">
               {bill.items.map((i) => {
                 const on = picked.has(i.id);
                 return (
@@ -261,7 +246,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
                             return n;
                           })
                         }
-                        className="h-5 w-5 shrink-0 accent-[rgb(var(--brand-600))]"
+                        className="h-5 w-5 shrink-0 accent-[#CA2851]"
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-semibold text-ink-900">
@@ -269,7 +254,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
                         </span>
                         {i.options && <span className="block truncate text-xs text-ink-500">{i.options}</span>}
                       </span>
-                      {i.paid ? <Stamp className="!text-[0.625rem]">Paid</Stamp> : <span className="pad shrink-0 text-sm font-bold text-ink-900">{money(i.line_total)}</span>}
+                      <span className="shrink-0 text-sm tabular-nums text-ink-700">{i.paid ? "Paid" : money(i.line_total)}</span>
                     </label>
                   </li>
                 );
@@ -283,12 +268,10 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
       )}
 
       {/* The whole bill */}
-      <details className="group mt-6 rounded-xl bg-white shadow-sm">
+      <details className="group mt-6 rounded-3xl bg-white">
         <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-bold text-ink-900">
           Full bill · {bill.items.length} item{bill.items.length === 1 ? "" : "s"}
-          <svg viewBox="0 0 16 16" className="h-4 w-4 text-ink-400 transition group-open:rotate-90" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-            <path d="m6 3 5 5-5 5" />
-          </svg>
+          <span aria-hidden="true" className="text-ink-400 transition group-open:rotate-90">›</span>
         </summary>
         <div className="space-y-1.5 px-5 pb-5 text-sm">
           {mode !== "items" &&
@@ -306,7 +289,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
             {bill.service_charge > 0 && <Row label="Service charge" n={bill.service_charge} />}
             {bill.sst > 0 && <Row label="SST" n={bill.sst} />}
             {bill.rounding !== 0 && <Row label="Rounding" n={bill.rounding} />}
-            <div className="total-rule mt-2 flex justify-between pt-2 font-bold text-ink-900">
+            <div className="flex justify-between pt-1 font-bold text-ink-900">
               <span>Total</span>
               <span className="tabular-nums">{money(bill.total)}</span>
             </div>
@@ -318,38 +301,34 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
 
       {/* Pay, within thumb reach */}
       {bill.remaining > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-ink-100 bg-ink-50/90 backdrop-blur-md">
-          <div className="mx-auto max-w-md px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-            {!canPay ? (
-              <p className="py-3 text-center text-sm font-semibold text-ink-700">Please pay at the counter. Ask for the bill on the table page.</p>
-            ) : signedIn === false ? (
-              <Link
-                href={`/login?redirect=${encodeURIComponent(`${back}/bill`)}`}
-                className="flex w-full items-center justify-between rounded-xl bg-brand-600 px-5 py-4 text-base font-bold text-on transition hover:bg-brand-700 active:scale-[0.98]"
-              >
-                <span>Sign in to pay</span>
-                <span className="pad">{money(amount)}</span>
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={pay}
-                disabled={paying || amount <= 0 || signedIn === null}
-                className="flex w-full items-center justify-between rounded-xl bg-brand-600 px-5 py-4 text-base font-bold text-on transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-50"
-              >
-                <span>
-                  {paying
-                    ? "Opening payment…"
-                    : amount <= 0
-                      ? mode === "items"
-                        ? "Tick what you had"
-                        : "Someone is paying the rest"
-                      : "Pay · earn points"}
-                </span>
-                {amount > 0 && <span className="pad">{money(amount)}</span>}
-              </button>
-            )}
-          </div>
+        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {!canPay ? (
+            <p className="rounded-full bg-white py-4 text-center text-sm font-semibold text-ink-700 shadow-lg">
+              Please pay at the counter. Tap Ask for the bill on the table page.
+            </p>
+          ) : signedIn === false ? (
+            <Link
+              href={`/login?redirect=${encodeURIComponent(`${back}/bill`)}`}
+              className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97]"
+            >
+              Sign in to pay {money(amount)}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={pay}
+              disabled={paying || amount <= 0 || signedIn === null}
+              className="h-14 w-full rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-50"
+            >
+              {paying
+                ? "Opening payment…"
+                : amount <= 0
+                  ? mode === "items"
+                    ? "Tick what you had"
+                    : "Someone is paying the rest"
+                  : `Pay ${money(amount)} · earn points`}
+            </button>
+          )}
         </div>
       )}
     </Shell>
@@ -362,7 +341,9 @@ function Shell({ back, title, pad, children }: { back: string; title: string; pa
       <div className={`mx-auto max-w-md px-4 pt-[max(1rem,env(safe-area-inset-top))] ${pad ? "pb-[calc(7rem+env(safe-area-inset-bottom))]" : "pb-12"}`}>
         <div className="mb-5 flex items-center gap-3">
           <HomeButton href={back} />
-          <h1 className="pad text-xl font-extrabold text-ink-900">{title}</h1>
+          <h1 className="text-xl font-semibold tracking-[-0.02em] text-ink-900">
+            {title} · <span className="text-ink-500">Bill</span>
+          </h1>
         </div>
         {children}
       </div>
@@ -386,7 +367,7 @@ function Step({ label, onClick, disabled, children }: { label: string; onClick: 
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
-      className="flex h-10 w-10 items-center justify-center rounded-lg bg-ink-100 text-xl font-bold text-ink-900 transition active:scale-90 disabled:opacity-40"
+      className="flex h-10 w-10 items-center justify-center rounded-full bg-ink-100 text-xl font-bold text-ink-900 transition active:scale-90 disabled:opacity-40"
     >
       {children}
     </button>

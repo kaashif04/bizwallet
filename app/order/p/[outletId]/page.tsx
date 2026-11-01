@@ -15,7 +15,7 @@ export default function PickupOrderPage({ params }: { params: { outletId: string
         </p>
         <Link
           href={`/s/${params.outletId}`}
-          className="mt-6 rounded-lg bg-brand-600 px-6 py-3 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+          className="mt-6 rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
         >
           Back to the restaurant
         </Link>

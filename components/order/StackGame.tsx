@@ -171,7 +171,7 @@ export default function StackGame({ token }: { token: string }) {
                 <>
                   <p className="text-lg font-bold text-ink-900">Tap to drop each block</p>
                   <p className="mt-1 text-sm text-ink-600">Whatever hangs over is cut off. How high can your table go?</p>
-                  <span className="mt-5 rounded-lg bg-brand-600 px-6 py-3 text-sm font-bold text-on shadow-sm">Tap to start</span>
+                  <span className="mt-5 rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-on shadow-sm">Tap to start</span>
                 </>
               ) : (
                 <>
@@ -188,7 +188,7 @@ export default function StackGame({ token }: { token: string }) {
                     type="button"
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={start}
-                    className="mt-5 rounded-lg bg-brand-600 px-6 py-3 text-sm font-bold text-on shadow-sm transition active:scale-95"
+                    className="mt-5 rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-on shadow-sm transition active:scale-95"
                   >
                     Play again
                   </button>

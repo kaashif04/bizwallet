@@ -55,7 +55,7 @@ export function PopularRow({ items, currency, onPick }: { items: MenuItem[]; cur
           >
             <span className="relative block">
               <Thumb item={item} className="aspect-square w-full rounded-2xl" />
-              <span className="absolute left-2 top-2 rounded-lg bg-white px-2 py-0.5 text-2xs font-bold text-ink-800 shadow-sm">
+              <span className="absolute left-2 top-2 rounded-full bg-white px-2 py-0.5 text-2xs font-bold text-ink-800 shadow-sm">
                 #{i + 1}
               </span>
               <span
@@ -108,7 +108,7 @@ export function PairNudge({
         <button
           type="button"
           onClick={onAdd}
-          className="h-9 shrink-0 rounded-lg bg-brand-600 px-4 text-sm font-bold text-on shadow-sm transition active:scale-95"
+          className="h-9 shrink-0 rounded-full bg-brand-600 px-4 text-sm font-bold text-on shadow-sm transition active:scale-95"
         >
           Add
         </button>

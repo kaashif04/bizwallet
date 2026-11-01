@@ -217,7 +217,7 @@ function VoucherCard({ v }: { v: Voucher }) {
           )}
         </div>
         <span
-          className={`shrink-0 rounded-lg px-2.5 py-1 text-2xs font-bold ${
+          className={`shrink-0 rounded-full px-2.5 py-1 text-2xs font-bold ${
             active ? "bg-emerald-50 text-emerald-700" : "bg-white text-ink-500"
           }`}
         >

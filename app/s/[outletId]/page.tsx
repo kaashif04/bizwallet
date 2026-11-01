@@ -11,7 +11,6 @@ import BannerCarousel from "@/components/order/BannerCarousel";
 import RememberPlace from "@/components/order/RememberPlace";
 import ItemMark from "@/components/order/ItemMark";
 import PointsCard from "@/components/store/PointsCard";
-import { Chit, PadLabel, Stamp } from "@/components/ui/chit";
 import { SectionTitle } from "@/components/customer/ui";
 
 type Store = PickupOutlet & { ordering: boolean };
@@ -102,55 +101,77 @@ export default async function StorePage({
     },
   ].filter(Boolean) as { href: string; label: string; icon: string; external?: boolean }[];
 
-  const firstName = member?.full_name?.trim().split(/\s+/)[0] ?? null;
-
   return (
     <div className="min-h-dvh bg-ink-50">
       <RememberPlace outletId={store.id} />
-      <main className={`mx-auto max-w-md ${canPickup ? "pb-[calc(6.5rem+env(safe-area-inset-bottom))]" : "pb-16"}`}>
-        {/* The restaurant owns the top of the screen: its photo, logo and name. */}
-        <header className="relative h-[min(46dvh,23rem)] overflow-hidden bg-ink-800">
-          {store.cover_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={store.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/5 to-black/75" />
-          <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))]">
-            {member ? (
-              <Link
-                href="/customer/dashboard"
-                className="flex h-9 items-center gap-1.5 rounded-lg bg-black/35 px-3 text-xs font-bold text-on backdrop-blur-md transition hover:bg-black/50"
-              >
-                <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M10 3 5 8l5 5" />
-                </svg>
-                Your places
-              </Link>
-            ) : (
-              <span />
+      <main className={`mx-auto max-w-md ${canPickup ? "pb-[calc(7rem+env(safe-area-inset-bottom))]" : "pb-16"}`}>
+        {/* Cover, logo, name, open now */}
+        <header className="relative">
+          <div className="relative h-60 overflow-hidden bg-brand-100">
+            {store.cover_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={store.cover_url} alt="" className="h-full w-full object-cover" />
             )}
-            {!member && (
-              <Link href={signIn} className="flex h-9 items-center rounded-lg bg-white px-3.5 text-xs font-bold text-ink-900 transition hover:bg-ink-100">
-                Sign in
-              </Link>
-            )}
-          </div>
-          <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 px-4 pb-10">
-            <BranchLogo name={store.name} logoUrl={logos[store.id]} className="h-14 w-14 rounded-xl text-xl ring-2 ring-on/80" />
-            <div className="min-w-0 pb-0.5 text-on">
-              <h1 className="pad text-[1.75rem] font-extrabold leading-[1.05] drop-shadow">{store.name}</h1>
-              <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-on/85">
-                {status && (
-                  <span className={`h-2 w-2 shrink-0 rounded-full ${status.open ? "bg-emerald-500" : "bg-white/50"}`} aria-hidden="true" />
-                )}
-                {status ? status.text : store.tagline}
-              </p>
+            <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/10" />
+            <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))]">
+              {member ? (
+                <Link
+                  href="/customer/dashboard"
+                  className="flex h-9 items-center gap-1 rounded-full bg-white/90 pl-2.5 pr-3.5 text-xs font-bold text-ink-900 shadow-sm backdrop-blur transition hover:bg-white"
+                >
+                  <span aria-hidden="true">‹</span> Your places
+                </Link>
+              ) : (
+                <span />
+              )}
+              {!member && (
+                <Link href={signIn} className="rounded-full bg-white px-3.5 py-2 text-xs font-bold text-ink-900 shadow-sm transition hover:bg-brand-100">
+                  Sign in
+                </Link>
+              )}
             </div>
+          </div>
+          <div className="px-4">
+            <BranchLogo
+              name={store.name}
+              logoUrl={logos[store.id]}
+              className="relative -mt-10 h-20 w-20 rounded-3xl text-3xl shadow-md ring-4 ring-ink-50"
+            />
+            <h1 className="mt-3 text-[1.875rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">
+              {member?.full_name ? `Hi ${member.full_name.trim().split(/\s+/)[0]}, welcome back` : store.name}
+            </h1>
+            <p className="mt-1 text-sm text-ink-500">{member?.full_name ? store.name : store.tagline}</p>
+            {status && (
+              <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-ink-700">
+                <span className={`h-2 w-2 rounded-full ${status.open ? "bg-emerald-500" : "bg-ink-400"}`} aria-hidden="true" />
+                {status.text}
+              </p>
+            )}
           </div>
         </header>
 
-        <div className="relative -mt-6 space-y-7 px-4">
-          {/* The member's card, or what joining gets you, on the pad. */}
+        <div className="mt-5 space-y-8 px-4">
+          {actions.length > 0 && (
+            <nav aria-label="Quick actions" className="grid grid-cols-4 gap-2">
+              {actions.map((a) => (
+                <a
+                  key={a.label}
+                  href={a.href}
+                  {...(a.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  className="flex flex-col items-center gap-1.5 rounded-2xl py-2 text-xs font-bold text-ink-800 transition active:scale-95"
+                >
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm">
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d={a.icon} />
+                    </svg>
+                  </span>
+                  {a.label}
+                </a>
+              ))}
+            </nav>
+          )}
+
+          {/* Points: the member's card, or what joining gets you */}
           {loyaltyOn &&
             (member && place ? (
               <PointsCard
@@ -158,30 +179,16 @@ export default async function StorePage({
                 rewards={rewards}
                 vouchers={(voucherRows ?? []) as Voucher[]}
                 userId={user!.id}
-                name={firstName}
                 open={!!searchParams.rewards}
               />
             ) : (
-              <JoinCard signedIn={!!member} signIn={signIn} perRm={Number(program?.points_per_rm ?? 1)} rewards={rewards.slice(0, 3)} />
+              <JoinCard
+                signedIn={!!member}
+                signIn={signIn}
+                perRm={Number(program?.points_per_rm ?? 1)}
+                rewards={rewards.slice(0, 3)}
+              />
             ))}
-
-          {actions.length > 0 && (
-            <nav aria-label="Quick actions" className={`grid divide-x divide-paper-rule overflow-hidden rounded-xl bg-white shadow-sm`} style={{ gridTemplateColumns: `repeat(${actions.length}, minmax(0, 1fr))` }}>
-              {actions.map((a) => (
-                <a
-                  key={a.label}
-                  href={a.href}
-                  {...(a.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  className="flex flex-col items-center gap-1.5 py-3.5 text-xs font-bold text-ink-800 transition hover:bg-ink-50 active:bg-ink-100"
-                >
-                  <svg viewBox="0 0 24 24" className="h-5 w-5 text-brand-600" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d={a.icon} />
-                  </svg>
-                  {a.label}
-                </a>
-              ))}
-            </nav>
-          )}
 
           {(bannerData ?? []).length > 0 && (
             <section>
@@ -196,9 +203,9 @@ export default async function StorePage({
           {member && (orders ?? []).length > 0 && (
             <section>
               <SectionTitle href="/customer/orders" action="All orders">
-                Your bills here
+                Your recent orders
               </SectionTitle>
-              <ul className="ruled overflow-hidden rounded-xl bg-white shadow-sm">
+              <ul className="divide-y divide-ink-100 overflow-hidden rounded-2xl bg-white">
                 {orders!.map((o) => (
                   <li key={o.id}>
                     <Link href={`/customer/orders/${o.id}`} className="flex items-center gap-3 px-4 py-3.5 transition hover:bg-ink-50">
@@ -206,9 +213,13 @@ export default async function StorePage({
                         <span className="block truncate text-sm font-bold text-ink-900">
                           {new Date(o.created_at).toLocaleDateString("en-MY", { timeZone: "Asia/Kuala_Lumpur", weekday: "short", day: "numeric", month: "short" })}
                         </span>
-                        <span className="block truncate text-xs text-ink-500">{o.table_label ? `Table ${o.table_label}` : "Counter or pickup"}</span>
+                        <span className="block truncate text-xs text-ink-500">
+                          {o.table_label ? `Table ${o.table_label}` : "Counter or pickup"}
+                          {o.status === "open" ? " · Open bill" : ""}
+                        </span>
                       </span>
-                      {o.status === "open" ? <Stamp>Open</Stamp> : <span className="pad text-sm font-bold text-ink-900">{money(o.total)}</span>}
+                      <span className="shrink-0 text-sm font-semibold tabular-nums text-ink-900">{money(o.total)}</span>
+                      <span aria-hidden="true" className="text-ink-400">›</span>
                     </Link>
                   </li>
                 ))}
@@ -220,7 +231,7 @@ export default async function StorePage({
           {(store.hours || store.address) && (
             <section>
               <SectionTitle>Hours &amp; location</SectionTitle>
-              <div className="ruled overflow-hidden rounded-xl bg-white shadow-sm">
+              <div className="divide-y divide-ink-100 overflow-hidden rounded-2xl bg-white">
                 {store.hours && (
                   <details className="group">
                     <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3.5 text-sm">
@@ -230,9 +241,7 @@ export default async function StorePage({
                           {store.hours[todayIdx] ? `${clock(store.hours[todayIdx]!.open)} – ${clock(store.hours[todayIdx]!.close)}` : "Closed"}
                         </span>
                       </span>
-                      <svg viewBox="0 0 16 16" className="h-4 w-4 text-ink-400 transition group-open:rotate-90" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-                        <path d="m6 3 5 5-5 5" />
-                      </svg>
+                      <span aria-hidden="true" className="text-ink-400 transition group-open:rotate-90">›</span>
                     </summary>
                     <ul className="px-4 pb-3.5 text-sm">
                       {store.hours.map((d, i) => (
@@ -252,30 +261,23 @@ export default async function StorePage({
                     className="flex items-center gap-3 px-4 py-3.5 text-sm text-ink-700 transition hover:bg-ink-50"
                   >
                     <span className="min-w-0 flex-1">{store.address}</span>
-                    <span className="shrink-0 font-bold text-brand-700">Map</span>
+                    <span className="shrink-0 font-bold text-brand-700">Map ›</span>
                   </a>
                 )}
               </div>
             </section>
           )}
-
-          <p className="pb-2 text-center text-xs text-ink-400">Powered by BizWallet</p>
         </div>
       </main>
 
       {canPickup && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-ink-100 bg-ink-50/90 backdrop-blur-md">
-          <div className="mx-auto max-w-md px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-            <Link
-              href={`/order/p/${store.id}`}
-              className="flex w-full items-center justify-between rounded-xl bg-brand-600 px-5 py-4 text-base font-bold text-on transition hover:bg-brand-700 active:scale-[0.98]"
-            >
-              <span>Order pickup</span>
-              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M3 8h10M9 4l4 4-4 4" />
-              </svg>
-            </Link>
-          </div>
+        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <Link
+            href={`/order/p/${store.id}`}
+            className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97]"
+          >
+            Order pickup
+          </Link>
         </div>
       )}
     </div>
@@ -294,65 +296,65 @@ function JoinCard({
   rewards: Reward[];
 }) {
   return (
-    <Chit band={<PadLabel>Rewards here</PadLabel>}>
-      <div className="px-4 pt-4">
-        <p className="pad text-[1.375rem] font-extrabold leading-tight text-ink-900">
-          {perRm === 1 ? "1 point" : `${perRm} points`} for every {sym}1
-        </p>
+    <section className="overflow-hidden rounded-3xl bg-white">
+      <div className="p-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">Rewards here</p>
+        <h2 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-ink-900">
+          Earn {perRm === 1 ? "1 point" : `${perRm} points`} for every {sym}1
+        </h2>
         <p className="mt-1 text-sm text-ink-500">
-          {signedIn ? "Your first order or receipt here starts your card." : "Free to join. Order here or scan your receipt."}
+          {signedIn ? "Your first order or receipt here starts your points." : "Free to join. Scan your receipt or order here to collect."}
         </p>
       </div>
       {rewards.length > 0 && (
-        <ul className="ruled mt-3 px-4">
+        <ul className="divide-y divide-ink-100 border-t border-ink-100">
           {rewards.map((r) => (
-            <li key={r.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+            <li key={r.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
               <span className="font-semibold text-ink-900">{r.name}</span>
-              <span className="pad shrink-0 font-bold text-brand-700">{r.points_cost.toLocaleString()} pts</span>
+              <span className="shrink-0 tabular-nums text-ink-500">{r.points_cost.toLocaleString()} pts</span>
             </li>
           ))}
         </ul>
       )}
       {!signedIn && (
-        <div className="total-rule mx-4 py-4">
+        <div className="p-4 pt-1">
           <Link
             href={signIn}
-            className="flex h-12 w-full items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-on transition hover:bg-brand-700 active:scale-[0.98]"
+            className="flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
           >
             Join free or sign in
           </Link>
         </div>
       )}
-    </Chit>
+    </section>
   );
 }
 
-// Dishes at one fixed square scale, so a menu reads as a set.
 function DishRail({ title, dishes, href, mine }: { title: string; dishes: Dish[]; href: string | null; mine?: boolean }) {
   return (
     <section>
       <SectionTitle href={href ?? undefined} action="Order">
         {title}
       </SectionTitle>
-      <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none]">
+      <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
         {dishes.map((d) => {
           const card = (
             <>
               {d.image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={d.image_url} alt="" className="aspect-square w-full rounded-lg object-cover" loading="lazy" />
+                <img src={d.image_url} alt="" className="aspect-square w-full rounded-2xl object-cover" loading="lazy" />
               ) : (
-                <ItemMark name={d.name} className="aspect-square w-full rounded-lg text-2xl" />
+                <ItemMark name={d.name} className="aspect-square w-full rounded-2xl text-3xl" />
               )}
               <span className="mt-2 block line-clamp-2 text-sm font-bold leading-snug text-ink-900">{d.name}</span>
               <span className="block text-xs text-ink-500">
                 {money(d.price)}
-                {mine && d.times && d.times > 1 ? ` · had ${d.times}×` : ""}
+                {mine && d.times && d.times > 1 ? ` · ordered ${d.times}×` : ""}
               </span>
             </>
           );
           return (
-            <li key={d.id} className="w-[7.5rem] shrink-0 snap-start">
+            <li key={d.id} className="w-32 shrink-0 snap-start">
               {href ? (
                 <Link href={href} className="block transition active:scale-[0.97]">
                   {card}

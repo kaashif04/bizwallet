@@ -17,7 +17,6 @@ import { SectionTitle } from "@/components/customer/ui";
 import AccountChip from "./AccountChip";
 import { rememberPlace } from "@/lib/place";
 import BranchLogo from "./BranchLogo";
-import { Chit, PadLabel, Stamp } from "@/components/ui/chit";
 
 type Me = { name: string | null; points: number; joined: boolean; vouchers: number } | "guest" | null;
 
@@ -145,85 +144,81 @@ export default function TableHome({ token, billSplit = false }: { token: string;
   const menuHref = `/order/t/${token}/menu`;
   const signIn = `/login?redirect=${encodeURIComponent(`/order/t/${token}`)}`;
 
-  const sym = currencySymbol("MYR");
-
   return (
     <div className="min-h-dvh bg-ink-50">
-      <main className="mx-auto max-w-md pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
-        {/* The restaurant owns the top: its photo, logo and name. */}
-        <header className="relative h-[min(34dvh,16rem)] overflow-hidden bg-ink-800">
-          {home.cover_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={home.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/5 to-black/75" />
-          <div className="absolute inset-x-0 top-0 flex justify-end px-4 pt-[max(1rem,env(safe-area-inset-top))]">
-            <AccountChip state={me === null ? null : me === "guest" ? "guest" : { points: me.points, joined: me.joined }} />
-          </div>
-          <div className="absolute inset-x-0 bottom-0 flex items-end gap-3 px-4 pb-9">
-            <BranchLogo name={home.outlet.name} logoUrl={logo} className="h-12 w-12 rounded-xl text-lg ring-2 ring-on/80" />
-            <div className="min-w-0 text-on">
-              <h1 className="pad truncate text-2xl font-extrabold leading-tight drop-shadow">{home.outlet.name}</h1>
-              <p className="truncate text-sm text-on/85">
-                {me && me !== "guest" && me.name ? `Welcome back, ${me.name}` : home.tagline || "Order from your table"}
-              </p>
+      <main className="mx-auto max-w-md pb-[calc(7rem+env(safe-area-inset-bottom))]">
+        {/* Cover, logo, name, table */}
+        <header className="relative">
+          <div className="relative h-56 overflow-hidden bg-brand-100">
+            {home.cover_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={home.cover_url} alt="" className="h-full w-full object-cover" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10" />
+            <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))]">
+              <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-ink-900 shadow-sm">
+                Table {home.table.label}
+              </span>
+              <AccountChip state={me === null ? null : me === "guest" ? "guest" : { points: me.points, joined: me.joined }} />
             </div>
+          </div>
+          <div className="px-4">
+            <BranchLogo
+              name={home.outlet.name}
+              logoUrl={logo}
+              className="relative -mt-10 h-20 w-20 rounded-3xl text-3xl shadow-md ring-4 ring-ink-50"
+            />
+            <h1 className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">
+              {me && me !== "guest" && me.name ? `Welcome back, ${me.name}` : home.outlet.name}
+            </h1>
+            <p className="mt-1 text-sm text-ink-500">
+              {me && me !== "guest" && me.name ? home.outlet.name : home.tagline || "Order from your table, pay in the app or at the counter."}
+            </p>
           </div>
         </header>
 
-        <div className="relative -mt-5 space-y-7 px-4">
-          {/* The table's chit: what's ordered, what's owed, and the two calls. */}
-          <Chit
-            band={
-              <div className="flex items-end justify-between gap-3">
-                <span>
-                  <PadLabel>Table</PadLabel>
-                  <span className="block text-xs text-ink-600">{orders.length > 0 ? "Your rounds" : "Order from your phone"}</span>
-                </span>
-                <span className="pad text-5xl font-extrabold leading-[0.85] text-brand-700">{home.table.label}</span>
-              </div>
-            }
-          >
-            <div className="ruled px-4">
-              {orders.length > 0 ? (
-                <TableLines orders={orders} canCallBill={!home.hide?.bill} />
-              ) : (
-                <p className="py-4 text-sm text-ink-600">
-                  {home.ordering ? "Nothing ordered yet. The menu is one tap away." : "Please order with our staff today."}
-                </p>
-              )}
-              {billLeft !== null && billLeft > 0 && (
-                <Link href={`/order/t/${token}/bill`} className="total-rule -mx-4 flex items-center justify-between gap-3 px-4 py-4 transition hover:bg-ink-50">
-                  <span className="min-w-0">
-                    <span className="block text-sm font-bold text-ink-900">Table bill</span>
-                    <span className="block text-xs text-ink-500">{billSplit ? "Pay it all or split it" : "See every item"}</span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    <span className="pad text-xl font-extrabold text-ink-900">
-                      {sym}
-                      {billLeft.toFixed(2)}
-                    </span>
-                    <svg viewBox="0 0 16 16" className="h-4 w-4 text-brand-600" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="m6 3 5 5-5 5" />
-                    </svg>
-                  </span>
-                </Link>
-              )}
-            </div>
-            <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />
-          </Chit>
+        <div className="mt-5 space-y-8 px-4">
+          {orders.length > 0 && <YourTable orders={orders} canCallBill={!home.hide?.bill} />}
 
-          {/* While you're here: one sheet, ruled rows. */}
-          <div className="ruled overflow-hidden rounded-xl bg-white shadow-sm">
-            <Points me={me} outletId={home.outlet.id} signIn={signIn} />
-            <Row
-              href={`/order/t/${token}/play`}
-              icon="M4 20h16M6 16h12M8 12h8M10 8h4"
-              title={orders.length > 0 ? "Play while you wait" : "Play Stack"}
-              note={`Put Table ${home.table.label} on today's leaderboard`}
-            />
-            {home.wifi && <Wifi name={home.wifi.name} password={home.wifi.password} />}
-          </div>
+          {billLeft !== null && billLeft > 0 && (
+            <Link
+              href={`/order/t/${token}/bill`}
+              className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 shadow-sm transition hover:bg-ink-100 active:scale-[0.99]"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600" aria-hidden="true">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6" />
+                </svg>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-ink-900">Your bill · {currencySymbol("MYR")}{billLeft.toFixed(2)} left</span>
+                <span className="block text-xs text-ink-500">{billSplit ? "Pay it all or split it with your table" : "See everything on your table's bill"}</span>
+              </span>
+              <span className="shrink-0 text-sm font-bold text-brand-700">{billSplit ? "Pay ›" : "View ›"}</span>
+            </Link>
+          )}
+
+          <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />
+
+          <Link
+            href={`/order/t/${token}/play`}
+            className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 transition hover:bg-ink-100"
+          >
+            <span className="flex h-10 w-10 shrink-0 flex-col-reverse items-center justify-center gap-0.5 rounded-full bg-brand-50" aria-hidden="true">
+              <span className="h-1.5 w-5 rounded-sm bg-brand-600" />
+              <span className="h-1.5 w-4 rounded-sm bg-brand-500" />
+              <span className="h-1.5 w-3 rounded-sm bg-brand-400" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-ink-900">{orders.length > 0 ? "Play while you wait" : "Play Stack"}</span>
+              <span className="block text-xs text-ink-500">Get Table {home.table.label} on today&apos;s leaderboard</span>
+            </span>
+            <span aria-hidden="true" className="text-ink-400">›</span>
+          </Link>
+
+          <Points me={me} outletId={home.outlet.id} signIn={signIn} />
+
+          {home.wifi && <Wifi name={home.wifi.name} password={home.wifi.password} />}
 
           {!home.hide?.feedback ? (
             <Feedback token={token} reviewUrl={home.review_url} canCallStaff={!home.hide?.staff} />
@@ -233,69 +228,44 @@ export default function TableHome({ token, billSplit = false }: { token: string;
                 href={home.review_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-xl bg-white px-4 py-3.5 text-sm font-bold text-ink-900 shadow-sm transition hover:bg-ink-100"
+                className="flex items-center justify-between rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-ink-900 transition hover:bg-ink-100"
               >
                 Review us on Google
-                <span className="text-brand-700">Open</span>
+                <span aria-hidden="true" className="text-ink-400">›</span>
               </a>
             )
           )}
-
-          <p className="pb-2 text-center text-xs text-ink-400">Powered by BizWallet</p>
         </div>
       </main>
 
-      {/* Order, within thumb reach. */}
-      {home.ordering && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-ink-100 bg-ink-50/90 backdrop-blur-md">
-          <div className="mx-auto max-w-md px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-            <Link
-              href={menuHref}
-              className="flex w-full items-center justify-between rounded-xl bg-brand-600 px-5 py-4 text-base font-bold text-on transition hover:bg-brand-700 active:scale-[0.98]"
-            >
-              <span>{orders.length > 0 ? "Order more" : "Open the menu"}</span>
-              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M3 8h10M9 4l4 4-4 4" />
-              </svg>
-            </Link>
-          </div>
-        </div>
-      )}
+      {/* Start order, within thumb reach. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        {home.ordering ? (
+          <Link
+            href={menuHref}
+            className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97]"
+          >
+            {orders.length > 0 ? "Order more" : "Start order"}
+          </Link>
+        ) : (
+          <p className="rounded-full bg-white py-4 text-center text-sm font-semibold text-ink-700 shadow-lg">
+            Please order with our staff today
+          </p>
+        )}
+      </div>
     </div>
-  );
-}
-
-// One ruled row on the table's sheet.
-function Row({ href, icon, title, note, external }: { href: string; icon: string; title: string; note: string; external?: boolean }) {
-  return (
-    <a
-      href={href}
-      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-      className="flex items-center gap-3 px-4 py-3.5 transition hover:bg-ink-50"
-    >
-      <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-brand-600" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d={icon} />
-      </svg>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-bold text-ink-900">{title}</span>
-        <span className="block truncate text-xs text-ink-500">{note}</span>
-      </span>
-      <svg viewBox="0 0 16 16" className="h-4 w-4 shrink-0 text-ink-400" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-        <path d="m6 3 5 5-5 5" />
-      </svg>
-    </a>
   );
 }
 
 const KITCHEN: Record<string, [string, number]> = {
   queued: ["Sent to the kitchen", 0],
   preparing: ["Being prepared", 1],
-  ready: ["Coming to your table", 2],
+  ready: ["Ready", 2],
   served: ["Served", 2],
 };
 
-// After ordering: each round as a line on the chit, then what's left to pay.
-function TableLines({ orders, canCallBill }: { orders: GuestOrderStatus[]; canCallBill: boolean }) {
+// After ordering: each round's progress, and what's left to pay.
+function YourTable({ orders, canCallBill }: { orders: GuestOrderStatus[]; canCallBill: boolean }) {
   const sym = currencySymbol("MYR");
   const money = (n: number | null) => `${sym}${Number(n ?? 0).toFixed(2)}`;
   const unpaid = orders.find((o) => o.status === "awaiting_payment");
@@ -304,69 +274,82 @@ function TableLines({ orders, canCallBill }: { orders: GuestOrderStatus[]; canCa
   const allPaid = !unpaid && due == null && orders.every((o) => o.paid || o.status === "cancelled");
 
   return (
-    <>
-      {orders.map((o, i) => {
-        const [label, step] =
-          o.status === "awaiting_payment"
-            ? ["Waiting for your payment", -1]
-            : o.status === "pending"
-              ? ["Waiting for the restaurant", -1]
-              : o.status === "cancelled"
-                ? ["Cancelled by the restaurant", -1]
-                : KITCHEN[o.kitchen_status ?? "queued"];
-        const count = o.items.reduce((n, it) => n + it.quantity, 0);
-        return (
-          <Link key={o.id} href={`/order/status/${o.id}`} className="-mx-4 block px-4 py-3.5 transition hover:bg-ink-50">
-            <span className="flex items-center gap-3">
-              <span className="pad w-7 shrink-0 text-sm font-extrabold text-brand-700">{String(i + 1).padStart(2, "0")}</span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-bold text-ink-900">{label}</span>
-                <span className="block truncate text-xs text-ink-500">
-                  {count} item{count === 1 ? "" : "s"}
-                </span>
-              </span>
-              {step === 2 ? <Stamp ok>Ready</Stamp> : o.paid ? <Stamp>Paid</Stamp> : null}
-            </span>
-            {o.status !== "cancelled" && step < 2 && (
-              <span className="ml-10 mt-2.5 grid grid-cols-3 gap-1" aria-hidden="true">
-                {[0, 1, 2].map((n) => (
-                  <span key={n} className="h-1 overflow-hidden rounded-full bg-paper-rule">
-                    <motion.span
-                      className="block h-full rounded-full bg-brand-600"
-                      initial={false}
-                      animate={{ width: n <= step ? "100%" : "0%" }}
-                      transition={{ duration: 0.4, delay: n * 0.05 }}
-                    />
+    <section>
+      <SectionTitle>Your table</SectionTitle>
+      <div className="divide-y divide-ink-100 rounded-2xl bg-white">
+        {orders.map((o, i) => {
+          const [label, step] =
+            o.status === "awaiting_payment"
+              ? ["Waiting for your payment", -1]
+              : o.status === "pending"
+                ? ["Waiting for the restaurant", -1]
+                : o.status === "cancelled"
+                  ? ["Cancelled by the restaurant", -1]
+                  : KITCHEN[o.kitchen_status ?? "queued"];
+          const count = o.items.reduce((n, it) => n + it.quantity, 0);
+          return (
+            <Link key={o.id} href={`/order/status/${o.id}`} className="block px-4 py-3.5 transition hover:bg-ink-50">
+              <span className="flex items-center gap-3">
+                <span
+                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                    o.status === "cancelled" ? "bg-ink-300" : step === 2 ? "bg-emerald-500" : step < 0 ? "bg-amber-500" : "bg-brand-500"
+                  }`}
+                  aria-hidden="true"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold text-ink-900">{label}</span>
+                  <span className="block truncate text-xs text-ink-500">
+                    {orders.length > 1 ? `Round ${i + 1} · ` : ""}
+                    {count} item{count === 1 ? "" : "s"}
+                    {o.paid ? " · Paid" : ""}
                   </span>
-                ))}
+                </span>
+                <span aria-hidden="true" className="text-ink-400">›</span>
               </span>
-            )}
-          </Link>
-        );
-      })}
-      {unpaid ? (
-        <div className="py-4">
-          <Link
-            href={`/order/status/${unpaid.id}`}
-            className="flex h-12 w-full items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-on transition hover:bg-brand-700 active:scale-[0.98]"
-          >
-            Pay {money(unpaid.amount_due)}
-          </Link>
-          <p className="mt-2 text-center text-xs text-ink-500">The kitchen starts once you&apos;ve paid.</p>
-        </div>
-      ) : due != null ? (
-        <div className="flex items-center justify-between gap-3 py-3.5">
-          <span className="min-w-0 text-xs text-ink-500">{canCallBill ? "Pay at the counter, or ask for the bill below" : "Pay at the counter when you're done"}</span>
-        </div>
-      ) : (
-        allPaid && (
-          <p className="flex items-center justify-between py-3.5 text-sm font-semibold text-ink-800">
-            All paid. Leave whenever you&apos;re ready.
-            <Stamp>Paid</Stamp>
-          </p>
-        )
-      )}
-    </>
+              {o.status !== "cancelled" && (
+                <span className="mt-2.5 grid grid-cols-3 gap-1.5" aria-hidden="true">
+                  {[0, 1, 2].map((n) => (
+                    <span key={n} className="h-1.5 overflow-hidden rounded-full bg-ink-100">
+                      <motion.span
+                        className="block h-full rounded-full bg-marple"
+                        initial={false}
+                        animate={{ width: n <= step ? "100%" : "0%" }}
+                        transition={{ duration: 0.4, delay: n * 0.05 }}
+                      />
+                    </span>
+                  ))}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+        {unpaid ? (
+          <div className="p-4">
+            <Link
+              href={`/order/status/${unpaid.id}`}
+              className="flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+            >
+              Pay {money(unpaid.amount_due)}
+            </Link>
+            <p className="mt-2 text-center text-xs text-ink-500">The kitchen starts once you&apos;ve paid.</p>
+          </div>
+        ) : due != null ? (
+          <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-ink-900">To pay at the counter</span>
+              <span className="block text-xs text-ink-500">
+                {canCallBill ? "Tap Ask for the bill when you're ready" : "When you're done"}
+              </span>
+            </span>
+            <span className="shrink-0 text-lg font-bold tabular-nums text-ink-900">{money(due)}</span>
+          </div>
+        ) : (
+          allPaid && (
+            <p className="px-4 py-3.5 text-sm font-medium text-ink-800">All paid. Leave whenever you&apos;re ready.</p>
+          )
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -408,8 +391,8 @@ function CallStaff({
   if (!buttons.length) return null;
 
   return (
-    <div className="border-t border-dashed border-ink-300">
-      <div className={`grid divide-x divide-paper-rule ${buttons.length > 1 ? "grid-cols-2" : ""}`}>
+    <section>
+      <div className={`grid gap-3 ${buttons.length > 1 ? "grid-cols-2" : ""}`}>
         {buttons.map(([kind, label, icon]) => {
           const sent = calls.find((c) => c.kind === kind);
           return (
@@ -419,40 +402,73 @@ function CallStaff({
               disabled={busy !== null}
               onClick={() => call(kind)}
               aria-live="polite"
-              className={`flex items-center gap-2.5 px-4 py-3.5 text-left transition active:bg-ink-100 ${sent ? "bg-brand-50" : "hover:bg-ink-50"}`}
+              className={`flex flex-col items-start gap-3 rounded-2xl p-4 text-left transition active:scale-[0.97] ${
+                sent ? "bg-brand-50 ring-1 ring-brand-200" : "bg-white hover:bg-ink-100"
+              }`}
             >
-              <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-brand-600" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg viewBox="0 0 24 24" className="h-6 w-6 text-brand-700" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={icon} />
               </svg>
-              <span className="min-w-0">
+              <span>
                 <span className="block text-sm font-bold text-ink-900">{label}</span>
-                <span className="block truncate text-xs text-ink-500">
-                  {busy === kind ? "Sending…" : sent ? `Notified · ${ago(sent.at)}` : "We'll come over"}
+                <span className="block text-xs text-ink-500">
+                  {busy === kind ? "Sending…" : sent ? `Staff notified · ${ago(sent.at)}` : "We'll come to your table"}
                 </span>
               </span>
             </button>
           );
         })}
       </div>
-      {error && <p className="px-4 pb-3 text-sm text-rose-700">{error}</p>}
-    </div>
+      {error && <p className="mt-2 px-1 text-sm text-rose-700">{error}</p>}
+    </section>
   );
 }
-
-const STAR = "M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4l-5.2 2.7 1-5.8L3.5 9.2l5.9-.9L12 3Z";
 
 function Points({ me, outletId, signIn }: { me: Me; outletId: string; signIn: string }) {
   if (!me) return null;
   if (me === "guest") {
-    return <Row href={signIn} icon={STAR} title="Collect points on this meal" note="Join free or sign in, now or after you order" />;
+    return (
+      <Link href={signIn} className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 transition hover:bg-ink-100">
+        <Star />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold text-ink-900">Collect points on this meal</span>
+          <span className="block text-xs text-ink-500">Sign in or join free. You can also do it after you order.</span>
+        </span>
+        <span className="text-sm font-bold text-brand-700">Sign in</span>
+      </Link>
+    );
   }
   return (
-    <Row
-      href={`/s/${outletId}?rewards=1`}
-      icon={STAR}
-      title={me.joined ? `${me.points.toLocaleString()} points here` : "Start collecting points"}
-      note={me.vouchers > 0 ? `${me.vouchers} voucher${me.vouchers > 1 ? "s" : ""} to use` : "Rewards and offers"}
-    />
+    <section>
+      <SectionTitle href="/customer/orders" action="My orders">
+        Your points here
+      </SectionTitle>
+      <Link
+        href={`/s/${outletId}?rewards=1`}
+        className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 transition hover:bg-ink-100"
+      >
+        <Star />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold text-ink-900">
+            {me.joined ? `${me.points.toLocaleString()} points` : "Start collecting points"}
+          </span>
+          <span className="block text-xs text-ink-500">
+            {me.vouchers > 0 ? `${me.vouchers} voucher${me.vouchers > 1 ? "s" : ""} to use · ` : ""}Rewards and offers
+          </span>
+        </span>
+        <span aria-hidden="true" className="text-ink-400">›</span>
+      </Link>
+    </section>
+  );
+}
+
+function Star() {
+  return (
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+      <svg viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+        <path d="M10 1.5l2.5 5.2 5.7.8-4.1 4 1 5.6L10 14.4l-5.1 2.7 1-5.6-4.1-4 5.7-.8L10 1.5Z" />
+      </svg>
+    </span>
   );
 }
 
@@ -469,25 +485,30 @@ function Wifi({ name, password }: { name: string; password: string | null }) {
     }
   }
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5">
-      <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-brand-600" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" aria-hidden="true">
-        <path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0" />
-        <circle cx="12" cy="19.5" r="1" fill="currentColor" />
-      </svg>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-bold text-ink-900">Wi-Fi · {name}</span>
-        <span className="block truncate text-xs tabular-nums text-ink-500">{password ?? "No password"}</span>
-      </span>
-      {password && (
-        <button
-          type="button"
-          onClick={copy}
-          className="h-9 shrink-0 rounded-lg border border-brand-600 px-3.5 text-sm font-bold text-brand-700 transition active:scale-95"
-        >
-          {copied ? "Copied" : "Copy"}
-        </button>
-      )}
-    </div>
+    <section>
+      <SectionTitle>Wi-Fi</SectionTitle>
+      <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+            <path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0" />
+            <circle cx="12" cy="19.5" r="1" fill="currentColor" />
+          </svg>
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-bold text-ink-900">{name}</span>
+          <span className="block truncate font-mono text-xs text-ink-500">{password ?? "No password"}</span>
+        </span>
+        {password && (
+          <button
+            type="button"
+            onClick={copy}
+            className="h-9 shrink-0 rounded-full bg-brand-600 px-4 text-sm font-bold text-on transition active:scale-95"
+          >
+            {copied ? "Copied" : "Copy"}
+          </button>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -537,7 +558,7 @@ function Feedback({ token, reviewUrl, canCallStaff }: { token: string; reviewUrl
                 href={reviewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-flex h-10 items-center rounded-lg bg-ink-100 px-4 text-sm font-bold text-ink-900 transition hover:bg-ink-200"
+                className="mt-3 inline-flex h-10 items-center rounded-full bg-ink-100 px-4 text-sm font-bold text-ink-900 transition hover:bg-ink-200"
               >
                 Also review us on Google
               </a>

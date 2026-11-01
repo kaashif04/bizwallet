@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import DashboardHeader from "@/components/customer/DashboardHeader";
 import ActiveOrders from "@/components/customer/ActiveOrders";
 import BranchLogo from "@/components/order/BranchLogo";
-import { Chit, PadLabel, Stamp } from "@/components/ui/chit";
 import { SectionTitle, screen } from "@/components/customer/ui";
 import { groupBy, storeNames, type Place, type Reward } from "@/lib/places";
 import { outletLogos, outletNames } from "@/lib/guest-order";
@@ -72,23 +71,30 @@ export default async function PlacesPage({
       <div className={screen}>
         <DashboardHeader name={member?.full_name ?? user?.email?.split("@")[0] ?? "there"} />
 
-        <div className="mt-7 space-y-8">
+        <div className="mt-6 space-y-8">
           <ActiveOrders names={Object.fromEntries(names)} />
 
           {ready.length > 0 && (
             <section>
               <SectionTitle>Ready for you</SectionTitle>
-              <ul className="ruled overflow-hidden rounded-xl bg-white shadow-sm">
+              <ul className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
                 {ready.map((c) => (
-                  <li key={c.p.company_id}>
-                    <Link href={`${c.href}?rewards=1`} className="flex items-center gap-3 px-4 py-3.5 transition hover:bg-ink-50">
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-bold text-ink-900">
-                          {c.ready ? c.ready.name : `${c.vouchers} voucher${c.vouchers > 1 ? "s" : ""} to use`}
-                        </span>
-                        <span className="block truncate text-xs text-ink-500">at {storeNames(c.p.branches.map((b) => b.name), c.p.company)}</span>
+                  <li key={c.p.company_id} className="w-60 shrink-0">
+                    <Link
+                      href={`${c.href}?rewards=1`}
+                      className="flex h-full items-center gap-3 rounded-2xl bg-white p-3.5 shadow-sm transition active:scale-[0.98]"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-lg" aria-hidden="true">
+                        🎁
                       </span>
-                      <Stamp ok>{c.ready ? "Ready" : "Use"}</Stamp>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-bold text-ink-900">
+                          {c.ready ? `${c.ready.name} is ready` : `${c.vouchers} voucher${c.vouchers > 1 ? "s" : ""} to use`}
+                        </span>
+                        <span className="block truncate text-xs text-ink-500">
+                          at {storeNames(c.p.branches.map((b) => b.name), c.p.company)}
+                        </span>
+                      </span>
                     </Link>
                   </li>
                 ))}
@@ -99,98 +105,98 @@ export default async function PlacesPage({
           <section>
             <SectionTitle>Your places</SectionTitle>
             {cards.length === 0 ? (
-              <Chit band={<PadLabel>No places yet</PadLabel>}>
-                <div className="p-4">
-                  <p className="text-sm text-ink-600">Scan the QR on your table or receipt to start a card at that restaurant.</p>
-                  <Link
-                    href="/scan"
-                    className="mt-4 flex h-12 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-on transition hover:bg-brand-700"
-                  >
-                    Scan a QR
-                  </Link>
-                </div>
-              </Chit>
+              <div className="rounded-3xl bg-white p-6 text-center">
+                <h2 className="font-bold text-ink-900">No places yet</h2>
+                <p className="mx-auto mt-1 max-w-[30ch] text-sm text-ink-500">
+                  Scan the QR on your table or receipt to start earning at that restaurant.
+                </p>
+                <Link
+                  href="/scan"
+                  className="mt-5 block rounded-full bg-brand-600 py-3 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700"
+                >
+                  Scan a QR
+                </Link>
+              </div>
             ) : (
-              <ul className="space-y-5">
+              <ul className="space-y-4">
                 {cards.map(({ p, pts, ready, next, href }) => {
                   const cover = p.branches.find((b) => b.cover_url)?.cover_url;
                   const open = p.branches.find((b) => b.open_now !== null)?.open_now ?? null;
                   const pct = next ? Math.max(3, Math.min(100, Math.round((pts / next.points_cost) * 100))) : 100;
                   const body = (
                     <>
-                      <span className="relative block h-24 bg-ink-800">
+                      <span className="relative block h-28 bg-brand-100">
                         {cover && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={cover} alt="" className="h-full w-full object-cover" loading="lazy" />
                         )}
-                        <span className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/0" />
-                        <span className="absolute inset-x-0 bottom-0 flex items-end gap-3 px-4 pb-3">
+                        <span className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                        {open !== null && (
+                          <span className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-2xs font-bold text-ink-800 backdrop-blur">
+                            <span className={`h-1.5 w-1.5 rounded-full ${open ? "bg-emerald-500" : "bg-ink-400"}`} />
+                            {open ? "Open now" : "Closed"}
+                          </span>
+                        )}
+                      </span>
+                      <span className="relative block px-4 pb-4">
+                        <span className="-mt-7 flex items-end justify-between gap-3">
                           <BranchLogo
                             name={p.branches[0]?.name ?? p.company}
                             logoUrl={p.branches[0] ? logos[p.branches[0].id] : null}
-                            className="h-10 w-10 rounded-lg text-base ring-2 ring-on/80"
+                            className="h-14 w-14 rounded-2xl text-xl shadow-md ring-4 ring-white"
                           />
-                          <span className="min-w-0 flex-1 text-on">
-                            <span className="pad block truncate text-lg font-extrabold leading-tight">
-                              {storeNames(p.branches.map((b) => b.name), p.company)}
-                            </span>
-                            {open !== null && <span className="block text-xs text-on/80">{open ? "Open now" : "Closed now"}</span>}
-                          </span>
-                        </span>
-                      </span>
-                      <span className="ruled block px-4">
-                        <span className="flex items-end justify-between gap-3 py-3.5">
-                          <span className="text-sm font-semibold text-ink-600">
-                            Points{p.tier.name ? ` · ${p.tier.name}` : ""}
-                          </span>
-                          <span className="pad text-3xl font-extrabold leading-none text-brand-700">{pts.toLocaleString()}</span>
-                        </span>
-                        <span className="block py-3">
-                          <span className="flex items-center justify-between gap-3 text-sm">
-                            <span className="min-w-0 truncate font-semibold text-ink-900">
-                              {ready ? ready.name : next ? `Next: ${next.name}` : "See rewards"}
-                            </span>
-                            {ready ? (
-                              <Stamp ok>Ready</Stamp>
-                            ) : next ? (
-                              <span className="shrink-0 text-xs tabular-nums text-ink-500">{(next.points_cost - pts).toLocaleString()} to go</span>
-                            ) : null}
-                          </span>
-                          {!ready && next && (
-                            <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-paper-rule">
-                              <span className="block h-full rounded-full bg-brand-600" style={{ width: `${pct}%` }} />
+                          {p.tier.name && (
+                            <span className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-ink-50 px-2.5 py-1 text-2xs font-bold text-ink-700">
+                              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.tier.color ?? "#CA2851" }} />
+                              {p.tier.name}
                             </span>
                           )}
                         </span>
+                        <span className="mt-2 flex items-baseline justify-between gap-3">
+                          <span className="min-w-0 truncate text-lg font-semibold tracking-[-0.02em] text-ink-900">
+                            {storeNames(p.branches.map((b) => b.name), p.company)}
+                          </span>
+                          <span className="shrink-0 text-lg font-semibold tabular-nums text-ink-900">
+                            {pts.toLocaleString()} <span className="text-xs font-bold text-ink-500">pts</span>
+                          </span>
+                        </span>
+                        <span className="mt-2 block text-xs text-ink-500">
+                          {ready
+                            ? `${ready.name} is ready to redeem`
+                            : next
+                              ? `${(next.points_cost - pts).toLocaleString()} pts to ${next.name}`
+                              : "Tap to see rewards"}
+                        </span>
+                        {next && (
+                          <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-ink-100">
+                            <span className="block h-full rounded-full bg-marple" style={{ width: `${pct}%` }} />
+                          </span>
+                        )}
                       </span>
                     </>
                   );
                   return (
                     <li key={p.company_id}>
-                      <div className="chit">
-                        <div className="chit-paper">
-                          {href ? (
-                            <Link href={href} className="block transition active:opacity-90">
-                              {body}
+                      {href ? (
+                        <Link href={href} className="block overflow-hidden rounded-3xl bg-white shadow-sm transition active:scale-[0.99]">
+                          {body}
+                        </Link>
+                      ) : (
+                        <div className="overflow-hidden rounded-3xl bg-white shadow-sm">{body}</div>
+                      )}
+                      {p.branches.length > 1 && (
+                        <div className="mt-2 flex flex-wrap gap-2 px-1">
+                          {p.branches.map((b) => (
+                            <Link
+                              key={b.id}
+                              href={`/s/${b.id}`}
+                              className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-ink-800 shadow-sm transition hover:bg-ink-100"
+                            >
+                              {b.name} ›
                             </Link>
-                          ) : (
-                            body
-                          )}
-                          {p.branches.length > 1 && (
-                            <span className="flex flex-wrap gap-2 border-t border-dashed border-ink-300 px-4 py-3">
-                              {p.branches.map((b) => (
-                                <Link
-                                  key={b.id}
-                                  href={`/s/${b.id}`}
-                                  className="rounded-lg bg-ink-100 px-3 py-1.5 text-xs font-bold text-ink-800 transition hover:bg-ink-200"
-                                >
-                                  {b.name}
-                                </Link>
-                              ))}
-                            </span>
-                          )}
+                          ))}
                         </div>
-                      </div>
+                      )}
                     </li>
                   );
                 })}
@@ -198,22 +204,15 @@ export default async function PlacesPage({
             )}
           </section>
 
-          <nav className="ruled overflow-hidden rounded-xl bg-white shadow-sm" aria-label="More">
-            {[
-              ["/customer/orders", "My orders", "Every bill you were part of"],
-              ["/scan", "Scan a QR", "On your table or receipt"],
-              ["/customer/profile", "Profile", "Name, appearance, promotions"],
-            ].map(([href, title, note]) => (
-              <Link key={href} href={href} className="flex items-center justify-between gap-3 px-4 py-3.5 transition hover:bg-ink-50">
-                <span>
-                  <span className="block text-sm font-bold text-ink-900">{title}</span>
-                  <span className="block text-xs text-ink-500">{note}</span>
-                </span>
-                <svg viewBox="0 0 16 16" className="h-4 w-4 text-ink-400" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-                  <path d="m6 3 5 5-5 5" />
-                </svg>
-              </Link>
-            ))}
+          <nav className="grid grid-cols-2 gap-3" aria-label="More">
+            <Link href="/customer/orders" className="rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-ink-900 shadow-sm transition hover:bg-ink-100">
+              My orders
+              <span className="block text-xs font-normal text-ink-500">Every bill and receipt</span>
+            </Link>
+            <Link href="/scan" className="rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-ink-900 shadow-sm transition hover:bg-ink-100">
+              Scan a QR
+              <span className="block text-xs font-normal text-ink-500">Table or receipt</span>
+            </Link>
           </nav>
         </div>
       </div>
