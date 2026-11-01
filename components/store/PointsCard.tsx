@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import RewardsCatalog from "@/components/customer/RewardsCatalog";
@@ -13,18 +13,22 @@ export default function PointsCard({
   rewards,
   vouchers,
   userId,
+  googleWallet,
   open: openAtStart = false,
 }: {
   place: Place;
   rewards: Reward[];
   vouchers: Voucher[];
   userId: string;
+  googleWallet?: string; // "Add to Google Wallet" link, when it's set up
   open?: boolean; // ?rewards=1: a notification or "See my rewards" was tapped
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const [points, setPoints] = useState(place.points_balance ?? 0);
   const [open, setOpen] = useState(openAtStart);
+  const [ios, setIos] = useState(false); // no Google Wallet on iPhone
+  useEffect(() => setIos(/iPhone|iPad|iPod/.test(navigator.userAgent)), []);
 
   const ready = [...rewards].reverse().find((r) => r.points_cost <= points);
   const next = rewards.find((r) => r.points_cost > points);
@@ -90,6 +94,19 @@ export default function PointsCard({
         </span>
         {shared && <span className="relative mt-3 block text-xs text-on/80">Your points work at {shared}</span>}
       </button>
+
+      {googleWallet && !ios && (
+        <a
+          href={googleWallet}
+          className="mt-3 flex h-12 items-center justify-center gap-2 rounded-full bg-black text-sm font-semibold text-white transition active:scale-[0.99]"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <rect x="3" y="6" width="18" height="13" rx="3" />
+            <path d="M3 10h18M16 14.5h2" strokeLinecap="round" />
+          </svg>
+          Add to Google Wallet
+        </a>
+      )}
 
       <AnimatePresence>
         {open && (

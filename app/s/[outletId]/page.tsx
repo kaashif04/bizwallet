@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { billplzEnabled } from "@/lib/billplz";
+import { googleWalletEnabled } from "@/lib/google-wallet";
 import { currencySymbol } from "@/lib/format";
 import { DAYS, clock, openLabel } from "@/lib/hours";
 import { outletLogos, type Banner, type PickupOutlet } from "@/lib/guest-order";
@@ -179,6 +180,7 @@ export default async function StorePage({
                 rewards={rewards}
                 vouchers={(voucherRows ?? []) as Voucher[]}
                 userId={user!.id}
+                googleWallet={googleWalletEnabled() ? `/api/wallet/google?outlet=${store.id}` : undefined}
                 open={!!searchParams.rewards}
               />
             ) : (
