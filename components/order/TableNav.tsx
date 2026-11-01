@@ -1,14 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "./cart-context";
+import { rememberedHome } from "@/lib/place";
 
 const icons = {
   home: "M4 11l8-7 8 7M6 10v9h4v-5h4v5h4v-9",
   menu: "M5 4v7a2 2 0 0 0 2 2v7M9 4v7M7 4v3M15 20V4c-2 1-3 4-3 7s1 3 3 3M19 4v16",
   bill: "M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6",
-  me: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 20c0-4 3.6-6 8-6s8 2 8 6",
+  star: "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z",
 };
 
 // The table's bottom bar: Home, Menu, a raised Cart, Bill, Account.
@@ -17,6 +19,9 @@ export default function TableNav({ token }: { token: string }) {
   const path = usePathname();
   const router = useRouter();
   const { totalItems } = useCart();
+  // Rewards = this restaurant's points page (the phone remembers which one it came from).
+  const [rewards, setRewards] = useState("/customer/dashboard");
+  useEffect(() => setRewards(rememberedHome()), []);
   const home = `/order/t/${token}`;
   const menu = `${home}/menu`;
   if (path !== home && path !== menu) return null;
@@ -67,7 +72,7 @@ export default function TableNav({ token }: { token: string }) {
           )}
         </button>
         {tab(`${home}/bill`, "Bill", "bill")}
-        {tab("/customer/dashboard", "Account", "me")}
+        {tab(rewards, "Rewards", "star")}
       </div>
     </nav>
   );

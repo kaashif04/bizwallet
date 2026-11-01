@@ -57,6 +57,12 @@ export default function MenuView({
     return () => observer.disconnect();
   }, [categories]);
 
+  // Keep the active category in view in the chip tray as the page scrolls.
+  const chips = useRef<Record<string, HTMLButtonElement | null>>({});
+  useEffect(() => {
+    chips.current[active]?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }, [active]);
+
   function jumpTo(cat: string) {
     setActive(cat);
     clickScrolling.current = true;
@@ -82,6 +88,9 @@ export default function MenuView({
           {categories.map((c) => (
             <button
               key={c}
+              ref={(el) => {
+                chips.current[c] = el;
+              }}
               type="button"
               onClick={() => jumpTo(c)}
               aria-current={active === c ? "true" : undefined}
@@ -213,7 +222,7 @@ function MenuItemCard({
         type="button"
         onClick={onClick}
         {...enter}
-        className="group flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-brand-50/60 active:bg-brand-50"
+        className="group flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors [@media(hover:hover)]:hover:bg-brand-50/60 active:bg-brand-50"
       >
         {item.imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element

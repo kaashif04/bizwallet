@@ -9,6 +9,7 @@ import { currencySymbol } from "@/lib/format";
 import type { MenuItem } from "@/lib/order-types";
 import { guestLabel, outletLogos, saveClaimToken, toMenu, type Banner, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
 import type { AccountState } from "./AccountChip";
+import { rememberPlace } from "@/lib/place";
 import { storeNames } from "@/lib/places";
 import JoinPrompt from "./JoinPrompt";
 import { useCart } from "./cart-context";
@@ -67,6 +68,7 @@ export default function GuestOrder(
         if (error) return setLoadError(error.message);
         const m = data as GuestMenu;
         setMenu(m);
+        rememberPlace(m.outlet.id);
         outletLogos(supabase).then((logos) => setLogoUrl(logos[m.outlet.id] ?? null));
         // This outlet's offers (guests too); no "order" tap, they're already on its menu.
         supabase
