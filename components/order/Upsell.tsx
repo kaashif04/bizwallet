@@ -112,7 +112,7 @@ export function PairNudge({
         >
           Add
         </button>
-        <button type="button" onClick={onDismiss} aria-label="No thanks" className="-mr-1 h-9 w-7 shrink-0 text-ink-400">
+        <button type="button" onClick={onDismiss} aria-label="No thanks" className="-mr-2 h-11 w-11 shrink-0 text-ink-400">
           ✕
         </button>
       </div>

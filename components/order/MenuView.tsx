@@ -67,19 +67,15 @@ export default function MenuView({
   return (
     <div className="mx-auto max-w-md">
       {/* Sticky header + category chips */}
-      <div className="sticky top-0 z-20 border-b border-slate-200/60 bg-ink-50/90 backdrop-blur-xl">
-        <div className="flex items-center justify-between gap-3 px-5 pt-[max(1rem,env(safe-area-inset-top))]">
-          <span className="flex items-center gap-2">
-            <HomeButton href={homeHref} />
-            <span className="rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-bold text-brand-700">
-              {subtitle}
-            </span>
+      <div className="sticky top-0 z-20 bg-ink-50/90 backdrop-blur-xl">
+        <div className="flex items-center gap-3 px-5 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <HomeButton href={homeHref} />
+          {logoUrl && <BranchLogo name={title} logoUrl={logoUrl} className="h-11 w-11 rounded-xl" />}
+          <span className="min-w-0 flex-1">
+            <h1 className="truncate text-lg font-bold leading-tight text-slate-900">{title}</h1>
+            <span className="block text-xs font-semibold text-brand-700">{subtitle}</span>
           </span>
           <AccountChip state={account} />
-        </div>
-        <div className="flex items-center gap-3 px-5 pb-3 pt-2.5">
-          {logoUrl && <BranchLogo name={title} logoUrl={logoUrl} className="h-11 w-11 rounded-xl" />}
-          <h1 className="min-w-0 truncate text-[1.75rem] leading-tight text-slate-900">{title}</h1>
         </div>
 
         <div className="mx-5 mb-3 flex gap-1.5 overflow-x-auto rounded-full bg-white p-1.5 shadow-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -118,22 +114,21 @@ export default function MenuView({
             ref={(el) => {
               sectionRefs.current[cat] = el;
             }}
-            className="scroll-mt-32"
+            className="scroll-mt-28"
           >
             <h2 className="mb-3 px-1 text-xl text-slate-900">{cat}</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {items
-                .filter((i) => i.category === cat)
-                .map((item, i) => (
-                  <MenuItemCard
-                    key={item.id}
-                    index={i}
-                    item={item}
-                    currency={currency}
-                    onClick={() => onItemClick(item)}
-                  />
-                ))}
-            </div>
+            {(() => {
+              const list = items.filter((i) => i.category === cat);
+              // Photos lead where there are photos; dishes without one read better as plain rows.
+              const cards = list.filter((i) => i.imageUrl).length * 2 >= list.length;
+              return (
+                <div className={cards ? "grid grid-cols-2 gap-3" : "divide-y divide-ink-100 overflow-hidden rounded-3xl bg-white shadow-sm"}>
+                  {list.map((item, i) => (
+                    <MenuItemCard key={item.id} index={i} item={item} row={!cards} currency={currency} onClick={() => onItemClick(item)} />
+                  ))}
+                </div>
+              );
+            })()}
           </section>
         ))}
 
@@ -150,11 +145,13 @@ export default function MenuView({
 function MenuItemCard({
   item,
   index,
+  row,
   currency,
   onClick,
 }: {
   item: MenuItem;
   index: number;
+  row: boolean;
   currency: string;
   onClick: () => void;
 }) {
@@ -163,72 +160,96 @@ function MenuItemCard({
     .filter((l) => l.item.id === item.id)
     .reduce((n, l) => n + l.quantity, 0);
 
+  const badge = (
+    <span className="relative flex h-11 min-w-[2.75rem] shrink-0 items-center justify-center">
+      <AnimatePresence mode="popLayout" initial={false}>
+        {count > 0 ? (
+          <motion.span
+            key={count}
+            initial={{ scale: 0.4, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.4, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 600, damping: 26 }}
+            className="flex h-10 min-w-[2.5rem] items-center justify-center rounded-full bg-brand-50 px-2 text-sm font-bold text-brand-700 shadow-well"
+            aria-label={`${count} in cart`}
+          >
+            {count}
+          </motion.span>
+        ) : (
+          <motion.span
+            key="add"
+            initial={{ scale: 0.4, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.4, opacity: 0 }}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-600 text-on shadow-sm transition-colors group-hover:bg-brand-700"
+          >
+            <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
+              <path d="M8 3v10M3 8h10" />
+            </svg>
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </span>
+  );
+  const price = (
+    <span className="text-[15px] font-bold text-slate-900">
+      {currencySymbol(currency)}
+      {item.price.toFixed(2)}
+    </span>
+  );
+  const hint = item.freeHint && (
+    <span className="mt-1 inline-block rounded-full bg-mint-100 px-2 py-0.5 text-2xs font-semibold text-mint-700">{item.freeHint}</span>
+  );
+  const enter = {
+    initial: { opacity: 0, y: 14 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, margin: "0px 0px -40px 0px" },
+    transition: { duration: 0.3, delay: Math.min(index, 6) * 0.04, ease: [0.22, 1, 0.36, 1] as const },
+  };
+
+  if (row) {
+    return (
+      <motion.button
+        type="button"
+        onClick={onClick}
+        {...enter}
+        className="group flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-brand-50/60 active:bg-brand-50"
+      >
+        {item.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className="h-16 w-16 shrink-0 rounded-2xl bg-slate-100 object-cover" />
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-bold leading-snug text-slate-900">{item.name}</span>
+          {item.description && <span className="mt-0.5 line-clamp-2 block text-[13px] leading-snug text-slate-500">{item.description}</span>}
+          <span className="mt-1 block">{price}</span>
+          {hint}
+        </span>
+        {badge}
+      </motion.button>
+    );
+  }
+
   return (
     <motion.button
       type="button"
       onClick={onClick}
-      initial={{ opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "0px 0px -40px 0px" }}
-      transition={{ duration: 0.3, delay: Math.min(index, 6) * 0.04, ease: [0.22, 1, 0.36, 1] }}
+      {...enter}
       className="group flex flex-col rounded-3xl bg-white p-2.5 text-left shadow-sm transition active:scale-[0.97]"
     >
       {item.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={item.imageUrl}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="aspect-[4/3] w-full rounded-2xl bg-slate-100 object-cover"
-        />
+        <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className="aspect-[4/3] w-full rounded-2xl bg-slate-100 object-cover" />
       ) : (
         <ItemMark name={item.name} className="aspect-[4/3] w-full rounded-2xl text-4xl" />
       )}
-
       <span className="mt-2.5 block min-w-0 flex-1 px-1">
-        <span className="line-clamp-2 block text-[14px] font-bold leading-snug text-slate-900">{item.name}</span>
-        {item.freeHint && (
-          <span className="mt-1 inline-block rounded-full bg-mint-100 px-2 py-0.5 text-2xs font-semibold text-mint-700">
-            {item.freeHint}
-          </span>
-        )}
+        <span className="line-clamp-2 block text-[15px] font-bold leading-snug text-slate-900">{item.name}</span>
+        {hint}
       </span>
-
-      <span className="mt-2 flex items-center justify-between px-1 pb-0.5">
-        <span className="text-[15px] font-bold text-slate-900">
-          {currencySymbol(currency)}
-          {item.price.toFixed(2)}
-        </span>
-        <span className="relative flex h-9 min-w-[2.25rem] shrink-0 items-center justify-center">
-          <AnimatePresence mode="popLayout" initial={false}>
-            {count > 0 ? (
-              <motion.span
-                key={count}
-                initial={{ scale: 0.4, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.4, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 600, damping: 26 }}
-                className="flex h-9 min-w-[2.25rem] items-center justify-center rounded-full bg-brand-50 px-2 text-sm font-bold text-brand-700 shadow-well"
-                aria-label={`${count} in cart`}
-              >
-                {count}
-              </motion.span>
-            ) : (
-              <motion.span
-                key="add"
-                initial={{ scale: 0.4, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.4, opacity: 0 }}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-on shadow-sm transition-colors group-hover:bg-brand-700"
-              >
-                <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
-                  <path d="M8 3v10M3 8h10" />
-                </svg>
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </span>
+      <span className="mt-1 flex items-center justify-between pl-1">
+        {price}
+        {badge}
       </span>
     </motion.button>
   );
