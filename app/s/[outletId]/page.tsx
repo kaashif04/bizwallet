@@ -93,12 +93,12 @@ export default async function StorePage({
     canPickup && { href: `/order/p/${store.id}`, label: "Order", icon: "M5 8h14l-1 12H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2" },
     store.ordering && {
       href: `/scan?at=${encodeURIComponent(store.name)}`,
-      label: "Scan",
+      label: "Scan table",
       icon: "M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 8h3v3H8zM13 13h3v3h-3z",
     },
     (bookingCfg as { enabled?: boolean } | null)?.enabled && {
       href: `/booking?outlet=${store.id}`,
-      label: "Book",
+      label: "Book table",
       icon: "M4 6h16v14H4zM4 10h16M8 4v4M16 4v4",
     },
     store.maps_url && { href: store.maps_url, label: "Directions", icon: "M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12ZM12 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z", external: true },
@@ -173,7 +173,7 @@ export default async function StorePage({
                   key={a.label}
                   href={a.href}
                   {...(a.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  className="flex flex-col items-center gap-2 whitespace-nowrap rounded-2xl py-2 text-[13px] font-bold text-ink-800 transition active:scale-95"
+                  className="flex flex-col items-center gap-2 rounded-2xl py-2 text-center text-[13px] font-bold leading-tight text-ink-800 transition active:scale-95"
                 >
                   <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm">
                     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
