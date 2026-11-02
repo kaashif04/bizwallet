@@ -18,6 +18,7 @@ import AddToCartSheet from "./AddToCartSheet";
 import { useSheet } from "./useSheet";
 import ActiveOrders from "@/components/customer/ActiveOrders";
 import BannerCarousel from "./BannerCarousel";
+import ViewCartBar from "./ViewCartBar";
 import { CartUpsell, PairNudge, PopularRow, goesWith, type Suggestions } from "./Upsell";
 
 // ponytail: BizPos's guest_get_menu doesn't return a currency yet; every outlet is MYR today.
@@ -231,6 +232,9 @@ export default function GuestOrder(
           )
         }
       />
+
+      {/* A table opens the cart from its bottom bar; pickup has no bar, so it gets this. */}
+      {!props.token && !reviewing && <ViewCartBar currency={CURRENCY} onClick={() => setReviewing(true)} />}
 
       <AnimatePresence>
         {nudge && !reviewing && !sheetItem && (
