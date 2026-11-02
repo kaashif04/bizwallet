@@ -9,6 +9,7 @@ import ItemMark from "./ItemMark";
 import AccountChip, { type AccountState } from "./AccountChip";
 import HomeButton from "./HomeButton";
 import BranchLogo from "./BranchLogo";
+import { VegMark } from "./Veg";
 
 export default function MenuView({
   title,
@@ -19,6 +20,7 @@ export default function MenuView({
   currency,
   onItemClick,
   intro,
+  filter,
   homeHref,
 }: {
   homeHref?: string;
@@ -30,6 +32,7 @@ export default function MenuView({
   currency: string;
   onItemClick: (item: MenuItem) => void;
   intro?: React.ReactNode; // offers and best-sellers above the categories
+  filter?: React.ReactNode; // the Vegetarian only switch, first thing on the menu
 }) {
   const categories = useMemo(
     () => Array.from(new Set(items.map((i) => i.category))),
@@ -37,6 +40,10 @@ export default function MenuView({
   );
 
   const [active, setActive] = useState(categories[0] ?? "");
+  // A filter (Vegetarian only) can hide the highlighted category.
+  useEffect(() => {
+    if (!categories.includes(active)) setActive(categories[0] ?? "");
+  }, [categories, active]);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const clickScrolling = useRef(false);
 
@@ -115,6 +122,7 @@ export default function MenuView({
 
       {/* Menu sections */}
       <div className="space-y-9 px-5 pb-44 pt-6">
+        {filter}
         {intro}
         {categories.map((cat) => (
           <section
@@ -229,8 +237,11 @@ function MenuItemCard({
           <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className="h-16 w-16 shrink-0 rounded-2xl bg-slate-100 object-cover" />
         )}
         <span className="min-w-0 flex-1">
-          <span className="block text-[15px] font-bold leading-snug text-slate-900">{item.name}</span>
-          {item.description && <span className="mt-0.5 line-clamp-2 block text-[13px] leading-snug text-slate-500">{item.description}</span>}
+          <span className="block text-[15px] font-bold leading-snug text-slate-900">
+            {item.vegetarian && <VegMark className="mr-1.5" />}
+            {item.name}
+          </span>
+          {item.description && <span className="mt-0.5 block truncate text-[13px] leading-snug text-slate-500">{item.description}</span>}
           <span className="mt-1 block">{price}</span>
           {hint}
         </span>
@@ -253,7 +264,11 @@ function MenuItemCard({
         <ItemMark name={item.name} className="aspect-[4/3] w-full rounded-2xl text-4xl" />
       )}
       <span className="mt-2.5 block min-w-0 flex-1 px-1">
-        <span className="line-clamp-2 block text-[15px] font-bold leading-snug text-slate-900">{item.name}</span>
+        <span className="line-clamp-2 block text-[15px] font-bold leading-snug text-slate-900">
+          {item.vegetarian && <VegMark className="mr-1.5" />}
+          {item.name}
+        </span>
+        {item.description && <span className="mt-0.5 block truncate text-[13px] leading-snug text-slate-500">{item.description}</span>}
         {hint}
       </span>
       <span className="mt-1 flex items-center justify-between pl-1">

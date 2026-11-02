@@ -18,6 +18,7 @@ export type GuestMenu = {
     id: string;
     name: string;
     description: string | null;
+    is_vegetarian?: boolean;
     price: number;
     image_url: string | null;
     category_id: string | null;
@@ -121,6 +122,7 @@ export function toMenu(menu: GuestMenu): {
     outletId: menu.outlet.id,
     name: i.name,
     description: i.description,
+    vegetarian: !!i.is_vegetarian,
     category: (i.category_id && catName.get(i.category_id)?.name) || "Other",
     categoryId: i.category_id,
     price: Number(i.price),

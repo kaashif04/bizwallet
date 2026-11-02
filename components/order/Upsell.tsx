@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import type { MenuItem } from "@/lib/order-types";
 import { currencySymbol } from "@/lib/format";
 import ItemMark from "./ItemMark";
+import { VegMark } from "./Veg";
 
 // Upselling from the outlet's own sales (guest_menu_suggestions): best-sellers,
 // and dishes often on the same bill. No AI, just what customers here order.
@@ -65,7 +66,10 @@ export function PopularRow({ items, currency, onPick }: { items: MenuItem[]; cur
                 +
               </span>
             </span>
-            <span className="mt-2 block truncate text-sm font-bold text-ink-900">{item.name}</span>
+            <span className="mt-2 block truncate text-sm font-bold text-ink-900">
+              {item.vegetarian && <VegMark className="mr-1" />}
+              {item.name}
+            </span>
             <span className="block text-xs font-semibold text-ink-500">{price(item, currency)}</span>
           </button>
         ))}

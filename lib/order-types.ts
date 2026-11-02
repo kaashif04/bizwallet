@@ -5,6 +5,7 @@ export type MenuItem = {
   outletId: string;
   name: string;
   description?: string | null;
+  vegetarian?: boolean;
   category: string;
   categoryId?: string | null;
   price: number;

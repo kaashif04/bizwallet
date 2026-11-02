@@ -10,13 +10,12 @@ import type { Place, Reward, Voucher } from "@/lib/places";
 import BranchLogo from "@/components/order/BranchLogo";
 import BannerCarousel from "@/components/order/BannerCarousel";
 import RememberPlace from "@/components/order/RememberPlace";
-import ItemMark from "@/components/order/ItemMark";
 import PointsCard from "@/components/store/PointsCard";
+import DishRails, { type Dish } from "@/components/store/DishRails";
 import NotificationBell from "@/components/customer/NotificationBell";
 import { SectionTitle } from "@/components/customer/ui";
 
 type Store = PickupOutlet & { ordering: boolean };
-type Dish = { id: string; name: string; price: number; image_url: string | null; times?: number };
 
 const sym = currencySymbol("MYR");
 const money = (n: number) => `${sym}${Number(n).toFixed(2)}`;
@@ -214,8 +213,7 @@ export default async function StorePage({
             </section>
           )}
 
-          {dishes.mine.length > 0 && <DishRail title="Your usuals" dishes={dishes.mine} href={dishHref} mine />}
-          {dishes.popular.length > 0 && <DishRail title="Popular here" dishes={dishes.popular} href={dishHref} />}
+          <DishRails mine={dishes.mine} popular={dishes.popular} href={dishHref} />
 
           {member && (orders ?? []).length > 0 && (
             <section>
@@ -347,42 +345,3 @@ function JoinCard({
   );
 }
 
-function DishRail({ title, dishes, href, mine }: { title: string; dishes: Dish[]; href: string | null; mine?: boolean }) {
-  return (
-    <section>
-      <SectionTitle href={href ?? undefined} action="Order">
-        {title}
-      </SectionTitle>
-      <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
-        {dishes.map((d) => {
-          const card = (
-            <>
-              {d.image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={d.image_url} alt="" className="aspect-square w-full rounded-2xl object-cover" loading="lazy" />
-              ) : (
-                <ItemMark name={d.name} className="aspect-square w-full rounded-2xl text-3xl" />
-              )}
-              <span className="mt-2 block line-clamp-2 text-sm font-bold leading-snug text-ink-900">{d.name}</span>
-              <span className="block text-xs text-ink-500">
-                {money(d.price)}
-                {mine && d.times && d.times > 1 ? ` · ordered ${d.times}×` : ""}
-              </span>
-            </>
-          );
-          return (
-            <li key={d.id} className="w-32 shrink-0 snap-start">
-              {href ? (
-                <Link href={href} className="block transition active:scale-[0.97]">
-                  {card}
-                </Link>
-              ) : (
-                card
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
-}

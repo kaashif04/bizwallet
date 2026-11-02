@@ -19,6 +19,7 @@ import { useSheet } from "./useSheet";
 import ActiveOrders from "@/components/customer/ActiveOrders";
 import BannerCarousel from "./BannerCarousel";
 import ViewCartBar from "./ViewCartBar";
+import { VegToggle, useVegOnly } from "./Veg";
 import { CartUpsell, PairNudge, PopularRow, goesWith, type Suggestions } from "./Upsell";
 
 // ponytail: BizPos's guest_get_menu doesn't return a currency yet; every outlet is MYR today.
@@ -40,6 +41,7 @@ export default function GuestOrder(
   const [banners, setBanners] = useState<Banner[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
   const [nudge, setNudge] = useState<{ item: MenuItem; after: string } | null>(null);
+  const [vegOnly, setVegOnly] = useVegOnly();
   // Loyalty is per company: this branch's company, its points rate, and
   // whether the signed-in member has joined it.
   const [loyalty, setLoyalty] = useState<{
@@ -186,7 +188,13 @@ export default function GuestOrder(
 
   const byId = new Map(items.map((i) => [i.id, i]));
   const oneTap = new Map(items.filter((i) => !groupsByItem[i.id]?.length).map((i) => [i.id, i]));
-  const popular = (suggestions?.popular ?? []).map((id) => byId.get(id)).filter((i): i is MenuItem => !!i);
+  // Vegetarian only (no switch when the menu has no vegetarian dishes, so it can't empty the page).
+  const hasVeg = items.some((i) => i.vegetarian);
+  const veg = vegOnly && hasVeg;
+  const shown = veg ? items.filter((i) => i.vegetarian) : items;
+  const popular = (suggestions?.popular ?? [])
+    .map((id) => byId.get(id))
+    .filter((i): i is MenuItem => !!i && (!veg || !!i.vegetarian));
   const addSuggested = (item: MenuItem) => {
     setNudge(null);
     // Dishes with choices (size, sugar…) open their sheet; the rest go straight in.
@@ -223,9 +231,10 @@ export default function GuestOrder(
         subtitle={menu.table ? `Table ${menu.table.label}` : "Pickup order"}
         logoUrl={logoUrl}
         account={account}
-        items={items}
+        items={shown}
         currency={CURRENCY}
         onItemClick={setSheetItem}
+        filter={hasVeg && <VegToggle on={vegOnly} onChange={setVegOnly} />}
         intro={
           (banners.length > 0 || popular.length >= 3) && (
             <>
