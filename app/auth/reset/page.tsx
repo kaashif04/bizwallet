@@ -50,7 +50,7 @@ export default function ResetPasswordPage() {
           <p className="mt-3 text-sm text-slate-500">Loading…</p>
         ) : done ? (
           <p className="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            ✓ Password updated — taking you to your dashboard…
+            ✓ Password updated. Taking you back…
           </p>
         ) : !hasSession ? (
           <div className="mt-4">
@@ -102,7 +102,7 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-1 w-full rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-on shadow-sm transition hover:bg-brand-700 disabled:opacity-60"
+              className="mt-1 w-full rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-on shadow-sm transition hover:brightness-95 disabled:opacity-60"
             >
               {loading ? "Updating…" : "Update password"}
             </button>

@@ -54,6 +54,8 @@ const hl = "var(--nm-hl)";
 const sh = "var(--nm-sh)";
 
 const config: Config = {
+  // Hover styles only where there's a real pointer: on phones a tap left them stuck.
+  future: { hoverOnlyWhenSupported: true },
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",

@@ -140,7 +140,7 @@ export default function RewardsCatalog({
               )}
               <div className="mt-4 space-y-3">
                 {rewards.length === 0 ? (
-                  <p className="py-10 text-center text-sm text-slate-400">
+                  <p className="py-10 text-center text-sm text-slate-500">
                     No rewards available yet.
                   </p>
                 ) : (
@@ -181,7 +181,7 @@ export default function RewardsCatalog({
                           disabled={!affordable || busyId === r.id}
                           className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition disabled:opacity-60 ${
                             affordable
-                              ? "bg-brand-600 text-on hover:bg-brand-700"
+                              ? "bg-brand-600 text-on hover:brightness-95"
                               : "bg-slate-100 text-slate-400"
                           }`}
                         >

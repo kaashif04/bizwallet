@@ -92,7 +92,7 @@ export default function CustomerLogin() {
     });
     setLoading(false);
     if (error) return setError(error.message);
-    setInfo("Password reset link sent — check your email.");
+    setInfo("Password reset link sent. Check your email.");
   }
 
   return (
@@ -171,7 +171,7 @@ export default function CustomerLogin() {
           <button
             type="button"
             onClick={handleForgotPassword}
-            className="-mt-1 block w-full text-right text-xs font-medium text-slate-500 transition hover:text-brand-600"
+            className="-mt-1 ml-auto block py-2 text-right text-xs font-medium text-slate-500 transition hover:text-brand-600"
           >
             Forgot password?
           </button>
@@ -236,7 +236,7 @@ function PrimaryButton({
     <button
       type="submit"
       disabled={loading}
-      className="mt-1 flex w-full items-center justify-center rounded-full bg-brand-600 px-4 py-3.5 text-base font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+      className="mt-1 flex w-full items-center justify-center rounded-full bg-brand-600 px-4 py-3.5 text-base font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {loading ? (
         <Spinner />

@@ -126,7 +126,7 @@ export default function NotificationBell() {
                 {notifs === null ? (
                   <Skeleton />
                 ) : notifs.length === 0 ? (
-                  <p className="py-16 text-center text-sm text-slate-400">
+                  <p className="py-16 text-center text-sm text-slate-500">
                     No notifications yet.
                   </p>
                 ) : (
@@ -154,7 +154,7 @@ export default function NotificationBell() {
                           <p className="mt-0.5 text-sm text-slate-600">{n.message}</p>
                         )}
                         <p
-                          className="mt-1.5 text-[11px] text-slate-400"
+                          className="mt-1.5 text-[11px] text-slate-500"
                           suppressHydrationWarning
                         >
                           {timeAgo(n.created_at)}

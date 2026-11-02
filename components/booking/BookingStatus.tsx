@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import HomeButton from "@/components/order/HomeButton";
 import { createClient } from "@/lib/supabase/client";
 import { type Booking, type BookingConfig, bookingMoney, forgetBooking, klDateTime, klTime, rememberBooking, savedBookings } from "@/lib/booking";
 
@@ -116,6 +117,9 @@ export default function BookingStatus({ token, justPaid }: { token: string; just
   return (
     <Shell>
       <header>
+        <div className="mb-5">
+          <HomeButton href={`/s/${b.outlet.id}`} />
+        </div>
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">{b.outlet.name}</p>
         <h1 className="mt-1 text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">{headline(b.status)}</h1>
       </header>
@@ -151,7 +155,7 @@ export default function BookingStatus({ token, justPaid }: { token: string; just
             type="button"
             onClick={pay}
             disabled={busy || left <= 0}
-            className="mt-4 flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
+            className="mt-4 flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:brightness-95 active:scale-[0.97] disabled:opacity-60"
           >
             {busy ? "Opening payment…" : `Pay deposit ${bookingMoney(deposit)}`}
           </button>
@@ -281,6 +285,12 @@ function headline(status: string) {
       return "This slot was released";
     case "cancelled":
       return "Booking cancelled";
+    case "seated":
+      return "Enjoy your meal";
+    case "completed":
+      return "Thanks for dining with us";
+    case "no_show":
+      return "Marked as a no-show";
     default:
       return status.replace(/_/g, " ");
   }

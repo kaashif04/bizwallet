@@ -190,7 +190,7 @@ function MenuItemCard({
             initial={{ scale: 0.4, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.4, opacity: 0 }}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-600 text-on shadow-sm transition-colors group-hover:bg-brand-700"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-600 text-on shadow-sm transition-colors group-hover:brightness-95"
           >
             <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
               <path d="M8 3v10M3 8h10" />

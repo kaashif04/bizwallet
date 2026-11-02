@@ -149,12 +149,14 @@ export default function TableHome({ token, billSplit = false }: { token: string;
       <main className="mx-auto max-w-md pb-[calc(8rem+env(safe-area-inset-bottom))]">
         {/* Cover, logo, name, table */}
         <header className="relative">
-          <div className="relative mx-3 mt-3 h-56 overflow-hidden rounded-[2rem] bg-brand-100 shadow-md">
+          <div className="relative mx-3 mt-3 h-56 overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-100 via-brand-50 to-ink-50 shadow-md">
             {home.cover_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={home.cover_url} alt="" className="h-full w-full object-cover" />
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={home.cover_url} alt="" className="h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10" />
+              </>
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10" />
             <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-4">
               <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-ink-900 shadow-sm">
                 Table {home.table.label}
@@ -302,7 +304,7 @@ function YourTable({ orders, canCallBill }: { orders: GuestOrderStatus[]; canCal
           <div className="p-4">
             <Link
               href={`/order/status/${unpaid.id}`}
-              className="flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+              className="flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97]"
             >
               Pay {money(unpaid.amount_due)}
             </Link>
@@ -477,7 +479,7 @@ function Wifi({ name, password }: { name: string; password: string | null }) {
           <button
             type="button"
             onClick={copy}
-            className="h-9 shrink-0 rounded-full bg-brand-600 px-4 text-sm font-bold text-on transition active:scale-95"
+            className="h-11 shrink-0 rounded-full bg-brand-600 px-4 text-sm font-bold text-on transition active:scale-95"
           >
             {copied ? "Copied" : "Copy"}
           </button>

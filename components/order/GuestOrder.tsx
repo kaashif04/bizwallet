@@ -137,6 +137,8 @@ export default function GuestOrder(
   }, [nudge]);
 
   if (loadError) {
+    // ponytail: matches BizPos's "…QR code is not valid." wording; a code from guest_get_menu would be sturdier.
+    const badQr = !!props.token && /not valid/i.test(loadError);
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-6 text-center">
         <span className="flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white text-brand-700 shadow-md">
@@ -147,11 +149,12 @@ export default function GuestOrder(
         </span>
         <h1 className="mt-5 text-2xl font-semibold text-slate-900">Can&apos;t order here right now</h1>
         <p className="mt-2 max-w-xs text-sm text-slate-600">{loadError}</p>
+        {/* A bad QR has no table page to go to: scan again instead. */}
         <Link
-          href={props.token ? `/order/t/${props.token}/table` : `/s/${props.outletId}`}
-          className="mt-6 rounded-full bg-brand-600 px-6 py-3 text-[15px] font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+          href={badQr ? "/scan" : props.token ? `/order/t/${props.token}/table` : `/s/${props.outletId}`}
+          className="mt-6 rounded-full bg-brand-600 px-6 py-3 text-[15px] font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97]"
         >
-          {props.token ? "Call staff or see your table" : "Back to the restaurant"}
+          {badQr ? "Scan the QR again" : props.token ? "Call staff or see your table" : "Back to the restaurant"}
         </Link>
       </main>
     );
@@ -205,7 +208,7 @@ export default function GuestOrder(
   return (
     <div className="min-h-dvh bg-ink-50">
       {/* Came back to the menu with an order on the go: one tap to follow it. */}
-      <ActiveOrders names={{}} outletId={menu.outlet.id} variant="pill" />
+      {loyalty?.member && <ActiveOrders names={{}} outletId={menu.outlet.id} variant="pill" />}
       {loyalty?.member && !loyalty.joined && loyalty.pointsPerRm !== null && (
         <JoinPrompt
           companyId={loyalty.companyId}
@@ -719,7 +722,7 @@ function CartReview({
           type="button"
           onClick={place}
           disabled={placing}
-          className="h-14 w-full rounded-full bg-brand-600 px-5 text-base font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
+          className="h-14 w-full rounded-full bg-brand-600 px-5 text-base font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97] disabled:opacity-60"
         >
           {placing
             ? payNow

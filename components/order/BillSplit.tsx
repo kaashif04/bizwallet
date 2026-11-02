@@ -6,7 +6,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
 import { tableOrders, type BillShare, type TableBill } from "@/lib/guest-order";
-import HomeButton from "./HomeButton";
 
 const sym = currencySymbol("MYR");
 const money = (n: number) => `${sym}${Number(n).toFixed(2)}`;
@@ -64,24 +63,23 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
     setPicked((s) => new Set(Array.from(s).filter((id) => bill.items.some((i) => i.id === id && !i.paid))));
   }, [bill]);
 
-  const back = `/order/t/${token}/table`;
   if (error || !bill) {
     return (
-      <Shell back={back} title="Bill">
+      <Shell title="Bill">
         {error ? <p role="alert" className="text-sm text-rose-700">{error}</p> : <div className="h-64 animate-pulse rounded-3xl bg-white" />}
       </Shell>
     );
   }
   if (!bill.open) {
     return (
-      <Shell back={back} title={`Table ${bill.table}`}>
+      <Shell title={`Table ${bill.table}`}>
         <div className="rounded-3xl bg-white p-6 text-center">
           <h2 className="text-xl font-semibold text-ink-900">{arrival === "paid" ? "All paid. Thank you!" : "No open bill at this table"}</h2>
           <p className="mt-2 text-sm text-ink-500">
             {arrival === "paid" ? "Your payment closed the bill. Enjoy the rest of your day." : "Once you've ordered, your bill shows up here."}
           </p>
           {arrival !== "paid" && (
-            <Link href={`${back}/menu`} className="mt-4 inline-flex h-11 items-center rounded-full bg-brand-600 px-6 text-sm font-bold text-on transition active:scale-95">
+            <Link href={`/order/t/${token}/menu`} className="mt-4 inline-flex h-11 items-center rounded-full bg-brand-600 px-6 text-sm font-bold text-on transition active:scale-95">
               Start order
             </Link>
           )}
@@ -139,7 +137,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
   }
 
   return (
-    <Shell back={back} title={`Table ${bill.table}`} pad>
+    <Shell title={`Table ${bill.table}`} pad>
       <AnimatePresence>
         {arrival && (
           <motion.p
@@ -322,15 +320,15 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
 
       {/* Pay, within thumb reach */}
       {bill.remaining > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="fixed inset-x-0 bottom-[calc(5.25rem+max(0.75rem,env(safe-area-inset-bottom)))] z-30 mx-auto max-w-md px-4">
           {!canPay ? (
             <p className="rounded-full bg-white py-4 text-center text-sm font-semibold text-ink-700 shadow-lg">
               Please pay at the counter. Tap Ask for the bill on the table page.
             </p>
           ) : signedIn === false ? (
             <Link
-              href={`/login?redirect=${encodeURIComponent(`${back}/bill`)}`}
-              className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97]"
+              href={`/login?redirect=${encodeURIComponent(`/order/t/${token}/bill`)}`}
+              className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:brightness-95 active:scale-[0.97]"
             >
               Sign in to pay {money(amount)}
             </Link>
@@ -339,7 +337,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
               type="button"
               onClick={pay}
               disabled={paying || amount <= 0 || tooSmall || signedIn === null}
-              className="h-14 w-full rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-50"
+              className="h-14 w-full rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:brightness-95 active:scale-[0.97] disabled:opacity-50"
             >
               {paying
                 ? "Opening payment…"
@@ -358,12 +356,11 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
   );
 }
 
-function Shell({ back, title, pad, children }: { back: string; title: string; pad?: boolean; children: React.ReactNode }) {
+function Shell({ title, pad, children }: { title: string; pad?: boolean; children: React.ReactNode }) {
   return (
     <main className="min-h-dvh bg-ink-50">
-      <div className={`mx-auto max-w-md px-4 pt-[max(1rem,env(safe-area-inset-top))] ${pad ? "pb-[calc(7rem+env(safe-area-inset-bottom))]" : "pb-12"}`}>
-        <div className="mb-5 flex items-center gap-3">
-          <HomeButton href={back} />
+      <div className={`mx-auto max-w-md px-4 pt-[max(1rem,env(safe-area-inset-top))] ${pad ? "pb-[calc(12rem+env(safe-area-inset-bottom))]" : "pb-[calc(7rem+env(safe-area-inset-bottom))]"}`}>
+        <div className="mb-5 flex h-11 items-center">
           <h1 className="text-xl font-semibold tracking-[-0.02em] text-ink-900">
             {title} · <span className="text-ink-500">Bill</span>
           </h1>

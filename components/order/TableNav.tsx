@@ -12,8 +12,7 @@ const icons = {
 };
 
 // The table's bottom bar: Menu (where the QR lands), Table (call a waiter, the
-// bill, feedback), a raised Cart, Bill, Play. Only on the menu and Table tab;
-// the bill and the game have their own buttons.
+// bill, feedback), a raised Cart, Bill, Play. On every tab, so no tab is a dead end.
 export default function TableNav({ token }: { token: string }) {
   const path = usePathname();
   const router = useRouter();
@@ -21,7 +20,7 @@ export default function TableNav({ token }: { token: string }) {
   const base = `/order/t/${token}`;
   const menu = `${base}/menu`;
   const table = `${base}/table`;
-  if (path !== menu && path !== table) return null;
+  if (![menu, table, `${base}/bill`, `${base}/play`].includes(path)) return null;
 
   // Empty cart: the button just takes you to the menu to fill it.
   const openCart = () =>

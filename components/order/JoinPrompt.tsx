@@ -68,7 +68,7 @@ export default function JoinPrompt({
                 type="button"
                 onClick={join}
                 disabled={busy}
-                className="mt-3 h-10 w-full rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.98] disabled:opacity-60"
+                className="mt-3 h-10 w-full rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.98] disabled:opacity-60"
               >
                 {busy ? "Joining…" : "Join"}
               </button>

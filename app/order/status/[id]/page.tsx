@@ -277,7 +277,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
             type="button"
             onClick={pay}
             disabled={paying}
-            className="mt-4 h-12 w-full rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
+            className="mt-4 h-12 w-full rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97] disabled:opacity-60"
           >
             {paying ? "One moment…" : `Pay ${sym}${Number(order.amount_due ?? 0).toFixed(2)} with FPX`}
           </button>
@@ -332,7 +332,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           else if (window.history.length > 1) window.history.back();
           else window.location.assign("/");
         }}
-        className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-5 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+        className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-5 text-sm font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97]"
       >
         <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
           <path d="M8 3v10M3 8h10" />
@@ -424,7 +424,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           </p>
           <Link
             href={`/login?redirect=${encodeURIComponent(`/order/status/${params.id}`)}`}
-            className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand-600 px-5 py-3 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+            className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand-600 px-5 py-3 text-sm font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97]"
           >
             Create a free account
             <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
@@ -440,7 +440,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           </p>
           <Link
             href="/customer/dashboard?rewards=1"
-            className="shrink-0 rounded-full bg-brand-600 px-4 py-2.5 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.98]"
+            className="shrink-0 rounded-full bg-brand-600 px-4 py-2.5 text-sm font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.98]"
           >
             My account
           </Link>
@@ -497,7 +497,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
               </motion.button>
             )}
           </AnimatePresence>
-          <p className="mt-1 text-xs text-ink-400">You can cancel until the restaurant confirms it.</p>
+          <p className="mt-1 text-xs text-ink-500">You can cancel until the restaurant confirms it.</p>
         </div>
       )}
       {error && (

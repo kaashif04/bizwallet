@@ -116,12 +116,15 @@ export default async function StorePage({
       <main className={`mx-auto max-w-md ${canPickup ? "pb-[calc(7rem+env(safe-area-inset-bottom))]" : "pb-16"}`}>
         {/* Cover, logo, name, open now */}
         <header className="relative">
-          <div className="relative h-60 overflow-hidden bg-brand-100">
+          {/* No photo: a soft Marple wash, not a scrim over nothing. */}
+          <div className="relative h-60 overflow-hidden bg-gradient-to-br from-brand-100 via-brand-50 to-ink-50">
             {store.cover_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={store.cover_url} alt="" className="h-full w-full object-cover" />
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={store.cover_url} alt="" className="h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/10" />
+              </>
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/10" />
             <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))]">
               {member ? (
                 <>
@@ -137,7 +140,7 @@ export default async function StorePage({
               ) : (
                 <>
                   <span />
-                  <Link href={signIn} className="rounded-full bg-white px-3.5 py-2 text-xs font-bold text-ink-900 shadow-sm transition hover:bg-brand-100">
+                  <Link href={signIn} className="inline-flex h-11 items-center rounded-full bg-white px-4 text-sm font-bold text-ink-900 shadow-sm transition hover:bg-brand-100">
                     Sign in
                   </Link>
                 </>
@@ -288,7 +291,7 @@ export default async function StorePage({
         <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <Link
             href={`/order/p/${store.id}`}
-            className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97]"
+            className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:brightness-95 active:scale-[0.97]"
           >
             Order pickup
           </Link>
@@ -334,7 +337,7 @@ function JoinCard({
         <div className="p-4 pt-1">
           <Link
             href={signIn}
-            className="flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+            className="flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97]"
           >
             Join free or sign in
           </Link>

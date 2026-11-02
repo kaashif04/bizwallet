@@ -163,7 +163,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
           <button
             type="button"
             onClick={() => setShowCompletionSheet(true)}
-            className="mt-4 w-full rounded-full bg-brand-600 px-4 py-2.5 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.98]"
+            className="mt-4 w-full rounded-full bg-brand-600 px-4 py-2.5 text-sm font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.98]"
           >
             Add details
           </button>

@@ -220,10 +220,10 @@ export default function ProfileCompletionSheet({
           {!finished ? (
             <>
               <div className="flex items-center justify-between">
-                <button type="button" onClick={onClose} className="text-sm font-medium text-slate-400">
+                <button type="button" onClick={onClose} className="text-sm font-medium text-slate-500">
                   Close
                 </button>
-                <span className="text-xs font-semibold text-slate-400">
+                <span className="text-xs font-semibold text-slate-500">
                   {stepIndex + 1} of {steps.length}
                 </span>
               </div>

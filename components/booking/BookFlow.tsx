@@ -299,7 +299,7 @@ export default function BookFlow({ outletId }: { outletId?: string }) {
               type="button"
               onClick={book}
               disabled={busy}
-              className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-60"
+              className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:brightness-95 active:scale-[0.97] disabled:opacity-60"
             >
               {busy ? "Booking…" : picked.cfg.deposit_per_guest > 0 ? `Pay deposit ${bookingMoney(depositFor(picked.cfg, party))}` : "Book table"}
             </button>
@@ -316,7 +316,7 @@ function Next({ disabled, onClick }: { disabled: boolean; onClick: () => void })
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="mt-6 flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:bg-brand-700 active:scale-[0.97] disabled:opacity-40"
+      className="mt-6 flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:brightness-95 active:scale-[0.97] disabled:opacity-40"
     >
       Next
     </button>

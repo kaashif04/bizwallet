@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import type { GameBoard } from "@/lib/guest-order";
-import HomeButton from "./HomeButton";
 
 type Block = { x: number; w: number }; // % of the field's width
 const BASE: Block = { x: 20, w: 60 };
@@ -108,9 +107,8 @@ export default function StackGame({ token }: { token: string }) {
 
   return (
     <main className="min-h-dvh bg-ink-50">
-      <div className="mx-auto max-w-md px-4 pb-12 pt-[max(1rem,env(safe-area-inset-top))]">
-        <div className="flex items-center gap-3">
-          <HomeButton href={`/order/t/${token}/table`} />
+      <div className="mx-auto max-w-md px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
+        <div className="flex h-11 items-center gap-3">
           <h1 className="flex-1 text-xl font-semibold tracking-[-0.02em] text-ink-900">Stack</h1>
           <span className="text-sm text-ink-500">
             {board?.table ? `Table ${board.table}` : ""}

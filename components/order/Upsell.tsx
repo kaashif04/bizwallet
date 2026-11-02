@@ -108,7 +108,7 @@ export function PairNudge({
         <button
           type="button"
           onClick={onAdd}
-          className="h-9 shrink-0 rounded-full bg-brand-600 px-4 text-sm font-bold text-on shadow-sm transition active:scale-95"
+          className="h-11 shrink-0 rounded-full bg-brand-600 px-4 text-sm font-bold text-on shadow-sm transition active:scale-95"
         >
           Add
         </button>

@@ -8,7 +8,7 @@ export function PageHeader({ title, subtitle, back }: { title: string; subtitle?
       {back && (
         <Link
           href={back}
-          className="-ml-2 mb-2 inline-flex h-9 items-center gap-1 rounded-full px-2 text-sm font-bold text-brand-700 transition hover:bg-brand-50"
+          className="-ml-2 mb-2 inline-flex h-11 items-center gap-1 rounded-full px-2 text-sm font-bold text-brand-700 transition hover:bg-brand-50"
         >
           <span aria-hidden="true">‹</span> Back
         </Link>

@@ -76,6 +76,12 @@ export default function ReceiptClaimPage({ params }: { params: { code: string } 
           <div className="rounded-3xl bg-white p-6 text-center">
             <h1 className="text-xl font-semibold text-ink-900">Couldn&apos;t open this receipt</h1>
             <p className="mt-2 text-sm text-ink-600">{error}</p>
+            <Link
+              href="/scan"
+              className="mt-5 inline-flex h-11 items-center rounded-full bg-brand-600 px-6 text-sm font-bold text-on transition active:scale-95"
+            >
+              Scan the QR again
+            </Link>
           </div>
         )}
         {r && (
@@ -109,7 +115,7 @@ export default function ReceiptClaimPage({ params }: { params: { code: string } 
                 </p>
                 <Link
                   href={`/s/${r.outlet.id}?rewards=1`}
-                  className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+                  className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97]"
                 >
                   See my rewards
                 </Link>
@@ -124,7 +130,7 @@ export default function ReceiptClaimPage({ params }: { params: { code: string } 
                   <>
                     <Link
                       href={back}
-                      className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+                      className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97]"
                     >
                       Sign in or join free to collect
                     </Link>
@@ -153,7 +159,7 @@ export default function ReceiptClaimPage({ params }: { params: { code: string } 
                 {signedIn === false && r.state === "expired" && (
                   <Link
                     href={back}
-                    className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:bg-brand-700 active:scale-[0.97]"
+                    className="mt-6 flex h-12 w-full items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97]"
                   >
                     Join free
                   </Link>
