@@ -201,7 +201,10 @@ export default function GuestOrder(
     setNudge(null);
     // Dishes with choices (size, sugar…) open their sheet; the rest go straight in.
     if (groupsByItem[item.id]?.length) setSheetItem(item);
-    else cart.add(item, 1, []);
+    else {
+      cart.add(item, 1, []);
+      navigator.vibrate?.(12);
+    }
   };
 
   const account: AccountState = !loyalty
@@ -235,7 +238,7 @@ export default function GuestOrder(
         account={account}
         items={shown}
         currency={CURRENCY}
-        onItemClick={setSheetItem}
+        onItemClick={addSuggested} // no choices: straight into the cart
         filter={hasVeg && <VegToggle on={vegOnly} onChange={setVegOnly} />}
         intro={
           (banners.length > 0 || popular.length >= 3) && (
