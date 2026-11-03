@@ -28,12 +28,13 @@ const CURRENCY = "MYR";
 export default function GuestOrder(
   props: ({ token: string; outletId?: never } | { outletId: string; token?: never }) & {
     onlinePay?: boolean; // FPX is set up (Billplz); wallet credit works regardless
+    initialMenu?: GuestMenu | null; // fetched by the server page, so the menu shows without a second round trip
   }
 ) {
   const router = useRouter();
   const cart = useCart();
   const [supabase] = useState(() => createClient());
-  const [menu, setMenu] = useState<GuestMenu | null>(null);
+  const [menu, setMenu] = useState<GuestMenu | null>(props.initialMenu ?? null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sheetItem, setSheetItem] = useState<MenuItem | null>(null);
   const [reviewing, setReviewing] = useState(false);
@@ -65,9 +66,10 @@ export default function GuestOrder(
   }, []);
 
   useEffect(() => {
-    supabase
-      .rpc("guest_get_menu", props.token ? { p_token: props.token } : { p_outlet: props.outletId })
-      .then(({ data, error }) => {
+    (props.initialMenu
+      ? Promise.resolve({ data: props.initialMenu, error: null })
+      : supabase.rpc("guest_get_menu", props.token ? { p_token: props.token } : { p_outlet: props.outletId })
+    ).then(({ data, error }) => {
         if (error) return setLoadError(error.message);
         const m = data as GuestMenu;
         setMenu(m);

@@ -2,10 +2,12 @@ import Link from "next/link";
 import { CartProvider } from "@/components/order/cart-context";
 import GuestOrder from "@/components/order/GuestOrder";
 import { billplzEnabled } from "@/lib/billplz";
+import { createClient } from "@/lib/supabase/server";
+import type { GuestMenu } from "@/lib/guest-order";
 
 // Pickup pre-order (no table). Only works when the outlet enabled pickup in
 // BizPos, and only once online payment is set up (pickup is paid first).
-export default function PickupOrderPage({ params }: { params: { outletId: string } }) {
+export default async function PickupOrderPage({ params }: { params: { outletId: string } }) {
   if (!billplzEnabled()) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-6 text-center">
@@ -22,9 +24,11 @@ export default function PickupOrderPage({ params }: { params: { outletId: string
       </main>
     );
   }
+  // Fetched with the page so the menu shows on arrival (GuestOrder retries from the phone if not).
+  const { data } = await createClient().rpc("guest_get_menu", { p_outlet: params.outletId });
   return (
     <CartProvider>
-      <GuestOrder outletId={params.outletId} />
+      <GuestOrder outletId={params.outletId} initialMenu={(data as GuestMenu | null) ?? null} />
     </CartProvider>
   );
 }
