@@ -20,6 +20,8 @@ import ActiveOrders from "@/components/customer/ActiveOrders";
 import BannerCarousel from "./BannerCarousel";
 import ViewCartBar from "./ViewCartBar";
 import { VegToggle, useVegOnly } from "./Veg";
+import OrderAgain from "./OrderAgain";
+import { rebuild, type PastOrder } from "@/lib/reorder";
 import { CartUpsell, PairNudge, PopularRow, goesWith, type Suggestions } from "./Upsell";
 
 // ponytail: BizPos's guest_get_menu doesn't return a currency yet; every outlet is MYR today.
@@ -43,6 +45,8 @@ export default function GuestOrder(
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
   const [nudge, setNudge] = useState<{ item: MenuItem; after: string } | null>(null);
   const [vegOnly, setVegOnly] = useVegOnly();
+  const [lastOrder, setLastOrder] = useState<PastOrder | null>(null);
+  const againDone = useRef(false);
   // Loyalty is per company: this branch's company, its points rate, and
   // whether the signed-in member has joined it.
   const [loyalty, setLoyalty] = useState<{
@@ -116,6 +120,21 @@ export default function GuestOrder(
     }
   }, [supabase, props.token, props.outletId]);
 
+  // Signed in: their last order at this outlet, for "Order again" (RLS: own orders only).
+  const outletId = menu?.outlet.id;
+  useEffect(() => {
+    if (!loyalty?.member || !outletId) return;
+    supabase
+      .from("guest_orders")
+      .select("id, created_at, items")
+      .eq("outlet_id", outletId)
+      .eq("status", "accepted")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => data?.items?.length && setLastOrder(data as PastOrder));
+  }, [supabase, loyalty?.member, outletId]);
+
   const { items, groupsByItem } = useMemo(
     () => (menu ? toMenu(menu) : { items: [], groupsByItem: {} }),
     [menu]
@@ -131,7 +150,7 @@ export default function GuestOrder(
     counted.current = now;
     if (!before || !suggestions) return;
     const added = cart.lines.find((l) => now[l.item.id] > (before[l.item.id] ?? 0))?.item;
-    const partner = added && (suggestions.pairs[added.id] ?? []).map((id) => items.find((i) => i.id === id)).find((i) => i && !now[i.id]);
+    const partner = added && (suggestions.pairs[added.id] ?? []).map((id) => items.find((i) => i.id === id)).find((i) => i && !now[i.id] && i.isAvailable !== false);
     if (added && partner) setNudge({ item: partner, after: added.name });
   }, [cart.lines, suggestions, items]);
   useEffect(() => {
@@ -139,6 +158,16 @@ export default function GuestOrder(
     const t = window.setTimeout(() => setNudge(null), 7000);
     return () => window.clearTimeout(t);
   }, [nudge]);
+
+  // From the restaurant page's "Order again" (?again=1): fill the cart once and open it.
+  useEffect(() => {
+    if (againDone.current || !lastOrder || !items.length || !location.search.includes("again=1")) return;
+    againDone.current = true;
+    const { lines } = rebuild(lastOrder, new Map(items.map((i) => [i.id, i])), groupsByItem);
+    lines.forEach((l) => cart.add(l.item, l.qty, l.sels));
+    history.replaceState(history.state, "", location.pathname);
+    if (lines.length) setReviewing(true);
+  }, [lastOrder, items, groupsByItem, cart]);
 
   if (loadError) {
     // ponytail: matches BizPos's "…QR code is not valid." wording; a code from guest_get_menu would be sturdier.
@@ -196,8 +225,9 @@ export default function GuestOrder(
   const shown = veg ? items.filter((i) => i.vegetarian) : items;
   const popular = (suggestions?.popular ?? [])
     .map((id) => byId.get(id))
-    .filter((i): i is MenuItem => !!i && (!veg || !!i.vegetarian));
+    .filter((i): i is MenuItem => !!i && i.isAvailable !== false && (!veg || !!i.vegetarian));
   const addSuggested = (item: MenuItem) => {
+    if (item.isAvailable === false) return; // sold out
     setNudge(null);
     // Dishes with choices (size, sugar…) open their sheet; the rest go straight in.
     if (groupsByItem[item.id]?.length) setSheetItem(item);
@@ -239,7 +269,16 @@ export default function GuestOrder(
         items={shown}
         currency={CURRENCY}
         onItemClick={addSuggested} // no choices: straight into the cart
-        filter={hasVeg && <VegToggle on={vegOnly} onChange={setVegOnly} />}
+        filter={
+          (lastOrder || hasVeg) && (
+            <>
+              {lastOrder && (
+                <OrderAgain order={lastOrder} byId={byId} groupsByItem={groupsByItem} currency={CURRENCY} onView={() => setReviewing(true)} />
+              )}
+              {hasVeg && <VegToggle on={vegOnly} onChange={setVegOnly} />}
+            </>
+          )
+        }
         intro={
           (banners.length > 0 || popular.length >= 3) && (
             <>

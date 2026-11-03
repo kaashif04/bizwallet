@@ -177,7 +177,10 @@ function MenuItemCard({
     .filter((l) => l.item.id === item.id)
     .reduce((n, l) => n + l.quantity, 0);
 
-  const badge = (
+  const soldOut = item.isAvailable === false;
+  const badge = soldOut ? (
+    <span className="shrink-0 rounded-full bg-ink-100 px-2.5 py-1 text-2xs font-bold text-ink-600">Sold out</span>
+  ) : (
     <span className="relative flex h-11 min-w-[2.75rem] shrink-0 items-center justify-center">
       <AnimatePresence mode="popLayout" initial={false}>
         {count > 0 ? (
@@ -229,14 +232,17 @@ function MenuItemCard({
       <motion.button
         type="button"
         onClick={onClick}
+        disabled={soldOut}
         {...enter}
-        className="group flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors [@media(hover:hover)]:hover:bg-brand-50/60 active:bg-brand-50"
+        className={`group flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${
+          soldOut ? "" : "[@media(hover:hover)]:hover:bg-brand-50/60 active:bg-brand-50"
+        }`}
       >
         {item.imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className="h-16 w-16 shrink-0 rounded-2xl bg-slate-100 object-cover" />
+          <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className={`h-16 w-16 shrink-0 rounded-2xl bg-slate-100 object-cover ${soldOut ? "opacity-50 grayscale" : ""}`} />
         )}
-        <span className="min-w-0 flex-1">
+        <span className={`min-w-0 flex-1 ${soldOut ? "opacity-50" : ""}`}>
           <span className="block text-[15px] font-bold leading-snug text-slate-900">
             {item.vegetarian && <VegMark className="mr-1.5" />}
             {item.name}
@@ -254,16 +260,17 @@ function MenuItemCard({
     <motion.button
       type="button"
       onClick={onClick}
+      disabled={soldOut}
       {...enter}
-      className="group flex flex-col rounded-3xl bg-white p-2.5 text-left shadow-sm transition active:scale-[0.97]"
+      className={`group flex flex-col rounded-3xl bg-white p-2.5 text-left shadow-sm transition ${soldOut ? "" : "active:scale-[0.97]"}`}
     >
       {item.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className="aspect-[4/3] w-full rounded-2xl bg-slate-100 object-cover" />
+        <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className={`aspect-[4/3] w-full rounded-2xl bg-slate-100 object-cover ${soldOut ? "opacity-50 grayscale" : ""}`} />
       ) : (
         <ItemMark name={item.name} className="aspect-[4/3] w-full rounded-2xl text-4xl" />
       )}
-      <span className="mt-2.5 block min-w-0 flex-1 px-1">
+      <span className={`mt-2.5 block min-w-0 flex-1 px-1 ${soldOut ? "opacity-50" : ""}`}>
         <span className="line-clamp-2 block text-[15px] font-bold leading-snug text-slate-900">
           {item.vegetarian && <VegMark className="mr-1.5" />}
           {item.name}

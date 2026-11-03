@@ -25,7 +25,7 @@ export function goesWith(cart: MenuItem[], s: Suggestions | null, menu: Map<stri
   menu.forEach((i) => !cats.has(i.category) && !firsts.has(i.category) && firsts.set(i.category, i.id));
   return Array.from(new Set([...paired, ...other, ...Array.from(firsts.values())]))
     .map((id) => menu.get(id))
-    .filter((i): i is MenuItem => !!i && !inCart.has(i.id))
+    .filter((i): i is MenuItem => !!i && !inCart.has(i.id) && i.isAvailable !== false)
     .slice(0, n);
 }
 

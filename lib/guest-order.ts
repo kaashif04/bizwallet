@@ -19,6 +19,7 @@ export type GuestMenu = {
     name: string;
     description: string | null;
     is_vegetarian?: boolean;
+    is_available?: boolean; // false = sold out today: shown greyed, can't be added
     price: number;
     image_url: string | null;
     category_id: string | null;
@@ -123,6 +124,7 @@ export function toMenu(menu: GuestMenu): {
     name: i.name,
     description: i.description,
     vegetarian: !!i.is_vegetarian,
+    isAvailable: i.is_available !== false,
     category: (i.category_id && catName.get(i.category_id)?.name) || "Other",
     categoryId: i.category_id,
     price: Number(i.price),

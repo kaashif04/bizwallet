@@ -57,7 +57,7 @@ export default async function StorePage({
     supabase.from("loyalty_programs").select("is_enabled,points_per_rm").eq("company_id", store.company_id).maybeSingle(),
   ]);
   const rewards = (rewardRows ?? []) as Reward[];
-  const [{ data: placeData }, { data: voucherRows }, { data: orders }] = member
+  const [{ data: placeData }, { data: voucherRows }, { data: orders }, { data: lastOrder }] = member
     ? await Promise.all([
         supabase.rpc("wallet_my_places"),
         supabase
@@ -75,8 +75,18 @@ export default async function StorePage({
           .neq("status", "voided")
           .order("created_at", { ascending: false })
           .limit(3),
+        // Their last order from the app here, for "Order again" (RLS: own orders only).
+        supabase
+          .from("guest_orders")
+          .select("created_at, items")
+          .eq("outlet_id", store.id)
+          .eq("status", "accepted")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ])
-    : [{ data: null }, { data: null }, { data: null }];
+    : [{ data: null }, { data: null }, { data: null }, { data: null }];
+  const again = lastOrder as { created_at: string; items: { name: string; quantity: number }[] } | null;
   const place = ((placeData ?? []) as Place[]).find((p) => p.company_id === store.company_id) ?? null;
   const loyaltyOn = program?.is_enabled !== false;
 
@@ -213,6 +223,26 @@ export default async function StorePage({
             </section>
           )}
 
+          {canPickup && again?.items?.length ? (
+            // Pickup opens with this order in the cart (GuestOrder reads ?again=1).
+            <Link
+              href={`/order/p/${store.id}?again=1`}
+              className="flex items-center gap-3 rounded-3xl bg-white p-4 shadow-sm transition active:scale-[0.98]"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600" aria-hidden="true">
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.5M4 4v4.5h4.5" />
+                </svg>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-bold text-ink-900">Order again</span>
+                <span className="block truncate text-sm text-ink-600">
+                  {again.items.map((l) => (l.quantity > 1 ? `${l.quantity}× ${l.name}` : l.name)).join(", ")}
+                </span>
+              </span>
+              <span className="shrink-0 text-sm font-bold text-brand-700">Pickup ›</span>
+            </Link>
+          ) : null}
           <DishRails mine={dishes.mine} popular={dishes.popular} href={dishHref} />
 
           {member && (orders ?? []).length > 0 && (
