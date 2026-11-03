@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
 import type { MenuItem } from "@/lib/order-types";
-import { guestLabel, outletLogos, saveClaimToken, toMenu, type Banner, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
+import { guestLabel, outletLogos, saveClaimToken, toMenu, toOrderItem, type Banner, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
 import type { AccountState } from "./AccountChip";
 import { rememberPlace } from "@/lib/place";
 import { storeNames } from "@/lib/places";
@@ -15,6 +15,7 @@ import JoinPrompt from "./JoinPrompt";
 import { useCart } from "./cart-context";
 import MenuView from "./MenuView";
 import AddToCartSheet from "./AddToCartSheet";
+import PickupTime from "./PickupTime";
 import { useSheet } from "./useSheet";
 import ActiveOrders from "@/components/customer/ActiveOrders";
 import BannerCarousel from "./BannerCarousel";
@@ -218,7 +219,7 @@ export default function GuestOrder(
   }
 
   const byId = new Map(items.map((i) => [i.id, i]));
-  const oneTap = new Map(items.filter((i) => !groupsByItem[i.id]?.length).map((i) => [i.id, i]));
+  const oneTap = new Map(items.filter((i) => !groupsByItem[i.id]?.length && !i.combos?.length).map((i) => [i.id, i]));
   // Vegetarian only (no switch when the menu has no vegetarian dishes, so it can't empty the page).
   const hasVeg = items.some((i) => i.vegetarian);
   const veg = vegOnly && hasVeg;
@@ -230,7 +231,7 @@ export default function GuestOrder(
     if (item.isAvailable === false) return; // sold out
     setNudge(null);
     // Dishes with choices (size, sugar…) open their sheet; the rest go straight in.
-    if (groupsByItem[item.id]?.length) setSheetItem(item);
+    if (groupsByItem[item.id]?.length || item.combos?.length) setSheetItem(item);
     else {
       cart.add(item, 1, []);
       navigator.vibrate?.(12);
@@ -310,7 +311,7 @@ export default function GuestOrder(
           <AddToCartSheet
             key="sheet"
             item={sheetItem}
-            groups={groupsByItem[sheetItem.id] ?? []}
+            groupsByItem={groupsByItem}
             currency={CURRENCY}
             onClose={() => setSheetItem(null)}
           />
@@ -377,6 +378,8 @@ function CartReview({
   const [signedIn, setSignedIn] = useState(false);
   const [payWith, setPayWith] = useState<"counter" | "fpx">(token ? "counter" : "fpx");
   const [note, setNote] = useState("");
+  const [pickupAt, setPickupAt] = useState<string | null>(null); // null = now
+  const [slotsRefresh, setSlotsRefresh] = useState(0);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // One id per submission, reused on retry so a flaky network never duplicates the order.
@@ -398,7 +401,8 @@ function CartReview({
   const due = menu.tax.sst_enabled ? null : roundUp(cart.totalPrice + service);
   const charges = [service > 0 && "service charge", menu.tax.sst_enabled && "SST"].filter(Boolean);
   const payNow = pickup || payWith !== "counter";
-  const orderItems = cart.lines.map((l) => ({
+  // A combo is an ordinary menu item, so the promo quote prices it by its own id.
+  const quoteItems = cart.lines.map((l) => ({
     menu_item_id: l.item.id,
     quantity: l.quantity,
     modifier_ids: l.selections.map((s) => s.modifierId),
@@ -416,7 +420,7 @@ function CartReview({
     setPromoBusy(true);
     setPromoError(null);
     const { data, error } = await supabase.rpc("guest_check_promo", {
-      p_payload: { ...(token ? { table_token: token } : { outlet_id: menu.outlet.id }), code, items: orderItems },
+      p_payload: { ...(token ? { table_token: token } : { outlet_id: menu.outlet.id }), code, items: quoteItems },
     });
     setPromoBusy(false);
     if (error) {
@@ -454,12 +458,14 @@ function CartReview({
         customer_name: memberName ?? (name.trim() || (token ? guestLabel() : undefined)),
         note: note.trim() || undefined,
         pay_now: payNow || undefined,
+        pickup_at: pickupAt ?? undefined,
         promo_code: promo?.code,
-        items: orderItems,
+        items: cart.lines.map(toOrderItem),
       },
     });
     if (error) {
       setPlacing(false);
+      if (pickupAt) setSlotsRefresh((n) => n + 1); // the time may have just filled up
       return setError(error.message);
     }
     requestId.current = null;
@@ -570,6 +576,7 @@ function CartReview({
             Ordering as <span className="font-bold text-ink-900">{memberName}</span>
           </p>
         )}
+        {pickup && <PickupTime outletId={menu.outlet.id} value={pickupAt} onChange={setPickupAt} refresh={slotsRefresh} />}
         <details className="group mt-3 rounded-2xl bg-ink-50 px-4 py-1" open={!!(note || name)}>
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-bold text-ink-800">
             {memberName ? "Note for the kitchen" : "Your name or a note for the kitchen"}
@@ -705,7 +712,9 @@ function CartReview({
         <p className="mt-1 text-xs text-ink-500">
           {shown.total === null && `${charges.join(" and ")} added to the total. `}
           {pickup
-            ? "Paid before it's made. The kitchen starts once you've paid."
+            ? pickupAt
+              ? "Paid now. The kitchen starts it shortly before your pickup time."
+              : "Paid before it's made. The kitchen starts once you've paid."
             : payNow
               ? "Pay now and you can leave when you're done eating."
               : "Pay at the counter when you're done. Have a promo code? Give it to staff when you pay."}

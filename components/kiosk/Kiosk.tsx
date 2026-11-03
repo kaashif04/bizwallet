@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/client";
-import { outletLogos, toMenu, type GuestMenu } from "@/lib/guest-order";
+import { outletLogos, toMenu, toOrderItem, type GuestMenu } from "@/lib/guest-order";
 import type { MenuItem } from "@/lib/order-types";
 import { currencySymbol } from "@/lib/format";
 import { useCart } from "@/components/order/cart-context";
@@ -130,7 +130,7 @@ export default function Kiosk({ token }: { token: string }) {
 
   function tapDish(item: MenuItem) {
     if (item.isAvailable === false) return;
-    if (groupsByItem[item.id]?.length) setSheetItem(item);
+    if (groupsByItem[item.id]?.length || item.combos?.length) setSheetItem(item);
     else cart.add(item, 1, []);
   }
 
@@ -145,7 +145,7 @@ export default function Kiosk({ token }: { token: string }) {
         dining,
         customer_name: name.trim() || undefined,
         pay_now: online || undefined,
-        items: cart.lines.map((l) => ({ menu_item_id: l.item.id, quantity: l.quantity, modifier_ids: l.selections.map((s) => s.modifierId) })),
+        items: cart.lines.map(toOrderItem),
       },
     });
     setPlacing(false);
@@ -383,7 +383,7 @@ export default function Kiosk({ token }: { token: string }) {
 
       <AnimatePresence>
         {sheetItem && (
-          <AddToCartSheet key="sheet" item={sheetItem} groups={groupsByItem[sheetItem.id] ?? []} currency="MYR" onClose={() => setSheetItem(null)} />
+          <AddToCartSheet key="sheet" item={sheetItem} groupsByItem={groupsByItem} currency="MYR" onClose={() => setSheetItem(null)} />
         )}
       </AnimatePresence>
 

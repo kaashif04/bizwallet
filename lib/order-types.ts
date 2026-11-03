@@ -17,6 +17,10 @@ export type MenuItem = {
   emoji?: string;
   isAvailable?: boolean;
   externalPosId?: string | null;
+  // "Make it a meal": the store's combos of this dish (each its own menu item), and for a
+  // combo, the dish it belongs to. A combo is ordered with combo_id (see toOrderItem).
+  combos?: MenuItem[];
+  comboOf?: string;
 };
 
 export type VariantSelection = {

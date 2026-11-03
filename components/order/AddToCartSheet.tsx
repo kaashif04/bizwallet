@@ -34,13 +34,13 @@ const needLabel = (g: VariantGroup) =>
     : g.maxSelect && g.maxSelect > 1 ? `Up to ${g.maxSelect}` : "Optional";
 
 export default function AddToCartSheet({
-  item,
-  groups,
+  item: dish,
+  groupsByItem,
   currency,
   onClose,
 }: {
   item: MenuItem;
-  groups: VariantGroup[];
+  groupsByItem: Record<string, VariantGroup[]>;
   currency: string;
   onClose: () => void;
 }) {
@@ -48,11 +48,41 @@ export default function AddToCartSheet({
   const sym = currencySymbol(currency);
   const drag = useDragControls();
   useSheet(onClose);
+  // A store's combo ("make it a meal") is optional: `item` is the dish or the combo picked.
+  const [item, setItem] = useState(dish);
+  const groups = groupsByItem[item.id] ?? [];
   // Two or more choices (a set: dish, side, drink…): one step at a time.
   const stepped = groups.length >= 2;
   const [sel, setSel] = useState<Record<string, string[]>>(() => defaultSelection(groups, stepped));
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
+
+  function pickVersion(to: MenuItem) {
+    const g = groupsByItem[to.id] ?? [];
+    setItem(to);
+    setSel(defaultSelection(g, g.length >= 2));
+    setStep(0);
+  }
+  const versions = dish.combos?.length ? [{ ...dish, combos: undefined }, ...dish.combos] : null;
+  const versionPicker = versions && (
+    <div role="radiogroup" aria-label="Just the dish or a combo" className="mt-4 grid grid-cols-2 gap-2.5">
+      {versions.map((v) => (
+        <button
+          key={v.id}
+          type="button"
+          role="radio"
+          aria-checked={v.id === item.id}
+          onClick={() => pickVersion(v)}
+          className={`rounded-2xl border-2 p-3 text-left transition active:scale-[0.97] ${
+            v.id === item.id ? "border-brand-500 bg-brand-50" : "border-ink-100 bg-white"
+          }`}
+        >
+          <span className="block text-[15px] font-semibold leading-snug text-ink-900">{v.comboOf ? v.name : "Just the dish"}</span>
+          <span className="mt-1 block text-sm font-bold text-ink-700">{currencySymbol(currency)}{v.price.toFixed(2)}</span>
+        </button>
+      ))}
+    </div>
+  );
 
   const [qty, setQty] = useState(1);
   const groupRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -144,12 +174,12 @@ export default function AddToCartSheet({
   // Big photo (edge to edge) on the first look; later steps keep a small one.
   const hero = item.imageUrl ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={item.imageUrl} alt={item.name} decoding="async" className="-mx-5 aspect-[4/3] w-[calc(100%+2.5rem)] max-w-none bg-slate-100 object-cover" />
+    <img src={item.imageUrl} alt={dish.name} decoding="async" className="-mx-5 aspect-[4/3] w-[calc(100%+2.5rem)] max-w-none bg-slate-100 object-cover" />
   ) : null;
   const title = (
     <h2 id="dish-title" className="text-2xl leading-tight text-slate-900">
       {item.vegetarian && <VegMark className="mr-2 align-[3px]" />}
-      {item.name}
+      {dish.name}
     </h2>
   );
 
@@ -205,7 +235,7 @@ export default function AddToCartSheet({
             <>
               {hero}
               <div className="flex items-start gap-4 pr-10 pt-4">
-                {!item.imageUrl && <ItemMark name={item.name} className="h-16 w-16 rounded-2xl text-3xl" />}
+                {!item.imageUrl && <ItemMark name={dish.name} className="h-16 w-16 rounded-2xl text-3xl" />}
                 <div className="min-w-0 flex-1">
                   {title}
                   {item.description && <p className="mt-1 text-sm text-slate-600">{item.description}</p>}
@@ -213,6 +243,7 @@ export default function AddToCartSheet({
                 </div>
               </div>
 
+              {versionPicker}
               {groups.map((g) => (
                 <motion.div
                   key={g.id}
@@ -248,13 +279,14 @@ export default function AddToCartSheet({
                 <>
                   {hero}
                   <div className="flex items-start gap-4 pr-10 pt-4">
-                    {!item.imageUrl && <ItemMark name={item.name} className="h-16 w-16 rounded-2xl text-3xl" />}
+                    {!item.imageUrl && <ItemMark name={dish.name} className="h-16 w-16 rounded-2xl text-3xl" />}
                     <div className="min-w-0 flex-1">
                       {title}
                       {item.description && <p className="mt-1 text-sm text-slate-600">{item.description}</p>}
                       <p className="mt-1.5 text-base font-bold text-slate-900">{money(item.price)}</p>
                     </div>
                   </div>
+                  {versionPicker}
                 </>
               ) : (
                 // Later steps: the dish and what's been picked so far, small.
@@ -263,10 +295,10 @@ export default function AddToCartSheet({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={item.imageUrl} alt="" className="h-12 w-12 shrink-0 rounded-xl bg-slate-100 object-cover" />
                   ) : (
-                    <ItemMark name={item.name} className="h-12 w-12 shrink-0 rounded-xl text-xl" />
+                    <ItemMark name={dish.name} className="h-12 w-12 shrink-0 rounded-xl text-xl" />
                   )}
                   <div className="min-w-0">
-                    <p className="truncate text-[15px] font-bold text-slate-900">{item.name}</p>
+                    <p className="truncate text-[15px] font-bold text-slate-900">{dish.name}</p>
                     <p className="truncate text-xs text-ink-500">{selections.map((s) => s.option).join(", ") || money(item.price)}</p>
                   </div>
                 </div>

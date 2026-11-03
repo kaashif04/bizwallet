@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
+import { pickupLabel } from "@/components/order/PickupTime";
 import HomeButton from "@/components/order/HomeButton";
 import StatusOrb, { type OrbStage } from "@/components/order/StatusOrb";
 import { loadClaimToken, loadMenuPath, type GuestOrderStatus } from "@/lib/guest-order";
@@ -192,6 +193,8 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
       ? order.reject_reason === "Cancelled by customer"
         ? "Order cancelled"
         : "The outlet couldn't take this order"
+      : order.status === "pending" && order.paid && order.pickup_at && new Date(order.pickup_at) > new Date()
+        ? `Booked for ${pickupLabel(order.pickup_at)}. We start it just before.`
       : order.status === "awaiting_payment" || order.status === "pending"
         ? STEPS[order.status]
         : !order.table_label && order.kitchen_status === "ready"
@@ -249,7 +252,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           }
         />
         <span className="rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-bold text-brand-700">
-          {order.table_label ? `Table ${order.table_label}` : "Pickup order"}
+          {order.table_label ? `Table ${order.table_label}` : order.pickup_at ? `Pickup · ${pickupLabel(order.pickup_at)}` : "Pickup order"}
         </span>
       </span>
       <div className="mt-6">

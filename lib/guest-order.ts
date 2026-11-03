@@ -1,6 +1,6 @@
 // Guest ordering against BizPos's RPCs (guest_get_menu / guest_place_order /
 // guest_order_status / claim_guest_order). Works signed-out.
-import type { MenuItem } from "./order-types";
+import type { CartLine, MenuItem } from "./order-types";
 import type { VariantGroup } from "./menu-variants";
 
 export type GuestMenu = {
@@ -25,16 +25,26 @@ export type GuestMenu = {
     category_id: string | null;
     free_from_spend: number | null;
     free_spend_category_ids: string[] | null;
-    modifier_groups: {
-      id: string;
-      name: string;
-      is_required: boolean;
-      min_select: number;
-      max_select: number | null;
-      modifiers: { id: string; name: string; price_delta: number; is_default: boolean }[];
-    }[];
+    modifier_groups: GuestGroup[];
+    combos?: { id: string; name: string; price: number; is_available: boolean; modifier_groups: GuestGroup[] }[];
   }[];
 };
+type GuestGroup = {
+  id: string;
+  name: string;
+  is_required: boolean;
+  min_select: number;
+  max_select: number | null;
+  modifiers: { id: string; name: string; price_delta: number; is_default: boolean }[];
+};
+
+// One cart line as guest_place_order wants it: a combo goes as combo_id on its dish.
+export const toOrderItem = (l: CartLine) => ({
+  menu_item_id: l.item.comboOf ?? l.item.id,
+  combo_id: l.item.comboOf ? l.item.id : undefined,
+  quantity: l.quantity,
+  modifier_ids: l.selections.map((s) => s.modifierId),
+});
 
 // The table QR start page (guest_table_home).
 export type TableHome = {
@@ -107,6 +117,7 @@ export type GuestOrderStatus = {
   paid: boolean;
   table_due?: number | null; // still to pay at the counter for this table (open bill)
   member_linked: boolean;
+  pickup_at?: string | null; // order ahead: the time the customer chose
 };
 
 // Flatten the RPC payload into MenuView's shape, items in category order.
@@ -148,27 +159,41 @@ export function toMenu(menu: GuestMenu): {
 
   const band = (g: { name: string; is_required: boolean }) =>
     g.name.toLowerCase().includes("vegetarian") ? 0 : g.is_required ? 1 : 2;
-  const groupsByItem = Object.fromEntries(
-    menu.items.map((i) => [
-      i.id,
-      // Same order as the POS: the "Vegetarian" option first (unticked = the normal,
-      // non-veg dish), then required groups, then add-ons
-      // (stable sort keeps the menu's order within each band).
-      [...i.modifier_groups].sort((a, b) => band(a) - band(b)).map<VariantGroup>((g) => ({
-        id: g.id,
-        label: g.name,
-        required: g.is_required,
-        selectionType: g.max_select === 1 ? "single" : "multiple",
-        maxSelect: g.max_select,
-        options: g.modifiers.map((m) => ({
-          id: m.id,
-          label: m.name,
-          priceDelta: Number(m.price_delta),
-          isDefault: m.is_default,
-        })),
+  // Same order as the POS: the "Vegetarian" option first (unticked = the normal,
+  // non-veg dish), then required groups, then add-ons
+  // (stable sort keeps the menu's order within each band).
+  const toGroups = (gs: GuestGroup[]) =>
+    [...gs].sort((a, b) => band(a) - band(b)).map<VariantGroup>((g) => ({
+      id: g.id,
+      label: g.name,
+      required: g.is_required,
+      selectionType: g.max_select === 1 ? "single" : "multiple",
+      maxSelect: g.max_select,
+      options: g.modifiers.map((m) => ({
+        id: m.id,
+        label: m.name,
+        priceDelta: Number(m.price_delta),
+        isDefault: m.is_default,
       })),
-    ])
-  );
+    }));
+  const groupsByItem: Record<string, VariantGroup[]> = {};
+  for (const i of menu.items) {
+    groupsByItem[i.id] = toGroups(i.modifier_groups);
+    const dish = items.find((d) => d.id === i.id)!;
+    // Sold-out combos are simply not offered.
+    const combos = (i.combos ?? []).filter((c) => c.is_available !== false);
+    if (combos.length) {
+      dish.combos = combos.map((c) => ({
+        ...dish,
+        id: c.id,
+        name: c.name,
+        price: Number(c.price),
+        combos: undefined,
+        comboOf: i.id,
+      }));
+      for (const c of combos) groupsByItem[c.id] = toGroups(c.modifier_groups);
+    }
+  }
 
   return { items, groupsByItem };
 }
