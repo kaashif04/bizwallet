@@ -13,14 +13,21 @@ export async function POST(request: Request) {
   const {
     data: { user },
   } = await createClient().auth.getUser();
-  if (!user?.email) return NextResponse.json({ error: "Please sign in to pay." }, { status: 401 });
-
-  const { order_id, claim_token } = await request.json().catch(() => ({}));
+  const { order_id, claim_token, mobile } = await request.json().catch(() => ({}));
   if (typeof order_id !== "string" || typeof claim_token !== "string") {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
   const admin = createAdminClient();
+  // Signed out: only a kiosk order (placed at the restaurant's tablet, paid on
+  // the customer's own phone), and Billplz then needs their mobile number.
+  const phone = typeof mobile === "string" ? mobile.replace(/\D/g, "") : "";
+  if (!user?.email) {
+    const { data: k, error: kErr } = await admin.from("guest_orders").select("kiosk_id").eq("id", order_id).maybeSingle();
+    if (kErr || !k?.kiosk_id) return NextResponse.json({ error: "Please sign in to pay." }, { status: 401 });
+    if (phone.length < 9) return NextResponse.json({ error: "Add your phone number to pay." }, { status: 400 });
+  }
+
   const { data: order } = await admin
     .from("guest_orders")
     .select("id, claim_token, status, amount_due, payment_ref, outlet_id, created_at, table_id")
@@ -47,13 +54,14 @@ export async function POST(request: Request) {
     const origin = new URL(request.url).origin;
     const [{ data: outlet }, { data: member }] = await Promise.all([
       admin.from("outlets").select("name").eq("id", order.outlet_id).maybeSingle(),
-      admin.from("members").select("full_name").eq("id", user.id).maybeSingle(),
+      user ? admin.from("members").select("full_name").eq("id", user.id).maybeSingle() : Promise.resolve({ data: null }),
     ]);
     const bill = await createBill({
-      email: user.email,
-      name: member?.full_name || user.email.split("@")[0],
+      email: user?.email ?? undefined,
+      mobile: user?.email ? undefined : phone,
+      name: member?.full_name || user?.email?.split("@")[0] || "Guest",
       amountSen: Math.round(Number(order.amount_due) * 100),
-      description: `${order.table_id ? "Dine-in" : "Pickup"} order at ${outlet?.name ?? "BizWallet"}`,
+      description: `${order.table_id ? "Dine-in" : user ? "Pickup" : "Kiosk"} order at ${outlet?.name ?? "BizWallet"}`,
       callbackUrl: `${origin}/api/pay/billplz/callback`,
       redirectUrl: `${origin}/api/pay/billplz/return?order=${order.id}`,
       reference: order.id,
