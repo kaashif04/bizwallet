@@ -78,7 +78,8 @@ export type TableBill =
       paid: number; // paid in the app
       remaining: number;
       held: number; // someone is at the payment page right now
-      items: { id: string; name: string; quantity: number; line_total: number; options: string | null; paid: boolean }[];
+      // parent_id: this line is a part of another line (a set's dishes, or made at another counter); the POS nests it.
+      items: { id: string; name: string; quantity: number; line_total: number; options: string | null; paid: boolean; parent_id?: string | null }[];
       // booking: a booking deposit paid before the bill (taken off it), not a share.
       payments: { amount: number; at: string; share?: BillShare; mine: boolean; booking?: boolean }[];
       booking_credit?: number; // booking deposits already taken off this bill

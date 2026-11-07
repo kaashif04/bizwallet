@@ -105,6 +105,11 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
   const step = Math.round((bill.rounding_step ?? 0) * 100);
   const up = (n: number) => (step > 0 ? Math.ceil(n / step) * step : Math.ceil(n));
   const shareSen = up(sen(bill.total) / of);
+  // Parts of a set sit under their line, as in the POS.
+  const ids = new Set(bill.items.map((i) => i.id));
+  const lines = bill.items
+    .filter((i) => !i.parent_id || !ids.has(i.parent_id))
+    .map((item) => ({ item, parts: bill.items.filter((c) => c.parent_id === item.id) }));
   const pickedSen = bill.items.filter((i) => picked.has(i.id)).reduce((n, i) => n + sen(i.line_total), 0);
   // Items carry their part of service charge, tax and rounding: x total / subtotal, as the server does.
   const itemsSen = up(sen(bill.subtotal) > 0 ? Math.round((pickedSen * sen(bill.total)) / sen(bill.subtotal) + 1e-9) : pickedSen);
@@ -248,7 +253,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
 
           {mode === "items" && (
             <ul className="mt-4 divide-y divide-ink-100 overflow-hidden rounded-3xl bg-white">
-              {bill.items.map((i) => {
+              {lines.map(({ item: i, parts }) => {
                 const on = picked.has(i.id);
                 return (
                   <li key={i.id}>
@@ -272,6 +277,12 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
                           {i.quantity} × {i.name}
                         </span>
                         {i.options && <span className="block truncate text-xs text-ink-500">{i.options}</span>}
+                        {parts.map((c) => (
+                          <span key={c.id} className="mt-1 block pl-3 text-xs text-ink-600">
+                            {c.quantity} × {c.name}
+                            {c.options ? ` · ${c.options}` : ""}
+                          </span>
+                        ))}
                       </span>
                       <span className="shrink-0 text-sm tabular-nums text-ink-700">{i.paid ? "Paid" : money(i.line_total)}</span>
                     </label>
@@ -294,12 +305,24 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
         </summary>
         <div className="space-y-1.5 px-5 pb-5 text-sm">
           {mode !== "items" &&
-            bill.items.map((i) => (
-              <div key={i.id} className="flex justify-between gap-3 text-ink-700">
-                <span>
-                  {i.quantity} × {i.name}
-                </span>
-                <span className="tabular-nums">{money(i.line_total)}</span>
+            lines.map(({ item: i, parts }) => (
+              <div key={i.id} className="text-ink-700">
+                <div className="flex justify-between gap-3">
+                  <span>
+                    {i.quantity} × {i.name}
+                  </span>
+                  <span className="tabular-nums">{money(i.line_total)}</span>
+                </div>
+                {i.options && <p className="text-xs text-ink-500">{i.options}</p>}
+                {parts.map((c) => (
+                  <div key={c.id} className="mt-1 flex justify-between gap-3 pl-3 text-ink-600">
+                    <span>
+                      {c.quantity} × {c.name}
+                      {c.options && <span className="block text-xs text-ink-500">{c.options}</span>}
+                    </span>
+                    <span className="shrink-0 text-xs text-ink-500">{c.line_total > 0 ? money(c.line_total) : "in set"}</span>
+                  </div>
+                ))}
               </div>
             ))}
           <div className={`space-y-1 ${mode !== "items" ? "mt-3 border-t border-ink-100 pt-3" : ""} text-ink-500`}>
