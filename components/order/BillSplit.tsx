@@ -300,7 +300,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
       {/* The whole bill */}
       <details className="group mt-6 rounded-3xl bg-white">
         <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-bold text-ink-900">
-          Full bill · {bill.items.length} item{bill.items.length === 1 ? "" : "s"}
+          Full bill · {lines.length} item{lines.length === 1 ? "" : "s"}
           <span aria-hidden="true" className="text-ink-400 transition group-open:rotate-90">›</span>
         </summary>
         <div className="space-y-1.5 px-5 pb-5 text-sm">
