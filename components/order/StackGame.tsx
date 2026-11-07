@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
-import type { GameBoard } from "@/lib/guest-order";
+import { rankLine, type GameProps } from "./games/shared";
 
 type Block = { x: number; w: number }; // % of the field's width
 const BASE: Block = { x: 20, w: 60 };
@@ -15,23 +14,13 @@ const color = (i: number) => `hsl(${(350 + 40 * Math.sin(i / 3) + 360) % 360} 80
 // Stack: a block slides across; tap to drop it on the one below. Whatever hangs
 // over is cut off, so it gets harder. Score = blocks stacked. Best per table
 // goes on today's board for the restaurant.
-export default function StackGame({ token }: { token: string }) {
-  const [supabase] = useState(() => createClient());
+export default function StackGame({ board, onEnd }: GameProps) {
   const [phase, setPhase] = useState<"ready" | "playing" | "over">("ready");
   const [stack, setStack] = useState<Block[]>([BASE]);
   const [x, setX] = useState(0);
   const [perfect, setPerfect] = useState(0); // bumps on each perfect drop, keys the pop
-  const [board, setBoard] = useState<GameBoard | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const stackRef = useRef<Block[]>([BASE]);
   const mover = useRef({ x: 0, w: BASE.w, dir: 1 });
-
-  useEffect(() => {
-    supabase.rpc("guest_game_board", { p_token: token }).then(({ data, error }) => {
-      if (error) setError(error.message);
-      else setBoard(data as GameBoard);
-    });
-  }, [supabase, token]);
 
   useEffect(() => {
     if (phase !== "playing") return;
@@ -55,20 +44,16 @@ export default function StackGame({ token }: { token: string }) {
     setStack([BASE]);
     mover.current = { x: 0, w: BASE.w, dir: 1 };
     setX(0);
-    setError(null);
     setPhase("playing");
   }
 
   const end = useCallback(
-    async (score: number) => {
+    (score: number) => {
       setPhase("over");
       navigator.vibrate?.([40, 40, 80]);
-      if (score < 1) return;
-      const { data, error } = await supabase.rpc("guest_game_submit", { p_token: token, p_game: "stack", p_score: score });
-      if (error) setError(error.message);
-      else setBoard(data as GameBoard);
+      onEnd(score);
     },
-    [supabase, token]
+    [onEnd]
   );
 
   const drop = useCallback(() => {
@@ -106,16 +91,7 @@ export default function StackGame({ token }: { token: string }) {
   const y = (i: number) => (i - cam) * ROW + 16;
 
   return (
-    <main className="min-h-dvh bg-ink-50">
-      <div className="mx-auto max-w-md px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
-        <div className="flex h-11 items-center gap-3">
-          <h1 className="flex-1 text-xl font-semibold tracking-[-0.02em] text-ink-900">Stack</h1>
-          <span className="text-sm text-ink-500">
-            {board?.table ? `Table ${board.table}` : ""}
-            {board?.best ? ` · best ${board.best}` : ""}
-          </span>
-        </div>
-
+    <>
         <div
           role="button"
           tabIndex={0}
@@ -176,11 +152,7 @@ export default function StackGame({ token }: { token: string }) {
                   <p className="text-sm font-semibold uppercase tracking-[0.14em] text-ink-500">Game over</p>
                   <p className="mt-1 text-4xl font-bold tabular-nums text-ink-900">{score}</p>
                   <p className="mt-1 text-sm text-ink-600">
-                    {score < 1
-                      ? "Missed! Try again."
-                      : board?.rank
-                        ? `Table ${board.table} is #${board.rank} of ${board.tables} today`
-                        : "Saving…"}
+                    {rankLine(score, board)}
                   </p>
                   <button
                     type="button"
@@ -195,31 +167,6 @@ export default function StackGame({ token }: { token: string }) {
             </div>
           )}
         </div>
-        {error && <p role="alert" className="mt-3 text-sm text-rose-700">{error}</p>}
-
-        <section className="mt-6">
-          <h2 className="mb-3 px-1 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Today&apos;s top tables</h2>
-          <ol className="divide-y divide-ink-100 rounded-2xl bg-white">
-            {board && board.top.length === 0 && (
-              <li className="px-4 py-3.5 text-sm text-ink-500">No scores yet today. Be the first table on the board.</li>
-            )}
-            {board?.top.map((r, i) => (
-              <li
-                key={r.table}
-                className={`flex items-center gap-3 px-4 py-3 text-sm ${r.table === board.table ? "bg-brand-50 font-bold" : ""}`}
-              >
-                <span className="w-6 tabular-nums text-ink-500">{i + 1}</span>
-                <span className="flex-1 text-ink-900">
-                  Table {r.table}
-                  {r.table === board.table ? " (you)" : ""}
-                </span>
-                <span className="tabular-nums text-ink-900">{r.score}</span>
-              </li>
-            ))}
-          </ol>
-          <p className="mt-2 px-1 text-xs text-ink-500">Each table&apos;s best score. Starts fresh every day.</p>
-        </section>
-      </div>
-    </main>
+    </>
   );
 }
