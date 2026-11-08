@@ -36,6 +36,14 @@ export default function BookingStatus({ token, justPaid }: { token: string; just
     load();
   }, [load]);
 
+  // A refund owed: get its link, so they can say where to send the money.
+  const [refundLink, setRefundLink] = useState<string | null>(null);
+  const refundDue = b?.deposit_status === "refund_due";
+  useEffect(() => {
+    if (!refundDue) return;
+    supabase.rpc("booking_refund_link", { p_token: token }).then(({ data }) => typeof data === "string" && setRefundLink(data));
+  }, [supabase, token, refundDue]);
+
   const outletId = b?.outlet.id;
   useEffect(() => {
     if (!outletId) return;
@@ -210,7 +218,13 @@ export default function BookingStatus({ token, justPaid }: { token: string; just
         <section className="mt-5 rounded-3xl bg-white p-5 text-sm text-ink-700">
           <p className="font-bold text-ink-900">Deposit {bookingMoney(deposit || b.deposit_applied)}</p>
           {b.deposit_applied > 0 && <p className="mt-1">{bookingMoney(b.deposit_applied)} is taken off your bill when you dine.</p>}
-          {b.refund_amount > 0 && <p className="mt-1">Refund {bookingMoney(b.refund_amount)}, made by the restaurant by hand within a few working days.</p>}
+          {b.refund_amount > 0 && !refundLink && <p className="mt-1">Refund {bookingMoney(b.refund_amount)}, made by the restaurant by hand within a few working days.</p>}
+          {refundLink && (
+            <Link href={`/refund/${refundLink}`} className="mt-3 flex items-center justify-between rounded-2xl bg-brand-50 px-4 py-3.5 font-bold text-brand-700">
+              Tell us where to send your {bookingMoney(b.refund_amount || deposit)} refund
+              <span aria-hidden="true">›</span>
+            </Link>
+          )}
           {b.can_cancel_free && b.free_cancel_until && <p className="mt-1">Free cancellation until {klDateTime(b.free_cancel_until)}.</p>}
           {!b.can_cancel_free && b.can_cancel && deposit > 0 && (
             <p className="mt-1">Cancelling now keeps the deposit{b.free_cancel_until ? `. Free cancellation ended ${klDateTime(b.free_cancel_until)}` : ""}.</p>
