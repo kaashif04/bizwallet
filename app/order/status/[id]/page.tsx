@@ -241,11 +241,11 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         )}
       </AnimatePresence>
       <span className="flex items-center gap-2">
-        {/* Home is the table's Table tab, or the restaurant's page for pickup. */}
+        {/* Home is the table's Home, or the restaurant's page for pickup. */}
         <HomeButton
           href={
             menuPath?.startsWith("/order/t/")
-              ? menuPath.replace(/\/menu$/, "/table")
+              ? menuPath.replace(/\/menu$/, "")
               : menuPath?.startsWith("/order/p/")
                 ? menuPath.replace("/order/p/", "/s/")
                 : undefined

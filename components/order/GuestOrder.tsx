@@ -185,7 +185,7 @@ export default function GuestOrder(
         <p className="mt-2 max-w-xs text-sm text-slate-600">{loadError}</p>
         {/* A bad QR has no table page to go to: scan again instead. */}
         <Link
-          href={badQr ? "/scan" : props.token ? `/order/t/${props.token}/table` : `/s/${props.outletId}`}
+          href={badQr ? "/scan" : props.token ? `/order/t/${props.token}` : `/s/${props.outletId}`}
           className="mt-6 rounded-full bg-brand-600 px-6 py-3 text-[15px] font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97]"
         >
           {badQr ? "Scan the QR again" : props.token ? "Call staff or see your table" : "Back to the restaurant"}
@@ -244,8 +244,8 @@ export default function GuestOrder(
       ? {
           points: loyalty.points,
           joined: loyalty.joined,
-          // At a table the points live on the Table tab; pickup has the restaurant page.
-          href: props.token ? `/order/t/${props.token}/table` : `/s/${menu.outlet.id}?rewards=1`,
+          // At a table the points live on its Home; pickup has the restaurant page.
+          href: props.token ? `/order/t/${props.token}` : `/s/${menu.outlet.id}?rewards=1`,
         }
       : "guest";
 
@@ -263,7 +263,7 @@ export default function GuestOrder(
       )}
       <MenuView
         title={menu.outlet.name}
-        homeHref={props.token ? undefined : `/s/${props.outletId}`} // a table has its Table tab
+        homeHref={props.token ? `/order/t/${props.token}` : `/s/${props.outletId}`}
         subtitle={menu.table ? `Table ${menu.table.label}` : "Pickup order"}
         logoUrl={logoUrl}
         account={account}

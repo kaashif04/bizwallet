@@ -1,8 +1,6 @@
-import TableHome from "@/components/order/TableHome";
-import { billplzEnabled } from "@/lib/billplz";
+import { redirect } from "next/navigation";
 
-// The Table tab: call staff, ask for the bill, this phone's rounds, the game,
-// Wi-Fi and feedback. Works signed-out.
+// The old Table tab is now the table's Home; keeps saved links and logins working.
 export default function TablePage({ params }: { params: { token: string } }) {
-  return <TableHome token={params.token} billSplit={billplzEnabled() && process.env.BILL_SPLIT === "1"} />;
+  redirect(`/order/t/${params.token}`);
 }

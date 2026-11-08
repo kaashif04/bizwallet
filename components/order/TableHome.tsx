@@ -12,6 +12,7 @@ import {
   type TableBill,
   type TableCall,
   type TableHome as Home,
+  type PickupOutlet,
 } from "@/lib/guest-order";
 import { SectionTitle } from "@/components/customer/ui";
 import AccountChip from "./AccountChip";
@@ -25,12 +26,21 @@ const finished = (o: GuestOrderStatus) =>
   o.status === "cancelled" ||
   (o.status === "accepted" && o.paid && o.table_due == null && ["ready", "served"].includes(o.kitchen_status ?? ""));
 
-// The Table tab (the QR itself opens the menu): call a waiter or ask for the
-// bill, this phone's rounds, the game, Wi-Fi, feedback and review, and the
-// diner's points here once signed in.
-export default function TableHome({ token, billSplit = false }: { token: string; billSplit?: boolean }) {
+// The table's Home, where the QR lands and the bottom bar's Home tab: one big
+// button per thing a diner wants (order, takeaway, waiter, bill, games, review),
+// then this phone's rounds, the bill, points, Wi-Fi and feedback.
+export default function TableHome({
+  token,
+  billSplit = false,
+  pickupPaid = false,
+}: {
+  token: string;
+  billSplit?: boolean;
+  pickupPaid?: boolean;
+}) {
   const [supabase] = useState(() => createClient());
   const [home, setHome] = useState<Home | null>(null);
+  const [takeaway, setTakeaway] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
   const [me, setMe] = useState<Me>(null);
@@ -72,6 +82,8 @@ export default function TableHome({ token, billSplit = false }: { token: string;
       if (!h) return;
       rememberPlace(h.outlet.id);
       outletLogos(supabase).then((l) => setLogo(l[h.outlet.id] ?? null));
+      if (pickupPaid)
+        supabase.rpc("guest_store", { p_outlet: h.outlet.id }).then(({ data }) => setTakeaway(!!(data as PickupOutlet | null)?.pickup));
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) return setMe("guest");
       const [{ data: m }, { data: acct }, { count }] = await Promise.all([
@@ -92,7 +104,7 @@ export default function TableHome({ token, billSplit = false }: { token: string;
         vouchers: count ?? 0,
       });
     });
-  }, [supabase, load]);
+  }, [supabase, load, pickupPaid]);
 
   // Follow the kitchen and the bill while anything is still going on.
   const live = orders.some((o) => !finished(o));
@@ -142,7 +154,7 @@ export default function TableHome({ token, billSplit = false }: { token: string;
     );
   }
 
-  const signIn = `/login?redirect=${encodeURIComponent(`/order/t/${token}/table`)}`;
+  const signIn = `/login?redirect=${encodeURIComponent(`/order/t/${token}`)}`;
 
   return (
     <div className="min-h-dvh bg-ink-50">
@@ -180,13 +192,33 @@ export default function TableHome({ token, billSplit = false }: { token: string;
         </header>
 
         <div className="mt-5 space-y-8 px-4">
-          {!home.ordering && (
+          {home.ordering ? (
+            <Link
+              href={`/order/t/${token}/menu`}
+              className="flex h-20 items-center gap-4 rounded-2xl bg-brand-600 px-5 text-on shadow-md transition hover:brightness-95 active:scale-[0.98]"
+            >
+              <svg viewBox="0 0 24 24" className="h-8 w-8 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 4v7a2 2 0 0 0 2 2v7M9 4v7M7 4v3M15 20V4c-2 1-3 4-3 7s1 3 3 3M19 4v16" />
+              </svg>
+              <span className="min-w-0 flex-1">
+                <span className="block text-lg font-bold">{orders.length ? "Order more" : "Order now"}</span>
+                <span className="block text-sm opacity-90">Eat here, we&apos;ll bring it to your table</span>
+              </span>
+              <span aria-hidden="true" className="text-2xl">›</span>
+            </Link>
+          ) : (
             <p className="rounded-full bg-white py-4 text-center text-sm font-semibold text-ink-700 shadow-sm">
               Please order with our staff today
             </p>
           )}
 
-          <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />
+          <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load}>
+            {takeaway && <Tile href={`/order/p/${home.outlet.id}`} icon={TILE.takeaway} title="Takeaway" hint="Order ahead, pay online" />}
+            <Tile href={`/order/t/${token}/play`} icon={TILE.play} title="Play games" hint="While you wait" />
+            <Tile href={`/order/t/${token}/bill`} icon={TILE.receipt} title="View bill" hint={billSplit ? "Pay or split it" : "Everything on your table"} />
+            {(!home.hide?.feedback || home.review_url) && <Tile href={home.hide?.feedback ? home.review_url! : "#feedback"} icon={TILE.review} title="Review us" hint="Tell us how it was" />}
+            {home.wifi && <Tile href="#wifi" icon={TILE.wifi} title="Wi-Fi" hint={home.wifi.name} />}
+          </CallStaff>
 
           {orders.length > 0 && <YourTable orders={orders} canCallBill={!home.hide?.bill} />}
 
@@ -335,16 +367,43 @@ const ago = (at: string) => {
   return m < 1 ? "just now" : `${m} min ago`;
 };
 
+const TILE = {
+  takeaway: "M5 8h14l-1 12H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2",
+  play: "M5 19h14M7 15h10M9 11h6M11 7h2",
+  receipt: "M3 6h18v13H3V6Zm0 4h18M7 15h4",
+  review: "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L12 3.5Z",
+  wifi: "M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01",
+};
+const tileClass = "flex flex-col items-start gap-3 rounded-2xl p-4 text-left shadow-sm transition active:scale-[0.97]";
+
+function Tile({ href, icon, title, hint }: { href: string; icon: string; title: string; hint: string }) {
+  return (
+    <Link href={href} className={`${tileClass} bg-white hover:bg-ink-100 last:odd:col-span-2`}>
+      <svg viewBox="0 0 24 24" className="h-6 w-6 text-brand-700" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d={icon} />
+      </svg>
+      <span className="min-w-0">
+        <span className="block text-sm font-bold text-ink-900">{title}</span>
+        <span className="block truncate text-xs text-ink-500">{hint}</span>
+      </span>
+    </Link>
+  );
+}
+
+// The Home's button grid: call a waiter and ask for the bill (sent from here),
+// then the shortcuts passed in as children.
 function CallStaff({
   token,
   calls,
   hide,
   onCalled,
+  children,
 }: {
   token: string;
   calls: TableCall[];
   hide?: Home["hide"];
   onCalled: () => void;
+  children: React.ReactNode;
 }) {
   const [supabase] = useState(() => createClient());
   const [busy, setBusy] = useState<TableCall["kind"] | null>(null);
@@ -365,11 +424,10 @@ function CallStaff({
       ["bill", "Ask for the bill", "M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6"],
     ] as const
   ).filter(([kind]) => !hide?.[kind]);
-  if (!buttons.length) return null;
 
   return (
     <section>
-      <div className={`grid gap-3 ${buttons.length > 1 ? "grid-cols-2" : ""}`}>
+      <div className="grid grid-cols-2 gap-3">
         {buttons.map(([kind, label, icon]) => {
           const sent = calls.find((c) => c.kind === kind);
           return (
@@ -379,9 +437,7 @@ function CallStaff({
               disabled={busy !== null}
               onClick={() => call(kind)}
               aria-live="polite"
-              className={`flex flex-col items-start gap-3 rounded-2xl p-4 text-left transition active:scale-[0.97] ${
-                sent ? "bg-brand-50 ring-1 ring-brand-200" : "bg-white hover:bg-ink-100"
-              }`}
+              className={`${tileClass} ${sent ? "bg-brand-50 ring-1 ring-brand-200" : "bg-white hover:bg-ink-100"}`}
             >
               <svg viewBox="0 0 24 24" className="h-6 w-6 text-brand-700" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={icon} />
@@ -395,6 +451,7 @@ function CallStaff({
             </button>
           );
         })}
+        {children}
       </div>
       {error && <p className="mt-2 px-1 text-sm text-rose-700">{error}</p>}
     </section>
@@ -462,7 +519,7 @@ function Wifi({ name, password }: { name: string; password: string | null }) {
     }
   }
   return (
-    <section>
+    <section id="wifi" className="scroll-mt-4">
       <SectionTitle>Wi-Fi</SectionTitle>
       <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
@@ -521,7 +578,7 @@ function Feedback({ token, reviewUrl, canCallStaff }: { token: string; reviewUrl
   }
 
   return (
-    <section>
+    <section id="feedback" className="scroll-mt-4">
       <SectionTitle>How was your visit?</SectionTitle>
       <div className="rounded-2xl bg-white p-4">
         {sent ? (
