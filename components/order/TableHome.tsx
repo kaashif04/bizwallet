@@ -216,6 +216,12 @@ export default function TableHome({
           {/* Staff come to the table: amber, so they stand apart from ordering. */}
           <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />
 
+          {/* Extras, so people know they're here: white, quieter than ordering and staff. */}
+          <nav aria-label="More" className={`grid gap-3 ${home.wifi ? "grid-cols-2" : ""}`}>
+            <Extra href={`/order/t/${token}/play`} icon={TILE.play} label="Play games" />
+            {home.wifi && <Extra href="#wifi" icon={TILE.wifi} label="Wi-Fi" />}
+          </nav>
+
 
           {orders.length > 0 && <YourTable orders={orders} canCallBill={!home.hide?.bill} />}
 
@@ -367,7 +373,17 @@ const ago = (at: string) => {
 const TILE = {
   menu: "M5 4v7a2 2 0 0 0 2 2v7M9 4v7M7 4v3M15 20V4c-2 1-3 4-3 7s1 3 3 3M19 4v16",
   takeaway: "M5 8h14l-1 12H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2",
+  play: "M5 19h14M7 15h10M9 11h6M11 7h2",
+  wifi: "M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01",
 };
+function Extra({ href, icon, label }: { href: string; icon: string; label: string }) {
+  return (
+    <Link href={href} className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-ink-900 shadow-sm transition hover:bg-ink-100 active:scale-[0.97]">
+      <Glyph d={icon} className="h-6 w-6 shrink-0 text-brand-700" />
+      {label}
+    </Link>
+  );
+}
 function Glyph({ d, className }: { d: string; className: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
