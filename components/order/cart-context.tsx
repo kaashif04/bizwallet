@@ -4,8 +4,10 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useReducer,
+  useRef,
 } from "react";
 import type { CartLine, MenuItem, VariantSelection } from "@/lib/order-types";
 import { lineTotals } from "@/lib/free-items";
@@ -17,7 +19,8 @@ type Action =
   | { type: "inc"; lineId: string }
   | { type: "dec"; lineId: string }
   | { type: "remove"; lineId: string }
-  | { type: "clear" };
+  | { type: "clear" }
+  | { type: "load"; lines: CartLine[] };
 
 function signature(itemId: string, selections: VariantSelection[]): string {
   return (
@@ -84,6 +87,8 @@ function reducer(state: State, action: Action): State {
       return { lines: state.lines.filter((l) => l.lineId !== action.lineId) };
     case "clear":
       return { lines: [] };
+    case "load":
+      return { lines: action.lines };
   }
 }
 
@@ -101,8 +106,30 @@ type CartValue = {
 
 const CartContext = createContext<CartValue | null>(null);
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+// storageKey: keep the cart in this tab's sessionStorage, so a reload, or the phone
+// dropping the tab while the guest is in another app, doesn't empty it. (Not for the kiosk.)
+export function CartProvider({ children, storageKey }: { children: React.ReactNode; storageKey?: string }) {
   const [state, dispatch] = useReducer(reducer, { lines: [] });
+  const restored = useRef(false);
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      const lines = JSON.parse(sessionStorage.getItem(storageKey) ?? "[]");
+      if (Array.isArray(lines) && lines.length) dispatch({ type: "load", lines });
+    } catch {
+      // Blocked or corrupt storage: start empty.
+    }
+    restored.current = true;
+  }, [storageKey]);
+  useEffect(() => {
+    if (!storageKey || !restored.current) return;
+    try {
+      if (state.lines.length) sessionStorage.setItem(storageKey, JSON.stringify(state.lines));
+      else sessionStorage.removeItem(storageKey);
+    } catch {
+      // Storage full or blocked: the cart still works, it just won't survive a reload.
+    }
+  }, [storageKey, state.lines]);
 
   const add = useCallback(
     (item: MenuItem, quantity: number, selections: VariantSelection[]) =>

@@ -18,6 +18,7 @@ import { SectionTitle } from "@/components/customer/ui";
 import AccountChip from "./AccountChip";
 import { rememberPlace } from "@/lib/place";
 import BranchLogo from "./BranchLogo";
+import { useSheet } from "./useSheet";
 
 type Me = { name: string | null; points: number; joined: boolean; vouchers: number } | "guest" | null;
 
@@ -43,6 +44,7 @@ export default function TableHome({
   // Takeaway is always shown; greyed out (and says so when tapped) unless the
   // outlet takes pickup orders, online payment is on, and it's open.
   const [takeaway, setTakeaway] = useState(false);
+  const [wifiOpen, setWifiOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
   const [me, setMe] = useState<Me>(null);
@@ -216,10 +218,10 @@ export default function TableHome({
           {/* Staff come to the table: amber, so they stand apart from ordering. */}
           <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />
 
-          {/* Extras, so people know they're here: white, quieter than ordering and staff. */}
-          <nav aria-label="More" className={`grid gap-3 ${home.wifi ? "grid-cols-2" : ""}`}>
-            <Extra href={`/order/t/${token}/play`} icon={TILE.play} label="Play games" />
-            {home.wifi && <Extra href="#wifi" icon={TILE.wifi} label="Wi-Fi" />}
+          {/* Extras, always there so people know about them; white, quieter than ordering and staff. */}
+          <nav aria-label="More" className="grid grid-cols-2 gap-3">
+            <Extra href={`/order/t/${token}/play`} icon={TILE.play} title="Play games" sub="While you wait" />
+            <Extra onClick={() => setWifiOpen(true)} icon={TILE.wifi} title="Wi-Fi" sub={home.wifi ? home.wifi.name : "Ask our staff"} />
           </nav>
 
 
@@ -245,7 +247,6 @@ export default function TableHome({
 
           <Points me={me} outletId={home.outlet.id} signIn={signIn} />
 
-          {home.wifi && <Wifi name={home.wifi.name} password={home.wifi.password} />}
 
           {!home.hide?.feedback ? (
             <Feedback token={token} reviewUrl={home.review_url} canCallStaff={!home.hide?.staff} />
@@ -264,7 +265,11 @@ export default function TableHome({
           )}
         </div>
       </main>
-
+      <AnimatePresence>
+        {wifiOpen && (
+          <WifiSheet key="wifi" wifi={home.wifi} token={token} canCallStaff={!home.hide?.staff} onCalled={load} onClose={() => setWifiOpen(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -376,12 +381,23 @@ const TILE = {
   play: "M5 19h14M7 15h10M9 11h6M11 7h2",
   wifi: "M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01",
 };
-function Extra({ href, icon, label }: { href: string; icon: string; label: string }) {
-  return (
-    <Link href={href} className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-ink-900 shadow-sm transition hover:bg-ink-100 active:scale-[0.97]">
-      <Glyph d={icon} className="h-6 w-6 shrink-0 text-brand-700" />
-      {label}
-    </Link>
+function Extra({ href, onClick, icon, title, sub }: { href?: string; onClick?: () => void; icon: string; title: string; sub: string }) {
+  const cls = "flex min-w-0 flex-col items-start gap-2.5 rounded-3xl bg-white p-4 text-left shadow-sm transition hover:bg-ink-100 active:scale-[0.97]";
+  const body = (
+    <>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+        <Glyph d={icon} className="h-6 w-6" />
+      </span>
+      <span className="w-full min-w-0">
+        <span className="block truncate text-base font-bold leading-tight text-ink-900">{title}</span>
+        <span className="block truncate text-xs text-ink-500">{sub}</span>
+      </span>
+    </>
+  );
+  return href ? (
+    <Link href={href} className={cls}>{body}</Link>
+  ) : (
+    <button type="button" onClick={onClick} className={cls}>{body}</button>
   );
 }
 function Glyph({ d, className }: { d: string; className: string }) {
@@ -541,42 +557,95 @@ function Star() {
 }
 
 // Phones don't let a web page join Wi-Fi, so: the name, and the password to copy.
-function Wifi({ name, password }: { name: string; password: string | null }) {
+// Wi-Fi in a bottom sheet: name, password and Copy; or, if the restaurant hasn't added it, ask a waiter.
+function WifiSheet({
+  wifi,
+  token,
+  canCallStaff,
+  onCalled,
+  onClose,
+}: {
+  wifi: { name: string; password: string | null } | null;
+  token: string;
+  canCallStaff: boolean;
+  onCalled: () => void;
+  onClose: () => void;
+}) {
+  useSheet(onClose);
+  const [supabase] = useState(() => createClient());
   const [copied, setCopied] = useState(false);
+  const [asked, setAsked] = useState<"idle" | "busy" | "sent" | string>("idle");
   async function copy() {
     try {
-      await navigator.clipboard.writeText(password!);
+      await navigator.clipboard.writeText(wifi!.password!);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
-      // No clipboard (old browser): the password is on screen to type.
+      // No clipboard: the password is on screen to type.
     }
   }
+  async function askWaiter() {
+    setAsked("busy");
+    const { error } = await supabase.rpc("guest_call_staff", { p_token: token, p_kind: "staff" });
+    setAsked(error ? error.message : "sent");
+    if (!error) onCalled();
+  }
   return (
-    <section id="wifi" className="scroll-mt-4">
-      <SectionTitle>Wi-Fi</SectionTitle>
-      <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-            <path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0" />
-            <circle cx="12" cy="19.5" r="1" fill="currentColor" />
-          </svg>
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-bold text-ink-900">{name}</span>
-          <span className="block truncate font-mono text-xs text-ink-500">{password ?? "No password"}</span>
-        </span>
-        {password && (
-          <button
-            type="button"
-            onClick={copy}
-            className="h-11 shrink-0 rounded-full bg-brand-600 px-4 text-sm font-bold text-on transition active:scale-95"
-          >
-            {copied ? "Copied" : "Copy"}
+    <>
+      <motion.div className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Wi-Fi"
+        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md rounded-t-sheet bg-white px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 shadow-sheet"
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 32, stiffness: 340 }}
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+            <Glyph d={TILE.wifi} className="h-6 w-6" />
+          </span>
+          <h2 className="flex-1 text-xl font-semibold text-ink-900">Wi-Fi</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="flex h-10 w-10 items-center justify-center rounded-full bg-ink-100 text-ink-700 active:scale-90">
+            <Glyph d="M6 6l12 12M18 6L6 18" className="h-5 w-5" />
           </button>
+        </div>
+        {wifi ? (
+          <div className="mt-5 space-y-3">
+            <div className="rounded-2xl bg-ink-50 px-4 py-3">
+              <p className="text-xs font-semibold text-ink-500">Network</p>
+              <p className="break-all text-base font-bold text-ink-900">{wifi.name}</p>
+            </div>
+            <div className="rounded-2xl bg-ink-50 px-4 py-3">
+              <p className="text-xs font-semibold text-ink-500">Password</p>
+              <p className="break-all font-mono text-base font-bold text-ink-900">{wifi.password ?? "No password needed"}</p>
+            </div>
+            {wifi.password && (
+              <button type="button" onClick={copy} className="h-12 w-full rounded-full bg-brand-600 text-sm font-bold text-on transition active:scale-[0.97]">
+                {copied ? "Copied" : "Copy password"}
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="mt-4">
+            <p className="text-sm text-ink-600">The Wi-Fi details aren&apos;t on the app yet. Our staff can give you the password.</p>
+            {canCallStaff && (
+              <button
+                type="button"
+                onClick={askWaiter}
+                disabled={asked === "busy" || asked === "sent"}
+                className="mt-4 h-12 w-full rounded-full bg-brand-600 text-sm font-bold text-on transition active:scale-[0.97] disabled:opacity-60"
+              >
+                {asked === "busy" ? "Sending…" : asked === "sent" ? "A waiter is coming" : "Ask a waiter"}
+              </button>
+            )}
+            {asked !== "idle" && asked !== "busy" && asked !== "sent" && <p className="mt-2 text-sm text-rose-700">{asked}</p>}
+          </div>
         )}
-      </div>
-    </section>
+      </motion.div>
+    </>
   );
 }
 

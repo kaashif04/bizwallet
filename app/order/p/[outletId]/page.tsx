@@ -27,7 +27,7 @@ export default async function PickupOrderPage({ params }: { params: { outletId: 
   // Fetched with the page so the menu shows on arrival (GuestOrder retries from the phone if not).
   const { data } = await createClient().rpc("guest_get_menu", { p_outlet: params.outletId });
   return (
-    <CartProvider>
+    <CartProvider storageKey={`bw_cart:p:${params.outletId}`}>
       <GuestOrder outletId={params.outletId} initialMenu={(data as GuestMenu | null) ?? null} />
     </CartProvider>
   );
