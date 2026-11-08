@@ -55,3 +55,6 @@ export function createBill(p: {
 }
 
 export const getBill = (id: string) => call(`/bills/${encodeURIComponent(id)}`);
+
+// Kills an unpaid bill so it can never be paid later. Throws if Billplz refuses (e.g. it was paid).
+export const deleteBill = (id: string) => call(`/bills/${encodeURIComponent(id)}`, { method: "DELETE" });

@@ -80,15 +80,22 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
 
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  async function cancel() {
+  // Cancel, or switch a table order to pay-at-the-counter. The server kills any open bank bill first.
+  async function change(action: "cancel" | "counter") {
     setCancelling(true);
     setError(null);
-    const { error } = await supabase.rpc("guest_cancel_order", { p_id: params.id, p_claim_token: claimToken });
+    const res = await fetch("/api/pay/order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order_id: params.id, claim_token: claimToken, action }),
+    });
+    const body = await res.json().catch(() => ({}));
     setCancelling(false);
     setConfirmCancel(false);
-    if (error) setError(error.message);
+    if (!res.ok) setError(body.error ?? "Something went wrong. Please try again.");
     refresh();
   }
+  const cancel = () => change("cancel");
 
   async function pay() {
     const guest = signedIn ? null : contact ?? (phoneOk(phone) ? { mobile: phone.trim() } : null);
@@ -308,6 +315,16 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           >
             {paying ? "One moment…" : `Pay ${sym}${Number(order.amount_due ?? 0).toFixed(2)} with FPX`}
           </button>
+          {order.table_label && (
+            <button
+              type="button"
+              onClick={() => change("counter")}
+              disabled={paying || cancelling}
+              className="mt-2 h-11 w-full rounded-full text-sm font-semibold text-ink-700 transition active:scale-[0.97] disabled:opacity-60"
+            >
+              Pay at the counter instead
+            </button>
+          )}
         </div>
       )}
 

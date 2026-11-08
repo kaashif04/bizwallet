@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { billplzEnabled, createBill, getBill } from "@/lib/billplz";
+import { billplzEnabled, createBill, deleteBill, getBill } from "@/lib/billplz";
 import { confirmBill } from "@/lib/pickup-payment";
 
 // Open Billplz for a share of a table bill (wallet_bill_pay_start made it and set
@@ -53,13 +53,18 @@ export async function POST(request: Request) {
       reference: pay.id,
     });
     // Only the first bill sticks, so two taps can't leave two live bills.
-    const { data: saved } = await admin
+    const { data: saved, error: saveError } = await admin
       .from("wallet_bill_payments")
       .update({ payment_ref: bill.id })
       .eq("id", pay.id)
       .is("payment_ref", null)
       .select("payment_ref")
       .maybeSingle();
+    if (saveError) {
+      // The database refused (cancelled or too old): kill the new bill and show why.
+      await deleteBill(bill.id).catch(() => {});
+      return NextResponse.json({ error: saveError.message }, { status: 410 });
+    }
     if (saved) return NextResponse.json({ url: bill.url });
     const { data: winner } = await admin.from("wallet_bill_payments").select("payment_ref").eq("id", pay.id).single();
     return NextResponse.json({ url: (await getBill(winner!.payment_ref!)).url });
