@@ -1,7 +1,8 @@
-import { redirect } from "next/navigation";
+import TableLanding from "@/components/order/TableLanding";
+import { billplzEnabled } from "@/lib/billplz";
 
-// Table QR codes printed from BizPos open this address: straight to ordering.
-// Calling staff, the bill, the game and feedback live on the Table tab.
+// Table QR codes printed from BizPos open this address: a start page with one
+// big button per thing a diner may want (order, takeaway, games, waiter, bill, review).
 export default function TableQr({ params }: { params: { token: string } }) {
-  redirect(`/order/t/${params.token}/menu`);
+  return <TableLanding token={params.token} pickupPaid={billplzEnabled()} />;
 }
