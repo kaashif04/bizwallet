@@ -164,37 +164,37 @@ export default function TableHome({
   return (
     <div className="min-h-dvh bg-ink-50">
       <main className="mx-auto max-w-md pb-[calc(8rem+env(safe-area-inset-bottom))]">
-        {/* Cover, logo, name, table */}
+        {/* Cover with sign-in; logo overlapping its edge; name and table below. */}
         <header className="relative">
-          <div className="relative mx-3 mt-3 h-32 overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-100 via-brand-50 to-ink-50 shadow-md">
+          <div className="relative mx-3 mt-3 h-36 overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-100 via-brand-50 to-ink-50 shadow-md">
             {home.cover_url && (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={home.cover_url} alt="" className="h-full w-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-transparent" />
               </>
             )}
-            <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-4">
-              <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-ink-900 shadow-sm">
-                Table {home.table.label}
-              </span>
+            <div className="absolute right-4 top-4">
               <AccountChip state={me === null ? null : me === "guest" ? "guest" : { points: me.points, joined: me.joined, href: `/s/${home.outlet.id}?rewards=1` }} />
             </div>
           </div>
-          <div className="flex items-end gap-3 px-4">
+          <div className="flex items-center gap-3 px-5">
             <BranchLogo
               name={home.outlet.name}
               logoUrl={logo}
-              className="relative -mt-8 h-16 w-16 shrink-0 rounded-[1.25rem] text-2xl shadow-md ring-4 ring-ink-50"
+              className="relative -mt-9 h-[4.5rem] w-[4.5rem] shrink-0 rounded-[1.4rem] text-2xl shadow-md ring-4 ring-ink-50"
             />
-            <div className="min-w-0 pb-0.5">
-              {me && me !== "guest" && me.name && <p className="text-xs font-semibold text-ink-500">Hi {me.name}</p>}
+            <div className="min-w-0 pt-2">
               <h1 className="truncate text-2xl font-semibold leading-tight tracking-[-0.03em] text-ink-900">{home.outlet.name}</h1>
+              <p className="text-sm font-semibold text-brand-700">
+                Table {home.table.label}
+                {me && me !== "guest" && me.name ? <span className="font-normal text-ink-500"> · Hi {me.name}</span> : null}
+              </p>
             </div>
           </div>
         </header>
 
-        <div className="mt-6 space-y-6 px-4">
+        <div className="mt-6 space-y-5 px-4">
           {/* Ordering: the two big, coloured buttons. */}
           {home.ordering ? (
             <div>
@@ -216,12 +216,6 @@ export default function TableHome({
           {/* Staff come to the table: amber, so they stand apart from ordering. */}
           <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />
 
-          {/* Everything else: a row of icons. */}
-          <nav aria-label="More" className="flex justify-center gap-6">
-            <Quick href={`/order/t/${token}/play`} icon={TILE.play} label="Games" />
-            <Quick href={`/order/t/${token}/bill`} icon={TILE.receipt} label="Bill" />
-            {home.wifi && <Quick href="#wifi" icon={TILE.wifi} label="Wi-Fi" />}
-          </nav>
 
           {orders.length > 0 && <YourTable orders={orders} canCallBill={!home.hide?.bill} />}
 
@@ -372,9 +366,6 @@ const ago = (at: string) => {
 const TILE = {
   menu: "M5 4v7a2 2 0 0 0 2 2v7M9 4v7M7 4v3M15 20V4c-2 1-3 4-3 7s1 3 3 3M19 4v16",
   takeaway: "M5 8h14l-1 12H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2",
-  play: "M5 19h14M7 15h10M9 11h6M11 7h2",
-  receipt: "M3 6h18v13H3V6Zm0 4h18M7 15h4",
-  wifi: "M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01",
 };
 function Glyph({ d, className }: { d: string; className: string }) {
   return (
@@ -416,16 +407,6 @@ function BigButton({
   );
 }
 
-function Quick({ href, icon, label }: { href: string; icon: string; label: string }) {
-  return (
-    <Link href={href} className="flex flex-col items-center gap-2 rounded-2xl py-1 text-sm font-semibold text-ink-800 transition active:scale-95">
-      <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-brand-700 shadow-sm">
-        <Glyph d={icon} className="h-7 w-7" />
-      </span>
-      {label}
-    </Link>
-  );
-}
 
 // Call a waiter / ask for the bill, sent from here.
 function CallStaff({
