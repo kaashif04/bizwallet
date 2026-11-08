@@ -384,9 +384,10 @@ function CartReview({
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on open
   }, [supabase]);
-  // Pickup is paid first (FPX); dine-in may pay now or at the counter.
-  const [signedIn, setSignedIn] = useState(false);
-  const [payWith, setPayWith] = useState<"counter" | "fpx">(token ? "counter" : "fpx");
+  // null until we know; a guest (false) gives their details before ordering.
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  // Paying online is the default (pickup always); the counter is the fallback.
+  const [payWith, setPayWith] = useState<"counter" | "fpx">(onlinePay || !token ? "fpx" : "counter");
   const [note, setNote] = useState("");
   const [pickupAt, setPickupAt] = useState<string | null>(null); // null = now
   const [slotsRefresh, setSlotsRefresh] = useState(0);
@@ -452,16 +453,16 @@ function CartReview({
     : { sub: cart.totalPrice, disc: 0, service, sst: 0, total: due };
   const methods = (
     [
-      !pickup && (["counter", "Pay at counter", "When you're done"] as const),
-      onlinePay && (["fpx", "Online banking", "FPX"] as const),
+      onlinePay && (["fpx", "Pay now", "Online banking"] as const),
+      !pickup && (["counter", "Pay at counter", "If you can't pay online"] as const),
     ] as const
   ).filter((m) => !!m) as (readonly ["counter" | "fpx", string, string])[];
 
-  const guestPays = payNow && !signedIn;
+  const guest = signedIn === false;
   const earns = pointsPerRm !== null ? Math.floor(cart.totalPrice * pointsPerRm) : 0;
 
   async function place() {
-    if (guestPays && !phoneOk(phone)) return setError("Add your phone number to pay.");
+    if (guest && !phoneOk(phone)) return setError("Add your phone number to place the order.");
     setPlacing(true);
     setError(null);
     requestId.current ??= crypto.randomUUID();
@@ -470,6 +471,8 @@ function CartReview({
         request_id: requestId.current,
         ...(token ? { table_token: token } : { outlet_id: menu.outlet.id }),
         customer_name: memberName ?? (name.trim() || (token ? guestLabel() : undefined)),
+        // Guests' contact for the restaurant (BizPos stores it once guest_place_order reads these).
+        ...(guest && { customer_phone: phone.replace(/\D/g, ""), customer_email: email.trim() || undefined }),
         note: note.trim() || undefined,
         pay_now: payNow || undefined,
         pickup_at: pickupAt ?? undefined,
@@ -483,6 +486,7 @@ function CartReview({
       return setError(error.message);
     }
     requestId.current = null;
+    if (guest) contact();
     saveClaimToken(data.id, data.claim_token, window.location.pathname, signedIn ? 0 : earns);
     if (data.status !== "awaiting_payment") return onPlaced(data.id);
 
@@ -490,7 +494,7 @@ function CartReview({
     const res = await fetch("/api/pay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ order_id: data.id, claim_token: data.claim_token, ...(guestPays && contact()) }),
+      body: JSON.stringify({ order_id: data.id, claim_token: data.claim_token, ...(guest && contact()) }),
     });
     const pay = await res.json().catch(() => ({}));
     if (pay.url) {
@@ -600,10 +604,10 @@ function CartReview({
         {pickup && <PickupTime outletId={menu.outlet.id} value={pickupAt} onChange={setPickupAt} refresh={slotsRefresh} />}
         <details className="group mt-3 rounded-2xl bg-ink-50 px-4 py-1" open={!!(note || name)}>
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-bold text-ink-800">
-            {memberName || guestPays ? "Note for the kitchen" : "Your name or a note for the kitchen"}
+            {memberName || guest ? "Note for the kitchen" : "Your name or a note for the kitchen"}
             <span aria-hidden="true" className="text-ink-400 transition group-open:rotate-90">›</span>
           </summary>
-          {!memberName && !guestPays && (
+          {!memberName && !guest && (
             <label className="block pb-3">
               <span className="mb-1.5 block text-sm font-medium text-slate-700">Your name</span>
               <input
@@ -768,9 +772,9 @@ function CartReview({
           </fieldset>
         )}
 
-        {guestPays && (
+        {guest && (
           <div className="mt-4 space-y-2 rounded-2xl bg-ink-50 p-4">
-            <p className="text-sm font-bold text-ink-800">Your details for the receipt</p>
+            <p className="text-sm font-bold text-ink-800">Your details</p>
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}

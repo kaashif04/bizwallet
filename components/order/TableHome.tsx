@@ -40,7 +40,15 @@ export default function TableHome({
 }) {
   const [supabase] = useState(() => createClient());
   const [home, setHome] = useState<Home | null>(null);
+  // Takeaway is always shown; greyed out (and says so when tapped) unless the
+  // outlet takes pickup orders, online payment is on, and it's open.
   const [takeaway, setTakeaway] = useState(false);
+  const [takeawayNote, setTakeawayNote] = useState(false);
+  useEffect(() => {
+    if (!takeawayNote) return;
+    const t = window.setTimeout(() => setTakeawayNote(false), 3000);
+    return () => window.clearTimeout(t);
+  }, [takeawayNote]);
   const [error, setError] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
   const [me, setMe] = useState<Me>(null);
@@ -83,7 +91,10 @@ export default function TableHome({
       rememberPlace(h.outlet.id);
       outletLogos(supabase).then((l) => setLogo(l[h.outlet.id] ?? null));
       if (pickupPaid)
-        supabase.rpc("guest_store", { p_outlet: h.outlet.id }).then(({ data }) => setTakeaway(!!(data as PickupOutlet | null)?.pickup));
+        supabase.rpc("guest_store", { p_outlet: h.outlet.id }).then(({ data }) => {
+          const o = data as PickupOutlet | null;
+          setTakeaway(!!o?.pickup && o.open_now !== false);
+        });
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) return setMe("guest");
       const [{ data: m }, { data: acct }, { count }] = await Promise.all([
@@ -192,9 +203,18 @@ export default function TableHome({
         <div className="mt-6 space-y-6 px-4">
           {/* Ordering: the two big, coloured buttons. */}
           {home.ordering ? (
-            <div className={`grid gap-3 ${takeaway ? "grid-cols-2" : ""}`}>
-              <BigButton href={`/order/t/${token}/menu`} icon={TILE.menu} title={orders.length ? "Order more" : "Order now"} sub="Eat here" className="bg-brand-600 text-on" />
-              {takeaway && <BigButton href={`/order/p/${home.outlet.id}`} icon={TILE.takeaway} title="Takeaway" sub="Pay & collect" className="bg-ink-900 text-ink-50" />}
+            <div>
+              <div className="grid grid-cols-2 gap-3">
+                <BigButton href={`/order/t/${token}/menu`} icon={TILE.menu} title={orders.length ? "Order more" : "Order now"} sub="Eat here" className="bg-brand-600 text-on" />
+                {takeaway ? (
+                  <BigButton href={`/order/p/${home.outlet.id}`} icon={TILE.takeaway} title="Takeaway" sub="Pay & collect" className="bg-ink-900 text-ink-50" />
+                ) : (
+                  <BigButton onClick={() => setTakeawayNote(true)} icon={TILE.takeaway} title="Takeaway" sub="Unavailable" className="bg-ink-100 text-ink-400 shadow-none" />
+                )}
+              </div>
+              <p role="status" className={`mt-2 text-center text-sm font-semibold text-ink-700 transition-opacity ${takeawayNote ? "opacity-100" : "opacity-0"}`}>
+                {takeawayNote ? "Takeaway is unavailable at the moment" : "\u00a0"}
+              </p>
             </div>
           ) : (
             <p className="rounded-full bg-white py-4 text-center text-sm font-semibold text-ink-700 shadow-sm">
@@ -205,7 +225,7 @@ export default function TableHome({
           {/* Staff come to the table: amber, so they stand apart from ordering. */}
           <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />
 
-          {/* Everything else: small and quiet. */}
+          {/* Everything else: a row of icons. */}
           <nav aria-label="More" className="grid grid-cols-4 gap-2">
             <Quick href={`/order/t/${token}/play`} icon={TILE.play} label="Games" />
             <Quick href={`/order/t/${token}/bill`} icon={TILE.receipt} label="Bill" />
@@ -377,23 +397,43 @@ function Glyph({ d, className }: { d: string; className: string }) {
   );
 }
 
-function BigButton({ href, icon, title, sub, className }: { href: string; icon: string; title: string; sub: string; className: string }) {
-  return (
-    <Link href={href} className={`flex h-28 flex-col justify-between rounded-3xl p-4 shadow-md transition hover:brightness-95 active:scale-[0.97] ${className}`}>
+function BigButton({
+  href,
+  onClick,
+  icon,
+  title,
+  sub,
+  className,
+}: {
+  href?: string;
+  onClick?: () => void;
+  icon: string;
+  title: string;
+  sub: string;
+  className: string;
+}) {
+  const cls = `flex h-28 flex-col items-start justify-between rounded-3xl p-4 text-left shadow-md transition active:scale-[0.97] ${className}`;
+  const body = (
+    <>
       <Glyph d={icon} className="h-7 w-7" />
       <span>
         <span className="block text-lg font-bold leading-tight">{title}</span>
         <span className="block text-xs opacity-80">{sub}</span>
       </span>
-    </Link>
+    </>
+  );
+  return href ? (
+    <Link href={href} className={`${cls} hover:brightness-95`}>{body}</Link>
+  ) : (
+    <button type="button" onClick={onClick} className={cls}>{body}</button>
   );
 }
 
 function Quick({ href, icon, label }: { href: string; icon: string; label: string }) {
   return (
-    <Link href={href} className="flex flex-col items-center gap-1.5 rounded-2xl py-2 text-xs font-semibold text-ink-700 transition active:scale-95">
-      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-brand-700 shadow-sm">
-        <Glyph d={icon} className="h-5 w-5" />
+    <Link href={href} className="flex flex-col items-center gap-2 rounded-2xl py-1 text-sm font-semibold text-ink-800 transition active:scale-95">
+      <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-brand-700 shadow-sm">
+        <Glyph d={icon} className="h-7 w-7" />
       </span>
       {label}
     </Link>
