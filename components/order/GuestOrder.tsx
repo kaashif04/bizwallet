@@ -13,6 +13,7 @@ import { rememberPlace } from "@/lib/place";
 import { storeNames } from "@/lib/places";
 import JoinPrompt from "./JoinPrompt";
 import { useCart } from "./cart-context";
+import { useVisitCheck } from "./TableVisit";
 import MenuView from "./MenuView";
 import AddToCartSheet from "./AddToCartSheet";
 import PickupTime from "./PickupTime";
@@ -357,6 +358,7 @@ function CartReview({
   onPlaced: (id: string, paid?: boolean) => void;
 }) {
   const cart = useCart();
+  const visitOk = useVisitCheck();
   const [supabase] = useState(() => createClient());
   const sym = currencySymbol(CURRENCY);
   useSheet(onClose);
@@ -467,6 +469,8 @@ function CartReview({
       return setError(pickup ? "Add your phone number to pay." : "Add your phone number to pay now, or choose Pay at counter.");
     setPlacing(true);
     setError(null);
+    // A phone whose party has left this table: the page turns into "visit ended".
+    if (!(await visitOk())) return setPlacing(false);
     requestId.current ??= crypto.randomUUID();
     const { data, error } = await supabase.rpc("guest_place_order", {
       p_payload: {
