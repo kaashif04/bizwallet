@@ -118,7 +118,8 @@ export default function BookingClaim({ token }: { token: string }) {
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+    // Sits above the table's bottom bar, so Home / Menu / Cart stay reachable.
+    <div className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
       <div role="dialog" aria-modal="false" className="rounded-3xl bg-white p-5 shadow-2xl">
         {children}
       </div>

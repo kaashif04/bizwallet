@@ -219,7 +219,8 @@ export default function TableHome({
 
           {orders.length > 0 && <YourTable orders={orders} canCallBill={!home.hide?.bill} />}
 
-          {billLeft !== null && billLeft > 0 && (
+          {/* Your table already shows what's owed; this card only adds the way to pay it. */}
+          {billLeft !== null && billLeft > 0 && (orders.length === 0 || billSplit) && (
             <Link
               href={`/order/t/${token}/bill`}
               className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 shadow-sm transition hover:bg-ink-100 active:scale-[0.99]"
