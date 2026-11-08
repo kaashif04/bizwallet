@@ -8,7 +8,6 @@ type Refund = {
   reason: string | null;
   outlet: string;
   status: "waiting" | "ready" | "sending" | "paid" | "failed";
-  needs_id_number: boolean;
   holder_name: string | null;
   bank_code: string | null;
   account_last4: string | null;
@@ -19,7 +18,7 @@ type Refund = {
 
 const field = "w-full rounded-xl bg-white px-4 py-3.5 text-base text-ink-900 outline-none ring-1 ring-ink-100 placeholder:text-ink-400 focus:ring-2 focus:ring-brand-600";
 
-// Tell us where to send your refund: name on the account, bank, account number (and IC/passport if the bank needs it).
+// Tell us where to send your refund: name on the account, bank, account number.
 export default function RefundForm({ token }: { token: string }) {
   const [supabase] = useState(() => createClient());
   const [r, setR] = useState<Refund | null>(null);
@@ -27,7 +26,6 @@ export default function RefundForm({ token }: { token: string }) {
   const [holder, setHolder] = useState("");
   const [bank, setBank] = useState("");
   const [account, setAccount] = useState("");
-  const [idNumber, setIdNumber] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,12 +48,11 @@ export default function RefundForm({ token }: { token: string }) {
       p_holder: holder.trim(),
       p_bank: bank,
       p_account: account.replace(/\D/g, ""),
-      p_id_number: idNumber.trim() || null,
+      p_id_number: null,
     });
     setBusy(false);
     if (error || !data) return setError(error?.message ?? "Couldn't save. Please try again.");
     setAccount("");
-    setIdNumber("");
     show(data as Refund);
   }
 
@@ -141,13 +138,6 @@ export default function RefundForm({ token }: { token: string }) {
               required
             />
           </label>
-          {r.needs_id_number && (
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-ink-800">IC or passport number</span>
-              <input className={field} value={idNumber} onChange={(e) => setIdNumber(e.target.value)} autoComplete="off" required />
-              <span className="mt-1 block text-xs text-ink-500">The bank needs it to send you the money.</span>
-            </label>
-          )}
           {error && (
             <p role="alert" className="rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700">
               {error}
