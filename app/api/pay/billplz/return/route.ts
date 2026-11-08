@@ -12,7 +12,8 @@ export async function GET(request: Request) {
 
   const table = url.searchParams.get("table") ?? "";
   if (/^[\w-]{1,64}$/.test(table)) {
-    return NextResponse.redirect(new URL(`/order/t/${table}/bill?paid=${paid}`, url.origin), 303);
+    const refund = result?.refundToken ? `&refund=${result.refundToken}` : "";
+    return NextResponse.redirect(new URL(`/order/t/${table}/bill?paid=${paid}${refund}`, url.origin), 303);
   }
   const order = url.searchParams.get("order") ?? "";
   const to = /^[0-9a-f-]{36}$/i.test(order) ? `/order/status/${order}` : "/customer/orders";

@@ -26,6 +26,8 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [paying, setPaying] = useState(false);
   const [arrival, setArrival] = useState<"paid" | "unpaid" | null>(null);
+  // Paid after the bill was already settled at the counter: the restaurant refunds it.
+  const [refund, setRefund] = useState<string | null>(null);
 
   const load = useCallback(
     () =>
@@ -43,7 +45,10 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
       .select("id")
       .maybeSingle()
       .then(({ data }) => setSignedIn(!!data));
-    const q = new URLSearchParams(window.location.search).get("paid");
+    const qs = new URLSearchParams(window.location.search);
+    const q = qs.get("paid");
+    const r = qs.get("refund");
+    if (r && /^[0-9a-f-]{36}$/i.test(r)) setRefund(r);
     if (q) {
       setArrival(q === "1" ? "paid" : "unpaid");
       history.replaceState(history.state, "", window.location.pathname);
@@ -67,6 +72,19 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
     return (
       <Shell title="Bill">
         {error ? <p role="alert" className="text-sm text-rose-700">{error}</p> : <div className="h-64 animate-pulse rounded-3xl bg-white" />}
+      </Shell>
+    );
+  }
+  if (refund) {
+    return (
+      <Shell title={`Table ${bill.table}`}>
+        <div className="rounded-3xl bg-white p-6 text-center">
+          <h2 className="text-xl font-semibold text-ink-900">This bill was already paid</h2>
+          <p className="mt-2 text-sm text-ink-500">It was paid at the counter before your payment came through. The restaurant will refund you.</p>
+          <Link href={`/refund/${refund}`} className="mt-4 inline-flex h-12 items-center rounded-full bg-brand-600 px-6 text-sm font-bold text-on transition active:scale-95">
+            Tell us where to send it
+          </Link>
+        </div>
       </Shell>
     );
   }
