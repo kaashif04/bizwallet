@@ -154,7 +154,7 @@ export default function TableLanding({ token, pickupPaid }: { token: string; pic
                 <Label title="Review us" hint="Tell us how it was" />
               </Link>
             )}
-            <Link href={`${base}/table`} className={tile}>
+            <Link href={`${base}/table`} className={`${tile} last:odd:col-span-2`}>
               <Icon d={ICON.more} />
               <Label title="Wi-Fi & more" hint="Points, your orders" />
             </Link>
