@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
 import type { MenuItem } from "@/lib/order-types";
-import { guestLabel, outletLogos, saveClaimToken, toMenu, toOrderItem, type Banner, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
+import { guestLabel, loadContact, outletLogos, phoneOk, saveClaimToken, saveContact, toMenu, toOrderItem, type Banner, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
 import type { AccountState } from "./AccountChip";
 import { rememberPlace } from "@/lib/place";
 import { storeNames } from "@/lib/places";
@@ -361,6 +361,16 @@ function CartReview({
   const sym = currencySymbol(CURRENCY);
   useSheet(onClose);
   const [name, setName] = useState("");
+  // Guests paying online: phone (Billplz needs it), email optional.
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  useEffect(() => {
+    const c = loadContact();
+    if (!c) return;
+    setPhone(c.mobile);
+    setEmail(c.email ?? "");
+    setName((n) => n || c.name || "");
+  }, []);
   // Signed-in members order under the name they registered with.
   const [memberName, setMemberName] = useState<string | null>(null);
   useEffect(() => {
@@ -447,7 +457,11 @@ function CartReview({
     ] as const
   ).filter((m) => !!m) as (readonly ["counter" | "fpx", string, string])[];
 
+  const guestPays = payNow && !signedIn;
+  const earns = pointsPerRm !== null ? Math.floor(cart.totalPrice * pointsPerRm) : 0;
+
   async function place() {
+    if (guestPays && !phoneOk(phone)) return setError("Add your phone number to pay.");
     setPlacing(true);
     setError(null);
     requestId.current ??= crypto.randomUUID();
@@ -469,14 +483,14 @@ function CartReview({
       return setError(error.message);
     }
     requestId.current = null;
-    saveClaimToken(data.id, data.claim_token, window.location.pathname);
+    saveClaimToken(data.id, data.claim_token, window.location.pathname, signedIn ? 0 : earns);
     if (data.status !== "awaiting_payment") return onPlaced(data.id);
 
     // Paying now (pickup always): the kitchen only sees it once paid.
     const res = await fetch("/api/pay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ order_id: data.id, claim_token: data.claim_token }),
+      body: JSON.stringify({ order_id: data.id, claim_token: data.claim_token, ...(guestPays && contact()) }),
     });
     const pay = await res.json().catch(() => ({}));
     if (pay.url) {
@@ -485,6 +499,13 @@ function CartReview({
     }
     // Couldn't open payment: the order page has a Pay button to retry.
     onPlaced(data.id);
+  }
+
+  // Saved for next time, and sent to Billplz (the receipt goes to the phone or email).
+  function contact() {
+    const c = { mobile: phone.trim(), name: name.trim() || undefined, email: email.trim() || undefined };
+    saveContact(c);
+    return c;
   }
 
   useEffect(() => {
@@ -579,10 +600,10 @@ function CartReview({
         {pickup && <PickupTime outletId={menu.outlet.id} value={pickupAt} onChange={setPickupAt} refresh={slotsRefresh} />}
         <details className="group mt-3 rounded-2xl bg-ink-50 px-4 py-1" open={!!(note || name)}>
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-bold text-ink-800">
-            {memberName ? "Note for the kitchen" : "Your name or a note for the kitchen"}
+            {memberName || guestPays ? "Note for the kitchen" : "Your name or a note for the kitchen"}
             <span aria-hidden="true" className="text-ink-400 transition group-open:rotate-90">›</span>
           </summary>
-          {!memberName && (
+          {!memberName && !guestPays && (
             <label className="block pb-3">
               <span className="mb-1.5 block text-sm font-medium text-slate-700">Your name</span>
               <input
@@ -720,19 +741,7 @@ function CartReview({
               : "Pay at the counter when you're done. Have a promo code? Give it to staff when you pay."}
         </p>
 
-        {!pickup && !signedIn && (
-          <p className="mt-3 text-xs text-ink-500">
-            Want to pay from your phone?{" "}
-            <Link
-              href={`/login?redirect=${encodeURIComponent(typeof window === "undefined" ? "/" : window.location.pathname)}`}
-              className="font-bold text-brand-700"
-            >
-              Sign in
-            </Link>
-          </p>
-        )}
-
-        {(pickup ? methods.length > 1 : signedIn && methods.length > 1) && (
+        {methods.length > 1 && (
           <fieldset className="mt-4">
             <legend className="mb-2 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Pay with</legend>
             <div className={`grid gap-2 ${methods.length > 2 ? "grid-cols-3" : "grid-cols-2"}`}>
@@ -759,15 +768,50 @@ function CartReview({
           </fieldset>
         )}
 
-        {!pickup && pointsPerRm !== null && Math.floor(cart.totalPrice * pointsPerRm) > 0 && (
+        {guestPays && (
+          <div className="mt-4 space-y-2 rounded-2xl bg-ink-50 p-4">
+            <p className="text-sm font-bold text-ink-800">Your details for the receipt</p>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              required
+              placeholder="Phone number"
+              aria-label="Phone number (required)"
+              className="w-full rounded-xl bg-white px-4 py-3 text-base outline-none placeholder:text-ink-400"
+            />
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={60}
+              autoComplete="name"
+              placeholder="Name (optional)"
+              aria-label="Name (optional)"
+              className="w-full rounded-xl bg-white px-4 py-3 text-base outline-none placeholder:text-ink-400"
+            />
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              autoComplete="email"
+              placeholder="Email (optional)"
+              aria-label="Email (optional)"
+              className="w-full rounded-xl bg-white px-4 py-3 text-base outline-none placeholder:text-ink-400"
+            />
+          </div>
+        )}
+
+        {earns > 0 && (
           <p className="mt-4 flex items-center gap-3 rounded-xl bg-ink-50 px-4 py-3 text-sm text-ink-700 shadow-well">
             <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0 text-brand-600" fill="currentColor" aria-hidden="true">
               <path d="M10 1.5l2.5 5.2 5.7.8-4.1 4 1 5.6L10 14.4l-5.1 2.7 1-5.6-4.1-4 5.7-.8L10 1.5Z" />
             </svg>
             <span>
               This order earns{" "}
-              <strong className="font-bold">{Math.floor(cart.totalPrice * pointsPerRm).toLocaleString()} points</strong>
-              {memberName ? "." : " with a free BizWallet account. You can join after you order."}
+              <strong className="font-bold">{earns.toLocaleString()} points</strong>
+              {memberName ? "." : ". Sign in after you order to keep them."}
             </span>
           </p>
         )}

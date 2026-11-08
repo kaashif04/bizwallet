@@ -161,7 +161,7 @@ export default function TableHome({
       <main className="mx-auto max-w-md pb-[calc(8rem+env(safe-area-inset-bottom))]">
         {/* Cover, logo, name, table */}
         <header className="relative">
-          <div className="relative mx-3 mt-3 h-56 overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-100 via-brand-50 to-ink-50 shadow-md">
+          <div className="relative mx-3 mt-3 h-32 overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-100 via-brand-50 to-ink-50 shadow-md">
             {home.cover_url && (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -176,49 +176,44 @@ export default function TableHome({
               <AccountChip state={me === null ? null : me === "guest" ? "guest" : { points: me.points, joined: me.joined, href: `/s/${home.outlet.id}?rewards=1` }} />
             </div>
           </div>
-          <div className="px-4">
+          <div className="flex items-end gap-3 px-4">
             <BranchLogo
               name={home.outlet.name}
               logoUrl={logo}
-              className="relative -mt-10 h-20 w-20 rounded-[1.5rem] text-3xl shadow-md ring-4 ring-ink-50"
+              className="relative -mt-8 h-16 w-16 shrink-0 rounded-[1.25rem] text-2xl shadow-md ring-4 ring-ink-50"
             />
-            <h1 className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">
-              {me && me !== "guest" && me.name ? `Welcome back, ${me.name}` : home.outlet.name}
-            </h1>
-            <p className="mt-1 text-sm text-ink-500">
-              {me && me !== "guest" && me.name ? home.outlet.name : home.tagline || "Order from your table, pay in the app or at the counter."}
-            </p>
+            <div className="min-w-0 pb-0.5">
+              {me && me !== "guest" && me.name && <p className="text-xs font-semibold text-ink-500">Hi {me.name}</p>}
+              <h1 className="truncate text-2xl font-semibold leading-tight tracking-[-0.03em] text-ink-900">{home.outlet.name}</h1>
+            </div>
           </div>
         </header>
 
-        <div className="mt-5 space-y-8 px-4">
+        <div className="mt-6 space-y-6 px-4">
+          {/* Ordering: the two big, coloured buttons. */}
           {home.ordering ? (
-            <Link
-              href={`/order/t/${token}/menu`}
-              className="flex h-20 items-center gap-4 rounded-2xl bg-brand-600 px-5 text-on shadow-md transition hover:brightness-95 active:scale-[0.98]"
-            >
-              <svg viewBox="0 0 24 24" className="h-8 w-8 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M5 4v7a2 2 0 0 0 2 2v7M9 4v7M7 4v3M15 20V4c-2 1-3 4-3 7s1 3 3 3M19 4v16" />
-              </svg>
-              <span className="min-w-0 flex-1">
-                <span className="block text-lg font-bold">{orders.length ? "Order more" : "Order now"}</span>
-                <span className="block text-sm opacity-90">Eat here, we&apos;ll bring it to your table</span>
-              </span>
-              <span aria-hidden="true" className="text-2xl">›</span>
-            </Link>
+            <div className={`grid gap-3 ${takeaway ? "grid-cols-2" : ""}`}>
+              <BigButton href={`/order/t/${token}/menu`} icon={TILE.menu} title={orders.length ? "Order more" : "Order now"} sub="Eat here" className="bg-brand-600 text-on" />
+              {takeaway && <BigButton href={`/order/p/${home.outlet.id}`} icon={TILE.takeaway} title="Takeaway" sub="Pay & collect" className="bg-ink-900 text-ink-50" />}
+            </div>
           ) : (
             <p className="rounded-full bg-white py-4 text-center text-sm font-semibold text-ink-700 shadow-sm">
               Please order with our staff today
             </p>
           )}
 
-          <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load}>
-            {takeaway && <Tile href={`/order/p/${home.outlet.id}`} icon={TILE.takeaway} title="Takeaway" hint="Order ahead, pay online" />}
-            <Tile href={`/order/t/${token}/play`} icon={TILE.play} title="Play games" hint="While you wait" />
-            <Tile href={`/order/t/${token}/bill`} icon={TILE.receipt} title="View bill" hint={billSplit ? "Pay or split it" : "Everything on your table"} />
-            {(!home.hide?.feedback || home.review_url) && <Tile href={home.hide?.feedback ? home.review_url! : "#feedback"} icon={TILE.review} title="Review us" hint="Tell us how it was" />}
-            {home.wifi && <Tile href="#wifi" icon={TILE.wifi} title="Wi-Fi" hint={home.wifi.name} />}
-          </CallStaff>
+          {/* Staff come to the table: amber, so they stand apart from ordering. */}
+          <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />
+
+          {/* Everything else: small and quiet. */}
+          <nav aria-label="More" className="grid grid-cols-4 gap-2">
+            <Quick href={`/order/t/${token}/play`} icon={TILE.play} label="Games" />
+            <Quick href={`/order/t/${token}/bill`} icon={TILE.receipt} label="Bill" />
+            {(!home.hide?.feedback || home.review_url) && (
+              <Quick href={home.hide?.feedback ? home.review_url! : "#feedback"} icon={TILE.review} label="Review" />
+            )}
+            {home.wifi && <Quick href="#wifi" icon={TILE.wifi} label="Wi-Fi" />}
+          </nav>
 
           {orders.length > 0 && <YourTable orders={orders} canCallBill={!home.hide?.bill} />}
 
@@ -233,8 +228,7 @@ export default function TableHome({
                 </svg>
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-bold text-ink-900">Your bill · {currencySymbol("MYR")}{billLeft.toFixed(2)} left</span>
-                <span className="block text-xs text-ink-500">{billSplit ? "Pay it all or split it with your table" : "See everything on your table's bill"}</span>
+                <span className="block text-sm font-bold text-ink-900">{currencySymbol("MYR")}{billLeft.toFixed(2)} left to pay</span>
               </span>
               <span className="shrink-0 text-sm font-bold text-brand-700">{billSplit ? "Pay ›" : "View ›"}</span>
             </Link>
@@ -347,7 +341,7 @@ function YourTable({ orders, canCallBill }: { orders: GuestOrderStatus[]; canCal
             <span className="min-w-0">
               <span className="block text-sm font-bold text-ink-900">To pay at the counter</span>
               <span className="block text-xs text-ink-500">
-                {canCallBill ? "Tap Ask for the bill when you're ready" : "When you're done"}
+                {canCallBill ? "Tap Get the bill when you're ready" : "When you're done"}
               </span>
             </span>
             <span className="shrink-0 text-lg font-bold tabular-nums text-ink-900">{money(due)}</span>
@@ -368,42 +362,55 @@ const ago = (at: string) => {
 };
 
 const TILE = {
+  menu: "M5 4v7a2 2 0 0 0 2 2v7M9 4v7M7 4v3M15 20V4c-2 1-3 4-3 7s1 3 3 3M19 4v16",
   takeaway: "M5 8h14l-1 12H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2",
   play: "M5 19h14M7 15h10M9 11h6M11 7h2",
   receipt: "M3 6h18v13H3V6Zm0 4h18M7 15h4",
   review: "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L12 3.5Z",
   wifi: "M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01",
 };
-const tileClass = "flex flex-col items-start gap-3 rounded-2xl p-4 text-left shadow-sm transition active:scale-[0.97]";
-
-function Tile({ href, icon, title, hint }: { href: string; icon: string; title: string; hint: string }) {
+function Glyph({ d, className }: { d: string; className: string }) {
   return (
-    <Link href={href} className={`${tileClass} bg-white hover:bg-ink-100 last:odd:col-span-2`}>
-      <svg viewBox="0 0 24 24" className="h-6 w-6 text-brand-700" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d={icon} />
-      </svg>
-      <span className="min-w-0">
-        <span className="block text-sm font-bold text-ink-900">{title}</span>
-        <span className="block truncate text-xs text-ink-500">{hint}</span>
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={d} />
+    </svg>
+  );
+}
+
+function BigButton({ href, icon, title, sub, className }: { href: string; icon: string; title: string; sub: string; className: string }) {
+  return (
+    <Link href={href} className={`flex h-28 flex-col justify-between rounded-3xl p-4 shadow-md transition hover:brightness-95 active:scale-[0.97] ${className}`}>
+      <Glyph d={icon} className="h-7 w-7" />
+      <span>
+        <span className="block text-lg font-bold leading-tight">{title}</span>
+        <span className="block text-xs opacity-80">{sub}</span>
       </span>
     </Link>
   );
 }
 
-// The Home's button grid: call a waiter and ask for the bill (sent from here),
-// then the shortcuts passed in as children.
+function Quick({ href, icon, label }: { href: string; icon: string; label: string }) {
+  return (
+    <Link href={href} className="flex flex-col items-center gap-1.5 rounded-2xl py-2 text-xs font-semibold text-ink-700 transition active:scale-95">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-brand-700 shadow-sm">
+        <Glyph d={icon} className="h-5 w-5" />
+      </span>
+      {label}
+    </Link>
+  );
+}
+
+// Call a waiter / ask for the bill, sent from here.
 function CallStaff({
   token,
   calls,
   hide,
   onCalled,
-  children,
 }: {
   token: string;
   calls: TableCall[];
   hide?: Home["hide"];
   onCalled: () => void;
-  children: React.ReactNode;
 }) {
   const [supabase] = useState(() => createClient());
   const [busy, setBusy] = useState<TableCall["kind"] | null>(null);
@@ -421,13 +428,14 @@ function CallStaff({
   const buttons = (
     [
       ["staff", "Call waiter", "M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6ZM10 19a2 2 0 0 0 4 0"],
-      ["bill", "Ask for the bill", "M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6"],
+      ["bill", "Get the bill", "M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6"],
     ] as const
   ).filter(([kind]) => !hide?.[kind]);
+  if (!buttons.length) return null;
 
   return (
     <section>
-      <div className="grid grid-cols-2 gap-3">
+      <div className={`grid gap-3 ${buttons.length > 1 ? "grid-cols-2" : ""}`}>
         {buttons.map(([kind, label, icon]) => {
           const sent = calls.find((c) => c.kind === kind);
           return (
@@ -437,21 +445,22 @@ function CallStaff({
               disabled={busy !== null}
               onClick={() => call(kind)}
               aria-live="polite"
-              className={`${tileClass} ${sent ? "bg-brand-50 ring-1 ring-brand-200" : "bg-white hover:bg-ink-100"}`}
+              className={`flex items-center gap-3 rounded-2xl bg-amber-50 px-4 py-3.5 text-left ring-1 transition active:scale-[0.97] ${
+                sent ? "ring-2 ring-amber-300" : "ring-amber-200"
+              }`}
             >
-              <svg viewBox="0 0 24 24" className="h-6 w-6 text-brand-700" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0 text-amber-700" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={icon} />
               </svg>
-              <span>
-                <span className="block text-sm font-bold text-ink-900">{label}</span>
-                <span className="block text-xs text-ink-500">
-                  {busy === kind ? "Sending…" : sent ? `Staff notified · ${ago(sent.at)}` : "We'll come to your table"}
-                </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-bold text-amber-800">{label}</span>
+                {(busy === kind || sent) && (
+                  <span className="block text-xs text-amber-700">{busy === kind ? "Sending…" : `Coming · ${ago(sent!.at)}`}</span>
+                )}
               </span>
             </button>
           );
         })}
-        {children}
       </div>
       {error && <p className="mt-2 px-1 text-sm text-rose-700">{error}</p>}
     </section>
@@ -466,7 +475,7 @@ function Points({ me, outletId, signIn }: { me: Me; outletId: string; signIn: st
         <Star />
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-bold text-ink-900">Collect points on this meal</span>
-          <span className="block text-xs text-ink-500">Sign in or join free. You can also do it after you order.</span>
+          <span className="block text-xs text-ink-500">Free to join</span>
         </span>
         <span className="text-sm font-bold text-brand-700">Sign in</span>
       </Link>

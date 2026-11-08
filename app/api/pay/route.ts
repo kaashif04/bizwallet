@@ -13,24 +13,24 @@ export async function POST(request: Request) {
   const {
     data: { user },
   } = await createClient().auth.getUser();
-  const { order_id, claim_token, mobile } = await request.json().catch(() => ({}));
+  const { order_id, claim_token, mobile, name, email } = await request.json().catch(() => ({}));
   if (typeof order_id !== "string" || typeof claim_token !== "string") {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
   const admin = createAdminClient();
-  // Signed out: only a kiosk order (placed at the restaurant's tablet, paid on
-  // the customer's own phone), and Billplz then needs their mobile number.
+  // Signed out (a guest at a table, pickup, or the kiosk): the claim token below
+  // proves it's their order; Billplz needs their phone, name and email are optional.
   const phone = typeof mobile === "string" ? mobile.replace(/\D/g, "") : "";
-  if (!user?.email) {
-    const { data: k, error: kErr } = await admin.from("guest_orders").select("kiosk_id").eq("id", order_id).maybeSingle();
-    if (kErr || !k?.kiosk_id) return NextResponse.json({ error: "Please sign in to pay." }, { status: 401 });
-    if (phone.length < 9) return NextResponse.json({ error: "Add your phone number to pay." }, { status: 400 });
+  const guestEmail = typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? email.trim() : undefined;
+  const guestName = typeof name === "string" ? name.trim().slice(0, 60) : "";
+  if (!user?.email && phone.length < 9) {
+    return NextResponse.json({ error: "Add your phone number to pay." }, { status: 400 });
   }
 
   const { data: order } = await admin
     .from("guest_orders")
-    .select("id, claim_token, status, amount_due, payment_ref, outlet_id, created_at, table_id")
+    .select("id, claim_token, status, amount_due, payment_ref, outlet_id, created_at, table_id, kiosk_id")
     .eq("id", order_id)
     .maybeSingle();
   if (!order || order.claim_token !== claim_token) {
@@ -57,11 +57,11 @@ export async function POST(request: Request) {
       user ? admin.from("members").select("full_name").eq("id", user.id).maybeSingle() : Promise.resolve({ data: null }),
     ]);
     const bill = await createBill({
-      email: user?.email ?? undefined,
+      email: user?.email ?? guestEmail,
       mobile: user?.email ? undefined : phone,
-      name: member?.full_name || user?.email?.split("@")[0] || "Guest",
+      name: member?.full_name || user?.email?.split("@")[0] || guestName || "Guest",
       amountSen: Math.round(Number(order.amount_due) * 100),
-      description: `${order.table_id ? "Dine-in" : user ? "Pickup" : "Kiosk"} order at ${outlet?.name ?? "BizWallet"}`,
+      description: `${order.table_id ? "Dine-in" : order.kiosk_id ? "Kiosk" : "Pickup"} order at ${outlet?.name ?? "BizWallet"}`,
       callbackUrl: `${origin}/api/pay/billplz/callback`,
       redirectUrl: `${origin}/api/pay/billplz/return?order=${order.id}`,
       reference: order.id,

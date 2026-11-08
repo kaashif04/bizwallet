@@ -203,14 +203,42 @@ export function toMenu(menu: GuestMenu): {
 // claiming it after sign-up. It only lives on the device that ordered.
 const key = (id: string) => `bw_guest_order:${id}`;
 
-export function saveClaimToken(id: string, claimToken: string, menuPath: string) {
+export function saveClaimToken(id: string, claimToken: string, menuPath: string, points = 0) {
   try {
     localStorage.setItem(key(id), claimToken);
     localStorage.setItem(`${key(id)}:menu`, menuPath);
     localStorage.setItem(`${key(id)}:at`, String(Date.now()));
+    // What it earns once linked to an account, for the status page's "sign in for N points".
+    if (points > 0) localStorage.setItem(`${key(id)}:pts`, String(points));
   } catch {
     // Private mode: the status page will say it can't find the order.
   }
+}
+
+export function loadOrderPoints(id: string): number {
+  try {
+    return Number(localStorage.getItem(`${key(id)}:pts`)) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+// A signed-out diner's details for paying online (Billplz needs a phone or an
+// email). Kept on this phone so they type them once.
+export type GuestContact = { mobile: string; name?: string; email?: string };
+export const phoneOk = (s: string) => s.replace(/\D/g, "").length >= 9;
+export function loadContact(): GuestContact | null {
+  try {
+    const c = JSON.parse(localStorage.getItem("bw_guest_contact") ?? "null");
+    return c && typeof c.mobile === "string" ? c : null;
+  } catch {
+    return null;
+  }
+}
+export function saveContact(c: GuestContact) {
+  try {
+    localStorage.setItem("bw_guest_contact", JSON.stringify(c));
+  } catch {}
 }
 
 // "Guest 4F2A": this phone's name when the diner gives none, kept so every round it

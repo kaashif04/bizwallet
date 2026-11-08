@@ -8,7 +8,7 @@ import { currencySymbol } from "@/lib/format";
 import { pickupLabel } from "@/components/order/PickupTime";
 import HomeButton from "@/components/order/HomeButton";
 import StatusOrb, { type OrbStage } from "@/components/order/StatusOrb";
-import { loadClaimToken, loadMenuPath, type GuestOrderStatus } from "@/lib/guest-order";
+import { loadClaimToken, loadContact, loadMenuPath, loadOrderPoints, phoneOk, saveContact, type GuestContact, type GuestOrderStatus } from "@/lib/guest-order";
 
 const STEPS: Record<string, string> = {
   awaiting_payment: "Waiting for your payment",
@@ -44,6 +44,15 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
   // Arrived from placing (?placed=1) or from the bank (?paid=1|0).
   const [arrival, setArrival] = useState<"placed" | "paid" | "unpaid" | null>(null);
   const [paying, setPaying] = useState(false);
+  // Signed out: the details they paid with last time, else a phone to type here.
+  const [contact, setContact] = useState<GuestContact | null>(null);
+  const [phone, setPhone] = useState("");
+  const [points, setPoints] = useState(0);
+  useEffect(() => {
+    setContact(loadContact());
+    setPoints(loadOrderPoints(params.id));
+    supabase.auth.getUser().then(({ data }) => data.user && setSignedIn(true));
+  }, [params.id, supabase]);
   // A paid order the outlet cancelled: the owner pays it back in Billplz and marks it.
   const [paidBackAt, setPaidBackAt] = useState<string | null | undefined>(undefined);
   useEffect(() => {
@@ -82,12 +91,15 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
   }
 
   async function pay() {
+    const guest = signedIn ? null : contact ?? (phoneOk(phone) ? { mobile: phone.trim() } : null);
+    if (!signedIn && !guest) return setError("Add your phone number to pay.");
+    if (guest && !contact) saveContact(guest);
     setPaying(true);
     setError(null);
     const res = await fetch("/api/pay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ order_id: params.id, claim_token: claimToken }),
+      body: JSON.stringify({ order_id: params.id, claim_token: claimToken, ...guest }),
     });
     const body = await res.json().catch(() => ({}));
     if (body.url) return window.location.assign(body.url);
@@ -276,6 +288,18 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
               ? "The payment wasn't completed. Nothing was charged and the kitchen hasn't started."
               : "The kitchen starts once you've paid."}
           </p>
+          {!signedIn && !contact && (
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="Your phone number"
+              aria-label="Your phone number"
+              className="mt-4 w-full rounded-xl bg-ink-50 px-4 py-3 text-center text-base outline-none placeholder:text-ink-400"
+            />
+          )}
           <button
             type="button"
             onClick={pay}
@@ -418,18 +442,15 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           transition={{ delay: 0.2, duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
           className="mt-8 rounded-2xl bg-white p-5"
         >
-          <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Rewards</p>
-          <p className="mt-2 font-bold text-ink-900">
-            {order.paid ? "You can still claim points for this order" : "Join to earn points on this order"}
+          <p className="text-lg font-bold text-ink-900">
+            {points > 0 ? `${points.toLocaleString()} points waiting for you` : "Earn points on this order"}
           </p>
-          <p className="mt-1 text-sm text-ink-500">
-            Every restaurant has its own rewards. Collect points here and redeem them for treats.
-          </p>
+          <p className="mt-1 text-sm text-ink-500">Sign in or join free and they go into your rewards here.</p>
           <Link
             href={`/login?redirect=${encodeURIComponent(`/order/status/${params.id}`)}`}
             className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand-600 px-5 py-3 text-sm font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97]"
           >
-            Create a free account
+            Sign in or join
             <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
               <path d="M3 8h10M9 4l4 4-4 4" />
             </svg>
