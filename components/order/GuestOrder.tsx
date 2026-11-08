@@ -833,7 +833,7 @@ function CartReview({
         )}
 
         {/* Pinned to the bottom of the sheet, however long the order gets. */}
-        <div className="sticky bottom-0 -mx-5 mt-5 bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_16px_-12px_rgb(0_0_0/0.18)]">
+        <div className="sticky bottom-0 z-10 -mx-5 mt-5 bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_16px_-12px_rgb(0_0_0/0.18)]">
         <button
           type="button"
           onClick={place}

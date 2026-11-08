@@ -43,12 +43,6 @@ export default function TableHome({
   // Takeaway is always shown; greyed out (and says so when tapped) unless the
   // outlet takes pickup orders, online payment is on, and it's open.
   const [takeaway, setTakeaway] = useState(false);
-  const [takeawayNote, setTakeawayNote] = useState(false);
-  useEffect(() => {
-    if (!takeawayNote) return;
-    const t = window.setTimeout(() => setTakeawayNote(false), 3000);
-    return () => window.clearTimeout(t);
-  }, [takeawayNote]);
   const [error, setError] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
   const [me, setMe] = useState<Me>(null);
@@ -209,12 +203,9 @@ export default function TableHome({
                 {takeaway ? (
                   <BigButton href={`/order/p/${home.outlet.id}`} icon={TILE.takeaway} title="Takeaway" sub="Pay & collect" className="bg-ink-900 text-ink-50" />
                 ) : (
-                  <BigButton onClick={() => setTakeawayNote(true)} icon={TILE.takeaway} title="Takeaway" sub="Unavailable" className="bg-ink-100 text-ink-400 shadow-none" />
+                  <BigButton icon={TILE.takeaway} title="Takeaway" sub="Unavailable now" className="bg-ink-100 text-ink-400 shadow-none" />
                 )}
               </div>
-              <p role="status" className={`mt-2 text-center text-sm font-semibold text-ink-700 transition-opacity ${takeawayNote ? "opacity-100" : "opacity-0"}`}>
-                {takeawayNote ? "Takeaway is unavailable at the moment" : "\u00a0"}
-              </p>
             </div>
           ) : (
             <p className="rounded-full bg-white py-4 text-center text-sm font-semibold text-ink-700 shadow-sm">
@@ -226,12 +217,9 @@ export default function TableHome({
           <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />
 
           {/* Everything else: a row of icons. */}
-          <nav aria-label="More" className="grid grid-cols-4 gap-2">
+          <nav aria-label="More" className="flex justify-center gap-6">
             <Quick href={`/order/t/${token}/play`} icon={TILE.play} label="Games" />
             <Quick href={`/order/t/${token}/bill`} icon={TILE.receipt} label="Bill" />
-            {(!home.hide?.feedback || home.review_url) && (
-              <Quick href={home.hide?.feedback ? home.review_url! : "#feedback"} icon={TILE.review} label="Review" />
-            )}
             {home.wifi && <Quick href="#wifi" icon={TILE.wifi} label="Wi-Fi" />}
           </nav>
 
@@ -386,7 +374,6 @@ const TILE = {
   takeaway: "M5 8h14l-1 12H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2",
   play: "M5 19h14M7 15h10M9 11h6M11 7h2",
   receipt: "M3 6h18v13H3V6Zm0 4h18M7 15h4",
-  review: "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L12 3.5Z",
   wifi: "M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01",
 };
 function Glyph({ d, className }: { d: string; className: string }) {
@@ -425,7 +412,7 @@ function BigButton({
   return href ? (
     <Link href={href} className={`${cls} hover:brightness-95`}>{body}</Link>
   ) : (
-    <button type="button" onClick={onClick} className={cls}>{body}</button>
+    <button type="button" onClick={onClick} disabled={!onClick} className={cls}>{body}</button>
   );
 }
 
