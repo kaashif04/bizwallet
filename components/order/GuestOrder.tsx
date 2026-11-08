@@ -462,7 +462,9 @@ function CartReview({
   const earns = pointsPerRm !== null ? Math.floor(cart.totalPrice * pointsPerRm) : 0;
 
   async function place() {
-    if (guest && !phoneOk(phone)) return setError("Add your phone number to place the order.");
+    // No details is fine, but then it's paid at the counter (pickup can't be).
+    if (guest && payNow && !phoneOk(phone))
+      return setError(pickup ? "Add your phone number to pay." : "Add your phone number to pay now, or choose Pay at counter.");
     setPlacing(true);
     setError(null);
     requestId.current ??= crypto.randomUUID();
@@ -472,7 +474,7 @@ function CartReview({
         ...(token ? { table_token: token } : { outlet_id: menu.outlet.id }),
         customer_name: memberName ?? (name.trim() || (token ? guestLabel() : undefined)),
         // Guests' contact for the restaurant (BizPos stores it once guest_place_order reads these).
-        ...(guest && { customer_phone: phone.replace(/\D/g, ""), customer_email: email.trim() || undefined }),
+        ...(guest && phoneOk(phone) && { customer_phone: phone.replace(/\D/g, ""), customer_email: email.trim() || undefined }),
         note: note.trim() || undefined,
         pay_now: payNow || undefined,
         pickup_at: pickupAt ?? undefined,
@@ -486,7 +488,7 @@ function CartReview({
       return setError(error.message);
     }
     requestId.current = null;
-    if (guest) contact();
+    if (guest && phoneOk(phone)) contact();
     saveClaimToken(data.id, data.claim_token, window.location.pathname, signedIn ? 0 : earns);
     if (data.status !== "awaiting_payment") return onPlaced(data.id);
 
@@ -761,7 +763,10 @@ function CartReview({
                     name="pay-with"
                     value={value}
                     checked={payWith === value}
-                    onChange={() => setPayWith(value)}
+                    onChange={() => {
+                      setPayWith(value);
+                      setError(null);
+                    }}
                     className="sr-only"
                   />
                   <span className="block text-sm font-bold">{label}</span>
@@ -775,15 +780,16 @@ function CartReview({
         {guest && (
           <div className="mt-4 space-y-2 rounded-2xl bg-ink-50 p-4">
             <p className="text-sm font-bold text-ink-800">Your details</p>
+            {!payNow && <p className="text-xs text-ink-500">Optional when you pay at the counter.</p>}
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               type="tel"
               inputMode="tel"
               autoComplete="tel"
-              required
-              placeholder="Phone number"
-              aria-label="Phone number (required)"
+              required={payNow}
+              placeholder={payNow ? "Phone number" : "Phone number (optional)"}
+              aria-label={payNow ? "Phone number (required to pay now)" : "Phone number (optional)"}
               className="w-full rounded-xl bg-white px-4 py-3 text-base outline-none placeholder:text-ink-400"
             />
             <input
