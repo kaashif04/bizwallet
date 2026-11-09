@@ -16,8 +16,8 @@ export const rankLine = (score: number, board: GameBoard | null) =>
 export const buzz = (p: number | number[]) => navigator.vibrate?.(p);
 
 // The white play area every game draws in.
-export function Arena({ children }: { children: ReactNode }) {
-  return <div className="relative mt-4 h-[min(60dvh,30rem)] touch-none select-none overflow-hidden rounded-3xl bg-white">{children}</div>;
+export function Arena({ children, pan }: { children: ReactNode; pan?: boolean }) {
+  return <div className={`relative mt-4 h-[min(52dvh,30rem)] ${pan ? "touch-pan-y" : "touch-none"} select-none overflow-hidden rounded-3xl bg-white`}>{children}</div>;
 }
 
 // Ready / game-over card laid over the arena.

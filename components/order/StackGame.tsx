@@ -101,7 +101,7 @@ export default function StackGame({ board, onEnd }: GameProps) {
             if (phase === "playing") drop();
             else if (phase === "ready") start();
           }}
-          className="relative mt-4 h-[min(60dvh,30rem)] touch-none select-none overflow-hidden rounded-3xl bg-white"
+          className="relative mt-4 h-[min(52dvh,30rem)] touch-none select-none overflow-hidden rounded-3xl bg-white"
         >
           <p
             className="absolute inset-x-0 top-5 text-center text-5xl font-bold tabular-nums text-ink-900"

@@ -74,7 +74,7 @@ export default function MatchGame({ board, onEnd, seed }: GameProps) {
   }
 
   return (
-    <Arena>
+    <Arena pan>
       <p className="absolute inset-x-0 top-4 text-center text-sm font-semibold text-ink-500" aria-live="polite">
         Turns <span className="tabular-nums text-ink-900">{turns}</span> · Pairs <span className="tabular-nums text-ink-900">{done.length / 2}/8</span>
       </p>
