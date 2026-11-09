@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { GameBoard } from "@/lib/guest-order";
+import { guestLabel, loadContact, type GameBoard } from "@/lib/guest-order";
 import StackGame from "./StackGame";
 import EchoGame from "./games/EchoGame";
 import WhackGame from "./games/WhackGame";
@@ -24,6 +24,23 @@ export default function TableGames({ token }: { token: string }) {
   const [error, setError] = useState<string | null>(null);
   const current = useRef(id);
   current.current = id;
+  // The name this phone plays under: same as its orders (member's first name, the
+  // name typed at checkout, else "Guest 4F2A"). The server uses a member's own name.
+  const [me, setMe] = useState<string | null>(null);
+  useEffect(() => {
+    supabase
+      .from("members")
+      .select("full_name")
+      .maybeSingle()
+      .then(({ data }) =>
+        setMe(
+          data?.full_name?.trim().split(/\s+/)[0] ||
+            // as the server keeps it: spaces collapsed, 20 characters
+            loadContact()?.name?.trim().replace(/\s+/g, " ").slice(0, 20) ||
+            guestLabel()
+        )
+      );
+  }, [supabase]);
 
   useEffect(() => {
     setBoard(null);
@@ -38,7 +55,7 @@ export default function TableGames({ token }: { token: string }) {
   async function submit(score: number) {
     if (score < 1) return;
     const game = id;
-    const { data, error } = await supabase.rpc("guest_game_submit", { p_token: token, p_game: game, p_score: score });
+    const { data, error } = await supabase.rpc("guest_game_submit", { p_token: token, p_game: game, p_score: score, p_player: me });
     if (current.current !== game) return;
     if (error) setError(error.message);
     else setBoard(data as GameBoard);
@@ -75,6 +92,25 @@ export default function TableGames({ token }: { token: string }) {
 
         <Game key={id} board={board} onEnd={submit} />
         {error && <p role="alert" className="mt-3 text-sm text-rose-700">{error}</p>}
+
+        <section className="mt-6">
+          <h2 className="mb-3 px-1 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">At your table · {name}</h2>
+          <ol className="divide-y divide-ink-100 rounded-2xl bg-white">
+            {board && !board.players?.length && (
+              <li className="px-4 py-3.5 text-sm text-ink-500">Nobody at your table has played yet. Everyone with the table QR can join in.</li>
+            )}
+            {board?.players?.map((p, i) => (
+              <li key={p.name} className={`flex items-center gap-3 px-4 py-3 text-sm ${p.name === me ? "bg-brand-50 font-bold" : ""}`}>
+                <span className="w-6 tabular-nums text-ink-500">{i + 1}</span>
+                <span className="flex-1 truncate text-ink-900">
+                  {p.name}
+                  {p.name === me ? " (you)" : ""}
+                </span>
+                <span className="tabular-nums text-ink-900">{p.score} <span className="text-xs font-normal text-ink-500">{unit}</span></span>
+              </li>
+            ))}
+          </ol>
+        </section>
 
         <section className="mt-6">
           <h2 className="mb-3 px-1 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Today&apos;s top tables · {name}</h2>

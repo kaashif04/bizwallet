@@ -94,6 +94,7 @@ export type GameBoard = {
   rank: number | null;
   tables: number; // tables on the board today
   top: { table: string; score: number }[]; // top 10
+  players?: { name: string; score: number }[]; // each player's best at this table, this visit
 };
 
 export type GuestOrderStatus = {

@@ -1,83 +1,122 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { tableOrders } from "@/lib/guest-order";
 
-// The table QR never changes, so a phone that has left still has a working link.
-// This phone remembers its party (BizPos table session); once that party is gone
-// (paid and left, cleared, a new party sat down) the table's pages are swapped for
-// "your visit has ended" until the diner says they're at this table again, so an
-// old phone can't order onto, or see, the next party's bill (wallet_table_visit).
-type Saved = { id: string | null; at: number }; // at: when saved, or when they started a new visit
+// Scanning the table's QR starts a visit; nothing else does. A reopened tab,
+// a reload, the back button or a link inside the app carries on the visit this
+// phone already has, and once that party has gone (paid and left, cleared, a new
+// party sat down) the table's pages are replaced by "scan the QR code on your
+// table" (wallet_table_visit). Same idea as QR systems that end the table's
+// session at payment, without reprinting the codes.
+type Pass = { id: string | null; at: number }; // id: the party (table session) once known; at: when scanned
 const key = (token: string) => `bw_visit:${token}`;
-const DAY = 12 * 3_600_000; // older than this is a new day's visit, not this one
+const MAX_AGE = 12 * 3_600_000; // a scan this old is never still the same visit
+const UNSEATED = 3 * 3_600_000; // scanned, but no party ever formed at the table: ends after this
 
-function load(token: string): Saved {
+function load(token: string): Pass | null {
   try {
-    const s = JSON.parse(localStorage.getItem(key(token)) ?? "null") as Saved | null;
-    return s && Date.now() - s.at < DAY ? s : { id: null, at: 0 };
+    const p = JSON.parse(localStorage.getItem(key(token)) ?? "null") as Pass | null;
+    return p && Date.now() - p.at < MAX_AGE ? p : null;
   } catch {
-    return { id: null, at: 0 };
+    return null;
   }
 }
-function save(token: string, s: Saved) {
+function save(token: string, p: Pass) {
   try {
-    localStorage.setItem(key(token), JSON.stringify(s));
+    localStorage.setItem(key(token), JSON.stringify(p));
   } catch {}
+}
+
+// Our own scanner (/scan) opens the table inside the app, so it starts the visit itself.
+export function startVisit(path: string) {
+  const token = /^\/order\/t\/([^/?#]+)\/?$/.exec(path)?.[1];
+  if (token) save(token, { id: null, at: Date.now() });
+}
+
+// A phone camera scan opens the table's address as a brand-new page load from
+// outside the app. Checked once per page load, so moving around inside the app
+// (or coming back from the order page) never counts as a scan.
+let landingChecked = false;
+function arrivedByScan(token: string) {
+  if (landingChecked) return false;
+  landingChecked = true;
+  const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+  if (!nav || nav.type !== "navigate") return false; // reload, back/forward, restored tab
+  if (document.referrer.startsWith(location.origin)) return false; // a link inside the app
+  return new URL(nav.name).pathname.replace(/\/$/, "") === `/order/t/${token}`;
 }
 
 // Resolves true when this phone may order here. Pickup has no gate.
 const Ctx = createContext<() => Promise<boolean>>(async () => true);
 export const useVisitCheck = () => useContext(Ctx);
 
+type Ended = { table: string | null; hadVisit: boolean };
+
 export default function TableVisit({ token, children }: { token: string; children: ReactNode }) {
   const [supabase] = useState(() => createClient());
-  const [ended, setEnded] = useState<string | null>(null); // the table's label once this phone's visit has ended
+  const [ended, setEnded] = useState<Ended | null>(null);
 
   const check = useCallback(async () => {
-    const saved = load(token);
-    // Orders from before "I'm at this table again" belong to the old visit.
-    const order = tableOrders(token).filter((o) => o.at > saved.at).pop();
+    const pass = load(token);
+    if (!pass) setEnded((e) => e ?? { table: null, hadVisit: false }); // show it at once; the label follows
+    // Orders from before this scan belong to an earlier visit.
+    const order = pass ? tableOrders(token).filter((o) => o.at >= pass.at).pop() : undefined;
     const { data, error } = await supabase.rpc("wallet_table_visit", {
       p_token: token,
-      p_visit: saved.id,
+      p_visit: pass?.id ?? null,
       p_order: order?.id ?? null,
+      p_since: pass ? new Date(pass.at).toISOString() : null,
     });
-    if (error || !data) return true; // bad token etc.: the page shows its own error
+    if (error || !data) {
+      if (pass) return true; // bad token or offline: the page shows its own error
+      setEnded(null);
+      return true;
+    }
     const v = data as { table: string; visit: string | null; ended: boolean };
-    if (v.ended) {
-      setEnded(v.table);
+    if (!pass || v.ended || (!pass.id && !v.visit && Date.now() - pass.at > UNSEATED)) {
+      setEnded({ table: v.table, hadVisit: !!pass });
       return false;
     }
-    if (v.visit && v.visit !== saved.id) save(token, { id: v.visit, at: Date.now() });
+    if (v.visit && v.visit !== pass.id) save(token, { id: v.visit, at: pass.at });
+    setEnded(null);
     return true;
   }, [supabase, token]);
 
   useEffect(() => {
+    if (arrivedByScan(token)) save(token, { id: null, at: Date.now() });
     check();
     const onShow = () => document.visibilityState === "visible" && check();
     document.addEventListener("visibilitychange", onShow);
-    return () => document.removeEventListener("visibilitychange", onShow);
-  }, [check]);
+    // Ties this phone to its party as soon as one forms (staff seat them or someone orders).
+    const t = window.setInterval(onShow, 60_000);
+    return () => {
+      document.removeEventListener("visibilitychange", onShow);
+      window.clearInterval(t);
+    };
+  }, [check, token]);
 
-  if (ended !== null) {
+  // Back from paying the bill online: show them it's paid, even if that just closed the table.
+  const paidReturn = typeof window !== "undefined" && location.pathname.endsWith("/bill") && location.search.includes("paid=");
+  if (ended && !paidReturn) {
+    const at = ended.table ? `Table ${ended.table}` : "your table";
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center bg-ink-50 px-6 text-center">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em] text-ink-900">Thanks for visiting</h1>
+        <h1 className="text-2xl font-semibold tracking-[-0.02em] text-ink-900">
+          {ended.hadVisit ? "Thanks for visiting" : "Scan to order"}
+        </h1>
         <p className="mt-2 max-w-xs text-sm text-ink-600">
-          Your visit at Table {ended} has ended, so this phone can&apos;t order to it or see its bill any more.
+          {ended.hadVisit ? `Your visit at ${at} has ended. ` : ""}
+          To order, scan the QR code on {ended.table ? `Table ${ended.table}` : "your table"} with your phone camera.
         </p>
-        <button
-          type="button"
-          onClick={() => {
-            save(token, { id: null, at: Date.now() });
-            setEnded(null);
-          }}
-          className="mt-6 rounded-full bg-brand-600 px-6 py-3 text-sm font-bold text-on shadow-sm transition active:scale-95"
+        <Link
+          href={`/scan${ended.table ? `?at=${encodeURIComponent(`Table ${ended.table}`)}` : ""}`}
+          className="mt-6 inline-flex h-11 items-center rounded-full bg-brand-600 px-6 text-sm font-bold text-on shadow-sm transition active:scale-95"
         >
-          I&apos;m at Table {ended} now
-        </button>
+          Scan QR code
+        </Link>
       </main>
     );
   }

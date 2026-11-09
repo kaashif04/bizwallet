@@ -3,13 +3,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import QrScanner from "@/components/order/QrScanner";
+import { startVisit } from "@/components/order/TableVisit";
 
 // Scan a table, receipt or restaurant QR and open it. Public, so guests can use it too.
 export default function ScanPage() {
   const router = useRouter();
   const [at, setAt] = useState<string | null>(null);
   useEffect(() => setAt(new URLSearchParams(window.location.search).get("at")), []);
-  const onPath = useCallback((path: string) => router.replace(path), [router]);
+  const onPath = useCallback(
+    (path: string) => {
+      startVisit(path); // a table scanned here is a scan, like the phone camera
+      router.replace(path);
+    },
+    [router]
+  );
 
   return (
     <main className="min-h-dvh bg-ink-50">
