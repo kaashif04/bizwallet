@@ -80,7 +80,7 @@ export default function MenuView({
   return (
     <div className="mx-auto max-w-md">
       {/* Sticky header + category chips */}
-      <div className="sticky top-0 z-20 bg-ink-50/90 backdrop-blur-xl">
+      <div className="sticky top-0 z-20 bg-ink-50">
         <div className="flex items-center gap-3 px-5 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           {homeHref && <HomeButton href={homeHref} />}
           {logoUrl && <BranchLogo name={title} logoUrl={logoUrl} className="h-11 w-11 rounded-xl" />}

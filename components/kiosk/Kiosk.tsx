@@ -421,7 +421,7 @@ function Screen({ children }: { children: React.ReactNode }) {
 
 function BottomBar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-ink-100 bg-white/95 px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl">
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-ink-100 bg-white px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4">
       <div className="mx-auto flex max-w-5xl items-center gap-4">{children}</div>
     </div>
   );

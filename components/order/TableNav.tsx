@@ -48,7 +48,7 @@ export default function TableNav({ token }: { token: string }) {
       aria-label="Table"
       className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
-      <div className="flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-2 shadow-lg backdrop-blur-xl">
+      <div className="flex items-center gap-1 rounded-full bg-white px-2.5 py-2 shadow-lg">
         {tab(base, "Home", "home")}
         {tab(menu, "Menu", "menu")}
         <button
