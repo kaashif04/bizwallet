@@ -438,6 +438,11 @@ function CartReview({
     setPromoBusy(false);
     if (error) {
       setPromo(null);
+      // A reward voucher is only taken at the counter; say so instead of "not found".
+      if (error.message.startsWith("Promo code not found")) {
+        const { data: v } = await supabase.from("vouchers").select("id").eq("code", code.replace(/\s/g, "").toUpperCase()).maybeSingle();
+        if (v) return setPromoError("This is a reward voucher. Show it to staff at the counter.");
+      }
       return setPromoError(error.message);
     }
     setPromo(data as Quote);

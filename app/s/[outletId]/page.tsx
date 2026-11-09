@@ -53,6 +53,7 @@ export default async function StorePage({
       .select("id,company_id,name,description,points_cost,kind,value")
       .eq("is_active", true)
       .eq("company_id", store.company_id)
+      .order("sort_order")
       .order("points_cost"),
     supabase.from("loyalty_programs").select("is_enabled,points_per_rm").eq("company_id", store.company_id).maybeSingle(),
   ]);
