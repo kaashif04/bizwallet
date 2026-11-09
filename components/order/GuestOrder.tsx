@@ -438,11 +438,6 @@ function CartReview({
     setPromoBusy(false);
     if (error) {
       setPromo(null);
-      // A reward voucher is only taken at the counter; say so instead of "not found".
-      if (error.message.startsWith("Promo code not found")) {
-        const { data: v } = await supabase.from("vouchers").select("id").eq("code", code.replace(/\s/g, "").toUpperCase()).maybeSingle();
-        if (v) return setPromoError("This is a reward voucher. Show it to staff at the counter.");
-      }
       return setPromoError(error.message);
     }
     setPromo(data as Quote);
@@ -753,7 +748,7 @@ function CartReview({
               : "Paid before it's made. The kitchen starts once you've paid."
             : payNow
               ? "Pay now and you can leave when you're done eating."
-              : "Pay at the counter when you're done. Have a promo code? Give it to staff when you pay."}
+              : "Pay at the counter when you're done. Have a promo or voucher code? Give it to staff when you pay."}
         </p>
 
         {methods.length > 1 && (
