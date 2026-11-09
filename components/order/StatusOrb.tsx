@@ -1,10 +1,21 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { Mascot, type Pose } from "@/components/Mascot";
 
 export type OrbStage = "pay" | "pending" | "queued" | "preparing" | "ready" | "served" | "rejected";
 
 const ease = [0.22, 1, 0.36, 1] as const;
+
+// The bun mascot stands in for the icon at every stage but payment.
+const POSE: Partial<Record<OrbStage, Pose>> = {
+  pending: "waiting",
+  queued: "waiting",
+  preparing: "waiting",
+  ready: "ready",
+  served: "bye",
+  rejected: "oops",
+};
 
 // The live centrepiece of the order page: one icon per stage, morphing as the
 // kitchen moves, with a soft pulse while something is still happening.
@@ -18,6 +29,38 @@ export default function StatusOrb({ stage }: { stage: OrbStage }) {
         : stage === "ready" || stage === "served"
           ? "bg-emerald-50 text-emerald-600"
           : "bg-brand-50 text-brand-600";
+
+  const pose = POSE[stage];
+  if (pose) {
+    return (
+      <div className="relative mx-auto flex h-36 w-36 items-center justify-center" aria-hidden="true">
+        {live && (
+          <motion.span
+            className={`absolute inset-4 rounded-full ${tone}`}
+            animate={{ scale: [1, 1.3], opacity: [0.5, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
+          />
+        )}
+        <motion.div
+          className="relative"
+          animate={stage === "ready" ? { y: [0, -8, 0] } : { y: 0 }}
+          transition={stage === "ready" ? { duration: 0.9, repeat: Infinity, repeatDelay: 1.2, ease } : { duration: 0.2 }}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pose}
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.7, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 380, damping: 24 }}
+            >
+              <Mascot pose={pose} className="h-32 w-32" />
+            </motion.div>
+          </AnimatePresence>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative mx-auto flex h-28 w-28 items-center justify-center" aria-hidden="true">

@@ -6,6 +6,7 @@ import { outletNames } from "@/lib/guest-order";
 import { currentPlace } from "@/lib/place-server";
 import type { Place } from "@/lib/places";
 import ActiveOrders from "@/components/customer/ActiveOrders";
+import { Mascot } from "@/components/Mascot";
 import { PageHeader, SectionTitle, screen } from "@/components/customer/ui";
 
 // BizPos transaction_status: open | completed | voided | refunded
@@ -63,7 +64,8 @@ export default async function OrdersListPage() {
 
         <SectionTitle>Past orders</SectionTitle>
         {mine.length === 0 ? (
-          <div className="rounded-2xl bg-white p-10 text-center text-sm text-ink-500">
+          <div className="flex flex-col items-center rounded-2xl bg-white p-10 text-center text-sm text-ink-500">
+            <Mascot pose="empty" className="mb-2 h-32 w-32" />
             No orders yet. Scan the QR on your table to order.
           </div>
         ) : (

@@ -220,8 +220,8 @@ export default function TableHome({
 
           {/* Extras, always there so people know about them; white, quieter than ordering and staff. */}
           <nav aria-label="More" className="grid grid-cols-2 gap-3">
-            <Extra href={`/order/t/${token}/play`} icon={TILE.play} title="Play games" sub="While you wait" />
-            <Extra onClick={() => setWifiOpen(true)} icon={TILE.wifi} title="Wi-Fi" sub={home.wifi ? home.wifi.name : "Ask our staff"} />
+            <Extra href={`/order/t/${token}/play`} icon={TILE.play} img="/tiles/games.png" title="Play games" sub="While you wait" />
+            <Extra onClick={() => setWifiOpen(true)} icon={TILE.wifi} img="/tiles/wifi.png" title="Wi-Fi" sub={home.wifi ? home.wifi.name : "Ask our staff"} />
           </nav>
 
 
@@ -381,13 +381,17 @@ const TILE = {
   play: "M5 19h14M7 15h10M9 11h6M11 7h2",
   wifi: "M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01",
 };
-function Extra({ href, onClick, icon, title, sub }: { href?: string; onClick?: () => void; icon: string; title: string; sub: string }) {
+function Extra({ href, onClick, icon, img, title, sub }: { href?: string; onClick?: () => void; icon: string; img?: string; title: string; sub: string }) {
   const cls = "flex min-w-0 flex-col items-start gap-2.5 rounded-3xl bg-white p-4 text-left shadow-sm transition hover:bg-ink-100 active:scale-[0.97]";
   const body = (
     <>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
-        <Glyph d={icon} className="h-6 w-6" />
-      </span>
+      {img ? (
+        <img src={img} alt="" className="h-12 w-12 shrink-0 object-contain" />
+      ) : (
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700">
+          <Glyph d={icon} className="h-6 w-6" />
+        </span>
+      )}
       <span className="w-full min-w-0">
         <span className="block truncate text-base font-bold leading-tight text-ink-900">{title}</span>
         <span className="block truncate text-xs text-ink-500">{sub}</span>

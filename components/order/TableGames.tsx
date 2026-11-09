@@ -5,14 +5,13 @@ import { createClient } from "@/lib/supabase/client";
 import { guestLabel, loadContact, type GameBoard } from "@/lib/guest-order";
 import StackGame from "./StackGame";
 import EchoGame from "./games/EchoGame";
-import WhackGame from "./games/WhackGame";
-import ReflexGame from "./games/ReflexGame";
+import MatchGame from "./games/MatchGame";
+import { Avatar } from "@/components/Mascot";
 
 const GAMES = {
   stack: { name: "Stack", Game: StackGame, unit: "blocks" },
   echo: { name: "Echo", Game: EchoGame, unit: "rounds" },
-  whack: { name: "Whack", Game: WhackGame, unit: "hits" },
-  reflex: { name: "Reflex", Game: ReflexGame, unit: "points" },
+  match: { name: "Match", Game: MatchGame, unit: "points" },
 };
 type Id = keyof typeof GAMES;
 
@@ -73,7 +72,7 @@ export default function TableGames({ token }: { token: string }) {
           </span>
         </div>
 
-        <div role="tablist" aria-label="Games" className="mt-2 flex gap-2 overflow-x-auto">
+        <div role="tablist" aria-label="Games" className="mt-3 grid grid-cols-3 gap-2">
           {(Object.keys(GAMES) as Id[]).map((g) => (
             <button
               key={g}
@@ -81,16 +80,15 @@ export default function TableGames({ token }: { token: string }) {
               role="tab"
               aria-selected={g === id}
               onClick={() => setId(g)}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition active:scale-95 ${
-                g === id ? "bg-brand-600 text-on" : "bg-white text-ink-700"
-              }`}
+              className={`flex flex-col items-center gap-1 rounded-2xl bg-white p-2 transition active:scale-95 ${g === id ? "ring-2 ring-brand-600" : ""}`}
             >
-              {GAMES[g].name}
+              <img src={`/games/${g}.png`} alt="" className="h-14 w-full object-contain" />
+              <span className={`text-xs font-semibold ${g === id ? "text-brand-700" : "text-ink-700"}`}>{GAMES[g].name}</span>
             </button>
           ))}
         </div>
 
-        <Game key={id} board={board} onEnd={submit} />
+        <Game key={id} board={board} onEnd={submit} seed={token} />
         {error && <p role="alert" className="mt-3 text-sm text-rose-700">{error}</p>}
 
         <section className="mt-6">
@@ -102,6 +100,7 @@ export default function TableGames({ token }: { token: string }) {
             {board?.players?.map((p, i) => (
               <li key={p.name} className={`flex items-center gap-3 px-4 py-3 text-sm ${p.name === me ? "bg-brand-50 font-bold" : ""}`}>
                 <span className="w-6 tabular-nums text-ink-500">{i + 1}</span>
+                <Avatar name={p.name} />
                 <span className="flex-1 truncate text-ink-900">
                   {p.name}
                   {p.name === me ? " (you)" : ""}

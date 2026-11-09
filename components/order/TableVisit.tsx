@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { tableOrders } from "@/lib/guest-order";
+import { Mascot } from "@/components/Mascot";
 
 // Scanning the table's QR starts a visit; nothing else does. A reopened tab,
 // a reload, the back button or a link inside the app carries on the visit this
@@ -104,6 +105,7 @@ export default function TableVisit({ token, children }: { token: string; childre
     const at = ended.table ? `Table ${ended.table}` : "your table";
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center bg-ink-50 px-6 text-center">
+        <Mascot pose={ended.hadVisit ? "bye" : "scan"} className="mb-2 h-40 w-40" />
         <h1 className="text-2xl font-semibold tracking-[-0.02em] text-ink-900">
           {ended.hadVisit ? "Thanks for visiting" : "Scan to order"}
         </h1>
