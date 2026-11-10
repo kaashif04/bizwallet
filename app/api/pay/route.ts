@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { billplzEnabled, createBill, deleteBill, getBill } from "@/lib/billplz";
 import { confirmBill } from "@/lib/pickup-payment";
-import { storeStatus } from "@/lib/hours";
 
 // Start (or resume) paying for an order (pickup, or dine-in paid in the app). Returns the Billplz page to
 // send the customer to, or { paid: true } if it's already paid.
@@ -31,7 +30,7 @@ export async function POST(request: Request) {
 
   const { data: order } = await admin
     .from("guest_orders")
-    .select("id, claim_token, status, amount_due, payment_ref, outlet_id, created_at, table_id, kiosk_id, delivery_fee, pickup_at")
+    .select("id, claim_token, status, amount_due, payment_ref, outlet_id, created_at, table_id, kiosk_id, delivery_fee")
     .eq("id", order_id)
     .maybeSingle();
   if (!order || order.claim_token !== claim_token) {
@@ -44,17 +43,6 @@ export async function POST(request: Request) {
   // Same 30-minute window as fn_guest_payment_expired; an open bill can still be paid.
   if (!order.payment_ref && Date.now() - Date.parse(order.created_at) > 30 * 60_000) {
     return NextResponse.json({ error: "This order expired. Please order again." }, { status: 410 });
-  }
-
-  // A pickup or delivery for "now" while the branch is closed: no bill, so the kitchen never gets it
-  // (it lapses unpaid). guest_place_order doesn't check opening hours; the app normally stops it first.
-  // ponytail: an order begun a minute before closing is refused too; move the check into
-  // guest_place_order (BizPos) so it judges the time the order was placed.
-  if (!order.payment_ref && !order.table_id && !order.kiosk_id && !order.pickup_at) {
-    const status = await storeStatus(admin, order.outlet_id);
-    if (status && !status.open) {
-      return NextResponse.json({ error: `We're closed now${status.opens ? ` and open ${status.opens}` : ""}. Please order again then.` }, { status: 409 });
-    }
   }
 
   try {

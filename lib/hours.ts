@@ -11,14 +11,39 @@ export function clock(hhmm: string): string {
 // Malaysia wall-clock time, for "opens tomorrow 10am" on a UTC server.
 export const klNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
 
-// The branch's open/closed pill from guest_store; null = no hours set (treated as always open).
-export async function storeStatus(
+// What guest_store says about hours. ordering_open / last_order_at come from BizPos's optional
+// "last orders" cut-off; until it's set (or shipped) they're missing and open_now decides.
+export type StoreHours = {
+  open_now: boolean | null;
+  today: DayHours;
+  hours: Hours | null;
+  ordering_open?: boolean | null;
+  last_order_at?: string | null; // "HH:MM"
+  prep_minutes?: number | null; // kitchen's prep time, for "ready in about 20 min"
+};
+
+export async function loadStore(
   supabase: { rpc: (fn: "guest_store", args: { p_outlet: string }) => PromiseLike<{ data: unknown }> },
   outletId: string
 ) {
   const { data } = await supabase.rpc("guest_store", { p_outlet: outletId });
-  const s = data as { open_now: boolean | null; today: DayHours; hours: Hours | null } | null;
-  return s ? openLabel(s.open_now, s.today, s.hours, klNow()) : null;
+  return data as StoreHours | null;
+}
+
+// Can the branch take orders for now? null = no hours set (always open). Closed, or past
+// last orders, gives open: false with when it opens next.
+export function orderingStatus(s: StoreHours, now = klNow()) {
+  const l = openLabel(s.open_now, s.today, s.hours, now);
+  if (l?.open && s.ordering_open === false) {
+    const opens = nextOpening(s.hours, now);
+    return { open: false, text: s.last_order_at ? `Last orders were ${clock(s.last_order_at)}` : "Not taking orders now", opens };
+  }
+  return l;
+}
+
+export async function storeStatus(supabase: Parameters<typeof loadStore>[0], outletId: string) {
+  const s = await loadStore(supabase, outletId);
+  return s ? orderingStatus(s) : null;
 }
 
 export const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];

@@ -8,6 +8,7 @@ import { currencySymbol } from "@/lib/format";
 import { pickupLabel } from "@/components/order/PickupTime";
 import HomeButton from "@/components/order/HomeButton";
 import StatusOrb, { type OrbStage } from "@/components/order/StatusOrb";
+import { loadStore } from "@/lib/hours";
 import { loadClaimToken, loadContact, loadMenuPath, loadOrderPoints, phoneOk, saveContact, type GuestContact, type GuestOrderStatus } from "@/lib/guest-order";
 
 const STEPS: Record<string, string> = {
@@ -51,6 +52,12 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
   const claimTried = useRef(false);
 
   const [menuPath, setMenuPath] = useState<string | null>(null);
+  // Pickup: the restaurant's usual prep time, for "Ready in about 20 min".
+  const [prep, setPrep] = useState<number | null>(null);
+  const pickupOutlet = menuPath?.match(/^\/order\/p\/([0-9a-f-]{36})/)?.[1];
+  useEffect(() => {
+    if (pickupOutlet) loadStore(supabase, pickupOutlet).then((s) => setPrep(s?.prep_minutes ?? null));
+  }, [supabase, pickupOutlet]);
   // Arrived from placing (?placed=1) or from the bank (?paid=1|0).
   const [arrival, setArrival] = useState<"placed" | "paid" | "unpaid" | null>(null);
   const [paying, setPaying] = useState(false);
@@ -377,9 +384,10 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
               href={order.delivery.share_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 flex h-11 items-center justify-center rounded-full bg-ink-900 text-sm font-bold text-ink-50 active:scale-[0.97]"
+              className="mt-3 flex h-12 items-center justify-center gap-2 rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm active:scale-[0.97]"
             >
-              Track on the map
+              <span className="h-2 w-2 animate-pulse rounded-full bg-white" aria-hidden="true" />
+              Track your driver live
             </a>
           )}
         </div>
@@ -416,7 +424,9 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
                   ? "Paid. Your food comes to your table, and you can leave when you're done."
                   : order.delivery
                     ? "Paid. A Lalamove driver brings it to you."
-                    : "Paid. Collect it at the counter when it's ready."
+                    : prep && !order.pickup_at && order.kitchen_status !== "ready"
+                      ? `Paid. Ready in about ${prep} min. Collect it at the counter.`
+                      : "Paid. Collect it at the counter when it's ready."
                 : "Pay at the counter when you're done."}
           </span>
         </p>

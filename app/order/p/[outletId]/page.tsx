@@ -4,7 +4,7 @@ import GuestOrder from "@/components/order/GuestOrder";
 import { billplzEnabled } from "@/lib/billplz";
 import { createClient } from "@/lib/supabase/server";
 import { pickupSlots, type GuestMenu } from "@/lib/guest-order";
-import { storeStatus } from "@/lib/hours";
+import { loadStore, orderingStatus } from "@/lib/hours";
 
 // Pickup pre-order (no table). Only works when the outlet enabled pickup in
 // BizPos, and only once online payment is set up (pickup is paid first).
@@ -27,15 +27,19 @@ export default async function PickupOrderPage({ params }: { params: { outletId: 
   }
   // Fetched with the page so the menu shows on arrival (GuestOrder retries from the phone if not).
   const supabase = createClient();
-  const [{ data }, status] = await Promise.all([
+  const [{ data }, store] = await Promise.all([
     supabase.rpc("guest_get_menu", { p_outlet: params.outletId }),
-    storeStatus(supabase, params.outletId),
+    loadStore(supabase, params.outletId),
   ]);
   // Closed now: browse, and order for a later pickup time if the branch takes them.
-  const closed = status && !status.open ? { opens: status.opens ?? null, ahead: (await pickupSlots(supabase, params.outletId)).length > 0 } : null;
+  const status = store && orderingStatus(store);
+  const closed =
+    status && !status.open
+      ? { text: status.text, opens: status.opens ?? null, ahead: (await pickupSlots(supabase, params.outletId)).length > 0 }
+      : null;
   return (
     <CartProvider storageKey={`bw_cart:p:${params.outletId}`}>
-      <GuestOrder outletId={params.outletId} initialMenu={(data as GuestMenu | null) ?? null} closed={closed} />
+      <GuestOrder outletId={params.outletId} initialMenu={(data as GuestMenu | null) ?? null} closed={closed} prepMinutes={store?.prep_minutes ?? null} />
     </CartProvider>
   );
 }

@@ -19,12 +19,14 @@ export default function PickupTime({
   onChange,
   refresh,
   closed,
+  prepMinutes,
 }: {
   outletId: string;
   value: string | null;
   onChange: (slot: string | null) => void;
   refresh?: number; // bump to reload the slots (a taken slot after a failed order)
   closed?: boolean; // the branch is closed now, so only later times
+  prepMinutes?: number | null; // shown on Now: "ready in about 20 min"
 }) {
   const supabase = useMemo(() => createClient(), []);
   const [slots, setSlots] = useState<string[]>([]);
@@ -57,6 +59,7 @@ export default function PickupTime({
         <div className="grid grid-cols-2 gap-2">
           <button type="button" className={chip(!later)} onClick={() => onChange(null)}>
             Now
+            {prepMinutes ? <span className="block text-xs font-medium opacity-80">Ready in about {prepMinutes} min</span> : null}
           </button>
           <button type="button" className={chip(later)} onClick={() => onChange(firstOf(shownDay))}>
             Later

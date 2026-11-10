@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { billplzEnabled } from "@/lib/billplz";
 import { googleWalletEnabled } from "@/lib/google-wallet";
 import { currencySymbol } from "@/lib/format";
-import { DAYS, clock, klNow, openLabel } from "@/lib/hours";
+import { DAYS, clock, klNow, openLabel, orderingStatus, type StoreHours } from "@/lib/hours";
 import { outletLogos, pickupSlots, type Banner, type PickupOutlet } from "@/lib/guest-order";
 import type { Place, Reward, Voucher } from "@/lib/places";
 import BranchLogo from "@/components/order/BranchLogo";
@@ -15,7 +15,7 @@ import DishRails, { type Dish } from "@/components/store/DishRails";
 import NotificationBell from "@/components/customer/NotificationBell";
 import { SectionTitle } from "@/components/customer/ui";
 
-type Store = PickupOutlet & { ordering: boolean };
+type Store = PickupOutlet & StoreHours & { ordering: boolean };
 
 const sym = currencySymbol("MYR");
 const money = (n: number) => `${sym}${Number(n).toFixed(2)}`;
@@ -97,8 +97,9 @@ export default async function StorePage({
   const kl = klNow();
   const status = openLabel(store.open_now, store.today, store.hours, kl);
   const todayIdx = (kl.getDay() + 6) % 7; // Monday = 0
-  // Closed now: pickup only for a later time (if the branch takes orders ahead), no delivery.
-  const closed = !!status && !status.open;
+  // Closed (or past last orders): pickup only for a later time (if the branch takes orders ahead), no delivery.
+  const ordering = orderingStatus(store, kl);
+  const closed = !!ordering && !ordering.open;
   const ahead = canPickup && closed && (await pickupSlots(supabase, store.id)).length > 0;
   const here = `/s/${store.id}`;
   const signIn = `/login?redirect=${encodeURIComponent(here)}`;
@@ -325,7 +326,7 @@ export default async function StorePage({
           {closed && (
             <p className="mb-2 text-center text-xs font-semibold text-ink-600">
               <span className="rounded-full bg-white px-3 py-1.5 shadow-sm">
-                Closed now{status!.opens ? ` · opens ${status!.opens}` : ""}
+                {ordering!.text}
               </span>
             </p>
           )}
@@ -346,7 +347,7 @@ export default async function StorePage({
                   className="flex h-14 flex-1 flex-col items-center justify-center rounded-full bg-ink-100 text-base font-bold leading-tight text-ink-500"
                 >
                   Delivery
-                  {status!.opens && <span className="text-xs font-medium">from {status!.opens}</span>}
+                  {ordering!.opens && <span className="text-xs font-medium">from {ordering!.opens}</span>}
                 </span>
               ) : (
                 // GuestOrder starts checkout on Delivery when the URL has ?delivery=1.

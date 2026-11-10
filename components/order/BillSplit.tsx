@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
 import { tableOrders, type BillShare, type TableBill } from "@/lib/guest-order";
+import { useCart } from "./cart-context";
 
 const sym = currencySymbol("MYR");
 const money = (n: number) => `${sym}${Number(n).toFixed(2)}`;
@@ -18,6 +19,7 @@ type Mode = BillShare["mode"];
 // one person ordered, an equal share. The server sets the amount; this only
 // previews it. Every phone refreshes, so everyone sees what's paid and what's left.
 export default function BillSplit({ token, canPay }: { token: string; canPay: boolean }) {
+  const cart = useCart();
   const [supabase] = useState(() => createClient());
   const [bill, setBill] = useState<TableBill | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -97,8 +99,12 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
             {arrival === "paid" ? "Your payment closed the bill. Enjoy the rest of your day." : "Once you've ordered, your bill shows up here."}
           </p>
           {arrival !== "paid" && (
-            <Link href={`/order/t/${token}/menu`} className="mt-4 inline-flex h-11 items-center rounded-full bg-brand-600 px-6 text-sm font-bold text-on transition active:scale-95">
-              Start order
+            // Something already in the cart: open it, rather than starting over.
+            <Link
+              href={`/order/t/${token}/menu${cart.totalItems ? "?cart=1" : ""}`}
+              className="mt-4 inline-flex h-11 items-center rounded-full bg-brand-600 px-6 text-sm font-bold text-on transition active:scale-95"
+            >
+              {cart.totalItems ? `Review your order (${cart.totalItems})` : "Start order"}
             </Link>
           )}
         </div>

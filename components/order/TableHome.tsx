@@ -15,6 +15,7 @@ import {
   type PickupOutlet,
 } from "@/lib/guest-order";
 import { SectionTitle } from "@/components/customer/ui";
+import { orderingStatus, type StoreHours } from "@/lib/hours";
 import AccountChip from "./AccountChip";
 import { rememberPlace } from "@/lib/place";
 import BranchLogo from "./BranchLogo";
@@ -44,6 +45,7 @@ export default function TableHome({
   // Takeaway is always shown; greyed out (and says so when tapped) unless the
   // outlet takes pickup orders, online payment is on, and it's open.
   const [takeaway, setTakeaway] = useState(false);
+  const [shut, setShut] = useState<string | null>(null); // "Closed · opens 10am" / "Last orders were 9:30pm"
   const [wifiOpen, setWifiOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
@@ -86,11 +88,13 @@ export default function TableHome({
       if (!h) return;
       rememberPlace(h.outlet.id);
       outletLogos(supabase).then((l) => setLogo(l[h.outlet.id] ?? null));
-      if (pickupPaid)
-        supabase.rpc("guest_store", { p_outlet: h.outlet.id }).then(({ data }) => {
-          const o = data as PickupOutlet | null;
-          setTakeaway(!!o?.pickup && o.open_now !== false);
-        });
+      supabase.rpc("guest_store", { p_outlet: h.outlet.id }).then(({ data }) => {
+        const o = data as (PickupOutlet & StoreHours) | null;
+        const st = o && orderingStatus(o);
+        // Closed or past last orders: no ordering from the table (staff can still help).
+        setShut(st && !st.open ? st.text : null);
+        setTakeaway(pickupPaid && !!o?.pickup && st?.open !== false);
+      });
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) return setMe("guest");
       const [{ data: m }, { data: acct }, { count }] = await Promise.all([
@@ -201,7 +205,11 @@ export default function TableHome({
           {home.ordering ? (
             <div>
               <div className="grid grid-cols-2 gap-3">
-                <BigButton href={`/order/t/${token}/menu`} icon={TILE.menu} title={orders.length ? "Order more" : "Order now"} sub="Eat here" className="bg-brand-600 text-on" />
+                {shut ? (
+                  <BigButton icon={TILE.menu} title={orders.length ? "Order more" : "Order now"} sub={shut} className="bg-ink-100 text-ink-400 shadow-none" />
+                ) : (
+                  <BigButton href={`/order/t/${token}/menu`} icon={TILE.menu} title={orders.length ? "Order more" : "Order now"} sub="Eat here" className="bg-brand-600 text-on" />
+                )}
                 {takeaway ? (
                   <BigButton href={`/order/p/${home.outlet.id}`} icon={TILE.takeaway} title="Takeaway" sub="Pay & collect" className="bg-ink-900 text-ink-50" />
                 ) : (

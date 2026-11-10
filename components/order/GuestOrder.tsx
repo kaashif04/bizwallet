@@ -34,7 +34,9 @@ export default function GuestOrder(
   props: ({ token: string; outletId?: never } | { outletId: string; token?: never }) & {
     onlinePay?: boolean; // FPX is set up (Billplz); wallet credit works regardless
     initialMenu?: GuestMenu | null; // fetched by the server page, so the menu shows without a second round trip
-    closed?: { opens: string | null; ahead: boolean } | null; // pickup page: closed now, when it opens, and if it takes orders for later
+    // Closed or past last orders: why ("Closed · opens 10am"), when it opens, and (pickup) if it takes orders for later.
+    closed?: { text: string; opens: string | null; ahead: boolean } | null;
+    prepMinutes?: number | null; // pickup: the kitchen's usual prep time
   }
 ) {
   const router = useRouter();
@@ -282,7 +284,7 @@ export default function GuestOrder(
         filter={
           (props.closed || lastOrder || hasVeg) && (
             <>
-              {props.closed && <ClosedNotice {...props.closed} />}
+              {props.closed && <ClosedNotice {...props.closed} table={!!props.token} />}
               {lastOrder && (
                 <OrderAgain order={lastOrder} byId={byId} groupsByItem={groupsByItem} currency={CURRENCY} onView={() => setReviewing(true)} />
               )}
@@ -334,6 +336,7 @@ export default function GuestOrder(
             onlinePay={props.onlinePay ?? true}
             delivery={delivery}
             closed={props.closed ?? null}
+            prepMinutes={props.prepMinutes ?? null}
             pointsPerRm={loyalty?.pointsPerRm ?? null}
             upsell={goesWith(cart.lines.map((l) => l.item), suggestions, oneTap, 4)}
             onClose={() => setReviewing(false)}
@@ -357,6 +360,7 @@ function CartReview({
   onlinePay,
   delivery,
   closed,
+  prepMinutes,
   upsell,
   pointsPerRm,
   onClose,
@@ -366,7 +370,8 @@ function CartReview({
   token?: string;
   onlinePay: boolean;
   delivery: DeliveryInfo | null;
-  closed: { opens: string | null; ahead: boolean } | null;
+  closed: { text: string; opens: string | null; ahead: boolean } | null;
+  prepMinutes: number | null;
   upsell: MenuItem[];
   pointsPerRm: number | null;
   onClose: () => void;
@@ -444,8 +449,8 @@ function CartReview({
   const due = menu.tax.sst_enabled ? null : roundUp(cart.totalPrice + service);
   const charges = [service > 0 && "service charge", menu.tax.sst_enabled && "SST"].filter(Boolean);
   const payNow = pickup || payWith !== "counter";
-  // Closed now: delivery is off and pickup needs a later time (none = can't order until it opens).
-  const shut = pickup && !!closed && !pickupAt;
+  // Closed now: tables can't order, delivery is off, and pickup needs a later time (none = wait till it opens).
+  const shut = !!closed && !(pickup && pickupAt);
   // A combo is an ordinary menu item, so the promo quote prices it by its own id.
   const quoteItems = cart.lines.map((l) => ({
     menu_item_id: l.item.id,
@@ -498,7 +503,7 @@ function CartReview({
   const earns = pointsPerRm !== null ? Math.floor((cart.totalPrice + deliveryFee) * pointsPerRm) : 0;
 
   async function place() {
-    if (shut) return setError(closed!.ahead ? "Choose a pickup time." : `We're closed now${closed!.opens ? `. Order from ${closed!.opens}` : ""}.`);
+    if (shut) return setError(closed!.ahead ? "Choose a pickup time." : closed!.text);
     // No details is fine, but then it's paid at the counter (pickup can't be).
     if (isDelivery) {
       if (!ds.quote) return setError(ds.quoting ? "Getting the delivery price. One moment." : ds.error ?? "Choose your delivery address first.");
@@ -649,14 +654,14 @@ function CartReview({
               >
                 {m === "pickup" ? "Pickup" : "Delivery"}
                 {m === "delivery" && closed && (
-                  <span className="block text-xs font-medium text-ink-500">{closed.opens ? `From ${closed.opens}` : "Closed now"}</span>
+                  <span className="block text-xs font-medium text-ink-500">{closed.opens ? `From ${closed.opens}` : "Not now"}</span>
                 )}
               </button>
             ))}
           </div>
         )}
         {isDelivery && <DeliveryAddress outletId={menu.outlet.id} info={delivery!} value={ds} onChange={setDs} />}
-        {pickup && !isDelivery && <PickupTime outletId={menu.outlet.id} value={pickupAt} onChange={setPickupAt} refresh={slotsRefresh} closed={!!closed} />}
+        {pickup && !isDelivery && <PickupTime outletId={menu.outlet.id} value={pickupAt} onChange={setPickupAt} refresh={slotsRefresh} closed={!!closed} prepMinutes={prepMinutes} />}
         <ul className="mt-3 divide-y divide-slate-100">
           {cart.lines.map((l) => (
             <li key={l.lineId} className="flex items-start gap-3 py-3">
@@ -849,7 +854,9 @@ function CartReview({
             : pickup
             ? pickupAt
               ? "Paid now. The kitchen starts it shortly before your pickup time."
-              : "Paid before it's made. The kitchen starts once you've paid."
+              : prepMinutes
+                ? `Paid before it's made. Ready in about ${prepMinutes} min once you've paid.`
+                : "Paid before it's made. The kitchen starts once you've paid."
             : payNow
               ? "Pay now and you can leave when you're done eating."
               : "Pay at the counter when you're done. Have a promo or voucher code? Give it to staff when you pay."}
@@ -949,7 +956,7 @@ function CartReview({
           className="h-14 w-full rounded-full bg-brand-600 px-5 text-base font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97] disabled:opacity-60"
         >
           {shut && !closed!.ahead
-            ? `Closed now${closed!.opens ? ` · opens ${closed!.opens}` : ""}`
+            ? closed!.text
             : placing
             ? payNow
               ? "Opening payment…"
@@ -966,14 +973,18 @@ function CartReview({
   );
 }
 
-// Pickup page while the branch is closed: the menu stays open to browse.
-function ClosedNotice({ opens, ahead }: { opens: string | null; ahead: boolean }) {
+// The menu while the branch is closed (or past last orders): it stays open to browse.
+function ClosedNotice({ text, ahead, table }: { text: string; opens: string | null; ahead: boolean; table: boolean }) {
   return (
     <div className="flex items-start gap-3 rounded-2xl bg-white p-4 shadow-sm">
       <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-ink-400" aria-hidden="true" />
       <p className="text-sm text-ink-700">
-        <span className="font-bold text-ink-900">Closed now{opens ? ` · opens ${opens}` : ""}.</span>{" "}
-        {ahead ? "Order now and pick a time to collect it later." : "Have a look at the menu and order once we open."}
+        <span className="font-bold text-ink-900">{text}.</span>{" "}
+        {table
+          ? "Ordering in the app is closed. Ask our staff if you need anything."
+          : ahead
+            ? "Order now and pick a time to collect it later."
+            : "Have a look at the menu and order once we open."}
       </p>
     </div>
   );
