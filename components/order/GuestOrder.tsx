@@ -389,12 +389,13 @@ function CartReview({
   useEffect(() => {
     supabase
       .from("members")
-      .select("full_name")
+      .select("full_name, phone")
       .maybeSingle()
       .then(({ data }) => {
         setSignedIn(!!data);
         setMemberName(data?.full_name?.trim() || null);
-        if (data?.full_name?.trim()) setDs((d) => ({ ...d, name: d.name || data.full_name!.trim() }));
+        // The driver's name and phone start as the member's own.
+        if (data) setDs((d) => ({ ...d, name: d.name || data.full_name?.trim() || "", phone: d.phone || data.phone || "" }));
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on open
   }, [supabase]);
@@ -491,7 +492,7 @@ function CartReview({
   async function place() {
     // No details is fine, but then it's paid at the counter (pickup can't be).
     if (isDelivery) {
-      if (!ds.quote) return setError("Move the map to your address to see the delivery fee.");
+      if (!ds.quote) return setError(ds.quoting ? "Getting the delivery price. One moment." : "Choose your delivery address first.");
       if (!ds.name.trim() || !phoneOk(ds.phone)) return setError("Add a name and phone number for the driver.");
     } else if (guest && payNow && !phoneOk(phone))
       return setError(pickup ? "Add your phone number to pay." : "Add your phone number to pay now, or choose Pay at counter.");
@@ -937,7 +938,7 @@ function CartReview({
             : error
               ? "Try again"
               : payNow
-                ? `Pay${grand !== null ? ` ${sym}${grand.toFixed(2)}` : ""} and place order`
+                ? `Pay${grand !== null && (!isDelivery || ds.quote) ? ` ${sym}${grand.toFixed(2)}` : ""} and place order`
                 : "Place order"}
         </button>
         </div>

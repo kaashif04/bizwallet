@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { Map as LeafletMap } from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { useRef, useState } from "react";
 
-// Delivery: the customer moves the map under a fixed pin (or searches / uses their location),
-// we fill the address from the pin, and get Lalamove's price for it from /api/delivery/quote.
-// ponytail: OpenStreetMap tiles + Nominatim are free with fair use (search on submit, ~1 req/s);
-// move to a paid geocoder if delivery volume grows.
+// Delivery: the customer searches their address or uses their current location, checks the
+// address we read back, and we get Lalamove's price for it from /api/delivery/quote. No map.
+// ponytail: Nominatim is free with fair use (search on submit only, ~1 req/s); move to a paid
+// geocoder if delivery volume grows or house-level results aren't good enough.
 
 export type DeliveryInfo = { max_km: number; free_above: number | null; lat: number; lng: number };
 export type DeliveryQuote = { id: string; fee: number; distance_km: number; expires_at: string; free_above: number | null };
@@ -53,161 +51,147 @@ export default function DeliveryAddress({
   value: DeliveryState;
   onChange: (f: (d: DeliveryState) => DeliveryState) => void;
 }) {
-  const el = useRef<HTMLDivElement>(null);
-  const map = useRef<LeafletMap | null>(null);
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<Place[] | null>(null);
-  const [locating, setLocating] = useState(false);
-  const typed = useRef(false); // the customer edited the address: don't overwrite it from the pin
-  const latest = useRef(value); // the map's handlers are made once; they read the address from here
-  latest.current = value;
+  const [busy, setBusy] = useState<"search" | "locate" | null>(null);
+  const seq = useRef(0); // only the latest address gets its price shown
 
-  // The map, once. Moving it moves the pin; the pin's spot gets an address.
-  useEffect(() => {
-    let off = false;
-    let timer: number | undefined;
-    import("leaflet").then((L) => {
-      if (off || !el.current || map.current) return;
-      const start: [number, number] = value.lat != null && value.lng != null ? [value.lat, value.lng] : [info.lat, info.lng];
-      const m = L.map(el.current, { zoomControl: false }).setView(start, value.lat != null ? 17 : 14);
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(m);
-      L.circleMarker([info.lat, info.lng], { radius: 7, color: "#fff", weight: 2, fillColor: "#0f766e", fillOpacity: 1 })
-        .bindTooltip("Restaurant")
-        .addTo(m);
-      m.on("movestart", () => onChange((d) => ({ ...d, quote: null, error: null })));
-      m.on("moveend", () => {
-        window.clearTimeout(timer);
-        timer = window.setTimeout(() => pinMoved(m.getCenter().lat, m.getCenter().lng), 700);
-      });
-      map.current = m;
-    });
-    return () => {
-      off = true;
-      window.clearTimeout(timer);
-      map.current?.remove();
-      map.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the map is made once
-  }, []);
-
-  async function pinMoved(lat: number, lng: number) {
-    let address = latest.current.address;
-    if (!typed.current) {
-      const r = await fetch(`${NOMINATIM}/reverse?format=jsonv2&zoom=18&lat=${lat}&lon=${lng}`, { headers: { "Accept-Language": "en" } })
-        .then((r) => r.json())
-        .catch(() => null);
-      address = r?.display_name ? short(r.display_name) : `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-    }
-    onChange((d) => ({ ...d, lat, lng, address: typed.current ? d.address : address }));
-    getPrice(lat, lng, typed.current ? undefined : address);
-  }
-
-  async function getPrice(lat: number, lng: number, address?: string) {
-    onChange((d) => ({ ...d, quoting: true, error: null, quote: null }));
+  async function choose(lat: number, lng: number, address: string) {
+    const n = ++seq.current;
+    setResults(null);
+    onChange((d) => ({ ...d, lat, lng, address, quote: null, quoting: true, error: null }));
     try {
-      const q = await fetchQuote(outletId, { lat, lng, address: address ?? latest.current.address });
-      onChange((d) => (d.lat === lat && d.lng === lng ? { ...d, quote: q, quoting: false } : d));
+      const q = await fetchQuote(outletId, { lat, lng, address });
+      if (n === seq.current) onChange((d) => ({ ...d, quote: q, quoting: false }));
     } catch (e) {
-      onChange((d) => ({ ...d, quoting: false, error: (e as Error).message }));
+      if (n === seq.current) onChange((d) => ({ ...d, quoting: false, error: (e as Error).message }));
     }
   }
 
   async function find(e: React.FormEvent) {
     e.preventDefault();
     if (search.trim().length < 3) return;
-    const r = await fetch(`${NOMINATIM}/search?format=jsonv2&countrycodes=my&limit=5&q=${encodeURIComponent(search.trim())}`, {
-      headers: { "Accept-Language": "en" },
-    })
+    setBusy("search");
+    // Results near the restaurant first (not limited to it: the server checks the distance).
+    const box = [info.lng - 0.15, info.lat + 0.15, info.lng + 0.15, info.lat - 0.15].join(",");
+    const r = await fetch(
+      `${NOMINATIM}/search?format=jsonv2&countrycodes=my&limit=5&viewbox=${box}&q=${encodeURIComponent(search.trim())}`,
+      { headers: { "Accept-Language": "en" } }
+    )
       .then((r) => r.json())
       .catch(() => []);
+    setBusy(null);
     setResults(r);
   }
 
-  function goTo(lat: number, lng: number) {
-    typed.current = false;
-    setResults(null);
-    map.current?.setView([lat, lng], 18);
-  }
-
   function locate() {
-    if (!navigator.geolocation) return;
-    setLocating(true);
+    if (!navigator.geolocation) return onChange((d) => ({ ...d, error: "Your phone can't share its location. Search for your address instead." }));
+    setBusy("locate");
+    onChange((d) => ({ ...d, error: null }));
     navigator.geolocation.getCurrentPosition(
-      (p) => {
-        setLocating(false);
-        goTo(p.coords.latitude, p.coords.longitude);
+      async (p) => {
+        const { latitude: lat, longitude: lng } = p.coords;
+        const r = await fetch(`${NOMINATIM}/reverse?format=jsonv2&zoom=18&lat=${lat}&lon=${lng}`, { headers: { "Accept-Language": "en" } })
+          .then((r) => r.json())
+          .catch(() => null);
+        setBusy(null);
+        choose(lat, lng, r?.display_name ? short(r.display_name) : "My current location");
       },
       () => {
-        setLocating(false);
+        setBusy(null);
         onChange((d) => ({ ...d, error: "Couldn't get your location. Search for your address instead." }));
       },
       { enableHighAccuracy: true, timeout: 10_000 }
     );
   }
 
+  function change() {
+    seq.current++;
+    onChange((d) => ({ ...d, lat: null, lng: null, address: "", quote: null, quoting: false, error: null }));
+  }
+
   const input = "w-full rounded-xl bg-white px-4 py-3 text-base outline-none placeholder:text-ink-400";
+  const picked = value.lat != null && value.lng != null;
   return (
     <div className="mt-4 space-y-2 rounded-2xl bg-ink-50 p-4">
       <p className="text-sm font-bold text-ink-800">Deliver to</p>
-      <form onSubmit={find} className="flex gap-2">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search your address or building"
-          aria-label="Search your address"
-          className={`${input} min-w-0 flex-1`}
-        />
-        <button type="submit" className="shrink-0 rounded-xl bg-ink-900 px-4 text-sm font-bold text-ink-50 active:scale-95">
-          Find
-        </button>
-      </form>
-      {results && (
-        <ul className="divide-y divide-ink-100 overflow-hidden rounded-xl bg-white">
-          {results.length === 0 && <li className="px-4 py-3 text-sm text-ink-500">Nothing found. Try a building or street name.</li>}
-          {results.map((r) => (
-            <li key={r.lat + r.lon}>
-              <button type="button" onClick={() => goTo(Number(r.lat), Number(r.lon))} className="block min-h-11 w-full px-4 py-2.5 text-left text-sm text-ink-800">
-                {short(r.display_name)}
-              </button>
-            </li>
-          ))}
-        </ul>
+      {picked ? (
+        <div className="flex items-start gap-3 rounded-xl bg-white px-4 py-3">
+          <svg viewBox="0 0 24 24" aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand-600">
+            <path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" />
+          </svg>
+          <p className="min-w-0 flex-1 text-sm font-semibold text-ink-900">{value.address}</p>
+          <button type="button" onClick={change} className="shrink-0 text-sm font-bold text-brand-700">
+            Change
+          </button>
+        </div>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={locate}
+            disabled={busy !== null}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-ink-900 shadow-sm active:scale-[0.98] disabled:opacity-60"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 text-brand-600" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+            </svg>
+            {busy === "locate" ? "Finding your address…" : "Use my current location"}
+          </button>
+          <form onSubmit={find} className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Or type your address or building"
+              aria-label="Search your address"
+              autoComplete="street-address"
+              className={`${input} min-w-0 flex-1`}
+            />
+            <button
+              type="submit"
+              disabled={busy !== null}
+              className="shrink-0 rounded-xl bg-ink-900 px-4 text-sm font-bold text-ink-50 active:scale-95 disabled:opacity-60"
+            >
+              {busy === "search" ? "…" : "Find"}
+            </button>
+          </form>
+          {results && (
+            <ul aria-label="Addresses found" className="divide-y divide-ink-100 overflow-hidden rounded-xl bg-white">
+              {results.length === 0 && <li className="px-4 py-3 text-sm text-ink-500">Nothing found. Try a building, street or area name.</li>}
+              {results.map((r) => (
+                <li key={r.lat + r.lon}>
+                  <button
+                    type="button"
+                    onClick={() => choose(Number(r.lat), Number(r.lon), short(r.display_name))}
+                    className="block min-h-11 w-full px-4 py-2.5 text-left text-sm text-ink-800"
+                  >
+                    {short(r.display_name)}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="text-xs text-ink-500">We deliver up to {info.max_km} km.</p>
+        </>
       )}
-      <div className="relative">
-        <div ref={el} className="h-56 w-full overflow-hidden rounded-xl bg-ink-100" />
-        {/* The pin stays in the middle; the map moves under it. */}
-        <svg viewBox="0 0 24 24" aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-[500] h-9 w-9 -translate-x-1/2 -translate-y-full text-rose-600 drop-shadow">
-          <path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" />
-        </svg>
-        <button
-          type="button"
-          onClick={locate}
-          className="absolute bottom-2 right-2 z-[500] rounded-full bg-white px-3 py-2 text-xs font-bold text-ink-800 shadow-md active:scale-95"
-        >
-          {locating ? "Finding you…" : "Use my location"}
-        </button>
-      </div>
-      <p className="text-xs text-ink-500">Move the map so the pin is on your door. We deliver up to {info.max_km} km.</p>
-      <input
-        value={value.address}
-        onChange={(e) => {
-          typed.current = true;
-          onChange((d) => ({ ...d, address: e.target.value }));
-        }}
-        onBlur={() => typed.current && value.lat != null && value.lng != null && getPrice(value.lat, value.lng)}
-        placeholder="Address"
-        aria-label="Address"
-        maxLength={300}
-        className={input}
-      />
-      <input
-        value={value.unit}
-        onChange={(e) => onChange((d) => ({ ...d, unit: e.target.value }))}
-        placeholder="Unit, floor or house no."
-        aria-label="Unit, floor or house number"
-        maxLength={100}
-        className={input}
-      />
+      {value.quoting && <p className="text-sm text-ink-500">Getting the Lalamove price… this takes a few seconds.</p>}
+      {value.error && (
+        <p role="alert" className="text-sm font-semibold text-rose-700">
+          {value.error}
+        </p>
+      )}
+      {value.quote && <p className="text-sm text-ink-700">Delivery by Lalamove · {value.quote.distance_km} km</p>}
+      {picked && (
+        <input
+          value={value.unit}
+          onChange={(e) => onChange((d) => ({ ...d, unit: e.target.value }))}
+          placeholder="Unit, floor or house no."
+          aria-label="Unit, floor or house number"
+          maxLength={100}
+          className={input}
+        />
+      )}
       <div className="grid grid-cols-2 gap-2">
         <input
           value={value.name}
@@ -237,17 +221,6 @@ export default function DeliveryAddress({
         maxLength={200}
         className={input}
       />
-      {value.quoting && <p className="text-sm text-ink-500">Checking the delivery fee…</p>}
-      {value.error && (
-        <p role="alert" className="text-sm font-semibold text-rose-700">
-          {value.error}
-        </p>
-      )}
-      {value.quote && (
-        <p className="text-sm text-ink-700">
-          Delivery by Lalamove · {value.quote.distance_km} km
-        </p>
-      )}
     </div>
   );
 }
