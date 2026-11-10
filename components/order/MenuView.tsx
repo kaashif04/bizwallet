@@ -83,7 +83,8 @@ export default function MenuView({
       <div className="sticky top-0 z-20 bg-ink-50">
         <div className="flex items-center gap-3 px-5 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           {homeHref && <HomeButton href={homeHref} />}
-          {logoUrl && <BranchLogo name={title} logoUrl={logoUrl} className="h-11 w-11 rounded-xl" />}
+          {/* Small phones: the name needs the room more than the logo. */}
+          {logoUrl && <BranchLogo name={title} logoUrl={logoUrl} className="hidden h-11 w-11 rounded-xl min-[360px]:block" />}
           <span className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-bold leading-tight text-slate-900">{title}</h1>
             <span className="block truncate text-xs font-semibold text-brand-700">{subtitle}</span>

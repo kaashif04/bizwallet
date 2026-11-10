@@ -4,8 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { billplzEnabled } from "@/lib/billplz";
 import { googleWalletEnabled } from "@/lib/google-wallet";
 import { currencySymbol } from "@/lib/format";
-import { DAYS, clock, openLabel } from "@/lib/hours";
-import { outletLogos, type Banner, type PickupOutlet } from "@/lib/guest-order";
+import { DAYS, clock, klNow, openLabel } from "@/lib/hours";
+import { outletLogos, pickupSlots, type Banner, type PickupOutlet } from "@/lib/guest-order";
 import type { Place, Reward, Voucher } from "@/lib/places";
 import BranchLogo from "@/components/order/BranchLogo";
 import BannerCarousel from "@/components/order/BannerCarousel";
@@ -94,10 +94,12 @@ export default async function StorePage({
 
   const canPickup = store.pickup && billplzEnabled();
   const canDeliver = canPickup && !!deliveryInfo;
-  // Malaysia wall-clock time, for "opens tomorrow 10am" on a UTC server.
-  const klNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
-  const status = openLabel(store.open_now, store.today, store.hours, klNow);
-  const todayIdx = (klNow.getDay() + 6) % 7; // Monday = 0
+  const kl = klNow();
+  const status = openLabel(store.open_now, store.today, store.hours, kl);
+  const todayIdx = (kl.getDay() + 6) % 7; // Monday = 0
+  // Closed now: pickup only for a later time (if the branch takes orders ahead), no delivery.
+  const closed = !!status && !status.open;
+  const ahead = canPickup && closed && (await pickupSlots(supabase, store.id)).length > 0;
   const here = `/s/${store.id}`;
   const signIn = `/login?redirect=${encodeURIComponent(here)}`;
   const dishHref = canPickup ? `/order/p/${store.id}` : null;
@@ -125,7 +127,7 @@ export default async function StorePage({
   return (
     <div className="min-h-dvh bg-ink-50">
       <RememberPlace outletId={store.id} />
-      <main className={`mx-auto max-w-md ${canPickup ? "pb-[calc(7rem+env(safe-area-inset-bottom))]" : "pb-16"}`}>
+      <main className={`mx-auto max-w-md ${!canPickup ? "pb-16" : closed ? "pb-[calc(9.5rem+env(safe-area-inset-bottom))]" : "pb-[calc(7rem+env(safe-area-inset-bottom))]"}`}>
         {/* Cover, logo, name, open now */}
         <header className="relative">
           {/* No photo: a soft Marple wash, not a scrim over nothing. */}
@@ -319,22 +321,43 @@ export default async function StorePage({
       </main>
 
       {canPickup && (
-        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-md gap-2 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <Link
-            href={`/order/p/${store.id}`}
-            className="flex h-14 flex-1 items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:brightness-95 active:scale-[0.97]"
-          >
-            {canDeliver ? "Pickup" : "Order pickup"}
-          </Link>
-          {canDeliver && (
-            // GuestOrder starts checkout on Delivery when the URL has ?delivery=1.
-            <Link
-              href={`/order/p/${store.id}?delivery=1`}
-              className="flex h-14 flex-1 items-center justify-center rounded-full bg-white text-base font-bold text-brand-700 shadow-lg ring-1 ring-brand-200 transition hover:bg-brand-50 active:scale-[0.97]"
-            >
-              Delivery
-            </Link>
+        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {closed && (
+            <p className="mb-2 text-center text-xs font-semibold text-ink-600">
+              <span className="rounded-full bg-white px-3 py-1.5 shadow-sm">
+                Closed now{status!.opens ? ` · opens ${status!.opens}` : ""}
+              </span>
+            </p>
           )}
+          <div className="flex gap-2">
+            <Link
+              href={`/order/p/${store.id}`}
+              className={`flex h-14 flex-1 items-center justify-center rounded-full text-base font-bold shadow-lg transition active:scale-[0.97] ${
+                closed && !ahead ? "bg-white text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50" : "bg-brand-600 text-on hover:brightness-95"
+              }`}
+            >
+              {closed ? (ahead ? "Pickup later" : "See the menu") : canDeliver ? "Pickup" : "Order pickup"}
+            </Link>
+            {canDeliver &&
+              (closed ? (
+                // No drivers while the kitchen is closed.
+                <span
+                  aria-disabled="true"
+                  className="flex h-14 flex-1 flex-col items-center justify-center rounded-full bg-ink-100 text-base font-bold leading-tight text-ink-500"
+                >
+                  Delivery
+                  {status!.opens && <span className="text-xs font-medium">from {status!.opens}</span>}
+                </span>
+              ) : (
+                // GuestOrder starts checkout on Delivery when the URL has ?delivery=1.
+                <Link
+                  href={`/order/p/${store.id}?delivery=1`}
+                  className="flex h-14 flex-1 items-center justify-center rounded-full bg-white text-base font-bold text-brand-700 shadow-lg ring-1 ring-brand-200 transition hover:bg-brand-50 active:scale-[0.97]"
+                >
+                  Delivery
+                </Link>
+              ))}
+          </div>
         </div>
       )}
     </div>

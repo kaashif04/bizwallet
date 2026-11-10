@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { companyKeys, quote } from "@/lib/lalamove";
 import { customerFee, km } from "@/lib/delivery";
+import { storeStatus } from "@/lib/hours";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -28,6 +29,11 @@ export async function POST(request: Request) {
   ]);
   if (!s?.delivery_enabled || s.store_lat == null || s.store_lng == null || !o?.company_id) {
     return NextResponse.json({ error: "Delivery isn't available here right now." }, { status: 404 });
+  }
+  // No drivers while the kitchen is closed (the app hides delivery then; this stops a stale page).
+  const status = await storeStatus(admin, outlet_id);
+  if (status && !status.open) {
+    return NextResponse.json({ error: `We're closed now${status.opens ? `. Delivery starts again ${status.opens}` : ""}.` }, { status: 409 });
   }
   const maxKm = Number(s.delivery_max_km);
   const store = { lat: Number(s.store_lat), lng: Number(s.store_lng) };

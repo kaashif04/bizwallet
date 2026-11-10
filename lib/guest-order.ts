@@ -348,6 +348,18 @@ export async function outletNames(
   return new Map(((data ?? []) as PickupOutlet[]).map((o) => [o.id, o.name]));
 }
 
+// Order-ahead pickup times for the next week (ISO). Empty when the branch doesn't take orders ahead.
+// ponytail: a week of days in parallel (the server returns nothing past the outlet's limit); one call if it grows.
+export async function pickupSlots(
+  supabase: { rpc: (fn: "guest_pickup_slots", args: { p_outlet: string; p_date: string }) => PromiseLike<{ data: unknown }> },
+  outletId: string
+): Promise<string[]> {
+  const start = Date.now();
+  const dates = Array.from({ length: 7 }, (_, i) => new Date(start + i * 86_400_000).toLocaleDateString("en-CA", { timeZone: "Asia/Kuala_Lumpur" }));
+  const rs = await Promise.all(dates.map((d) => supabase.rpc("guest_pickup_slots", { p_outlet: outletId, p_date: d })));
+  return rs.flatMap((r) => ((r.data ?? []) as { slot: string }[]).map((x) => x.slot));
+}
+
 // Branch logos from BizEazy Hub (outlet_id -> image URL). Empty until the
 // wallet_outlet_logos migration is live; callers fall back to a monogram.
 export async function outletLogos(

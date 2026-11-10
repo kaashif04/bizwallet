@@ -8,6 +8,19 @@ export function clock(hhmm: string): string {
   return `${h12}${m ? `:${String(m).padStart(2, "0")}` : ""}${suffix}`;
 }
 
+// Malaysia wall-clock time, for "opens tomorrow 10am" on a UTC server.
+export const klNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
+
+// The branch's open/closed pill from guest_store; null = no hours set (treated as always open).
+export async function storeStatus(
+  supabase: { rpc: (fn: "guest_store", args: { p_outlet: string }) => PromiseLike<{ data: unknown }> },
+  outletId: string
+) {
+  const { data } = await supabase.rpc("guest_store", { p_outlet: outletId });
+  const s = data as { open_now: boolean | null; today: DayHours; hours: Hours | null } | null;
+  return s ? openLabel(s.open_now, s.today, s.hours, klNow()) : null;
+}
+
 export const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const minutes = (hhmm: string) => {
   const [h, m] = hhmm.split(":").map(Number);

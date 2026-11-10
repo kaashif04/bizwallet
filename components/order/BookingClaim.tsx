@@ -8,7 +8,7 @@ type Claim = { matched: boolean; name: string | null; party: number | null; depo
 
 // At a table, find this visit's booking so the deposit comes off the bill. Signed-in
 // members are matched by their own phone. Everyone else is asked for the phone they
-// booked with, and can skip. Asked once per table per tab, and only where the restaurant takes bookings.
+// booked with, and can skip. Asked once per table per tab, and only while a booking is due here.
 export default function BookingClaim({ token }: { token: string }) {
   const [supabase] = useState(() => createClient());
   const [asking, setAsking] = useState(false);
@@ -33,12 +33,9 @@ export default function BookingClaim({ token }: { token: string }) {
       // Carry on without remembering.
     }
     (async () => {
-      // Only where this restaurant takes bookings.
-      const { data: home } = await supabase.rpc("guest_table_home", { p_token: token });
-      const outlet = (home as { outlet?: { id?: string } } | null)?.outlet?.id;
-      if (!outlet) return;
-      const { data: cfg } = await supabase.rpc("booking_config", { p_outlet: outlet });
-      if (!(cfg as { enabled?: boolean } | null)?.enabled) return;
+      // Only when the restaurant has a paid booking due around now; walk-ins aren't asked.
+      const { data: due } = await supabase.rpc("wallet_booking_due", { p_table_token: token });
+      if (!due) return;
       const {
         data: { user },
       } = await supabase.auth.getUser();
