@@ -33,13 +33,14 @@ export default async function StorePage({
 }) {
   if (!/^[0-9a-f-]{36}$/i.test(params.outletId)) notFound();
   const supabase = createClient();
-  const [{ data }, logos, { data: bannerData }, { data: dishData }, { data: auth }, { data: bookingCfg }] = await Promise.all([
+  const [{ data }, logos, { data: bannerData }, { data: dishData }, { data: auth }, { data: bookingCfg }, { data: deliveryInfo }] = await Promise.all([
     supabase.rpc("guest_store", { p_outlet: params.outletId }),
     outletLogos(supabase),
     supabase.rpc("wallet_banners", { p_outlet: params.outletId }),
     supabase.rpc("guest_store_dishes", { p_outlet: params.outletId }),
     supabase.auth.getUser(),
     supabase.rpc("booking_config", { p_outlet: params.outletId }),
+    supabase.rpc("guest_delivery_info", { p_outlet: params.outletId }), // null = no delivery here
   ]);
   const store = data as Store | null;
   if (!store) notFound();
@@ -92,6 +93,7 @@ export default async function StorePage({
   const loyaltyOn = program?.is_enabled !== false;
 
   const canPickup = store.pickup && billplzEnabled();
+  const canDeliver = canPickup && !!deliveryInfo;
   // Malaysia wall-clock time, for "opens tomorrow 10am" on a UTC server.
   const klNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
   const status = openLabel(store.open_now, store.today, store.hours, klNow);
@@ -241,7 +243,7 @@ export default async function StorePage({
                   {again.items.map((l) => (l.quantity > 1 ? `${l.quantity}× ${l.name}` : l.name)).join(", ")}
                 </span>
               </span>
-              <span className="shrink-0 text-sm font-bold text-brand-700">Pickup ›</span>
+              <span className="shrink-0 text-sm font-bold text-brand-700">{canDeliver ? "Order ›" : "Pickup ›"}</span>
             </Link>
           ) : null}
           <DishRails mine={dishes.mine} popular={dishes.popular} href={dishHref} />
@@ -317,13 +319,22 @@ export default async function StorePage({
       </main>
 
       {canPickup && (
-        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-md gap-2 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <Link
             href={`/order/p/${store.id}`}
-            className="flex h-14 w-full items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:brightness-95 active:scale-[0.97]"
+            className="flex h-14 flex-1 items-center justify-center rounded-full bg-brand-600 text-base font-bold text-on shadow-lg transition hover:brightness-95 active:scale-[0.97]"
           >
-            Order pickup
+            {canDeliver ? "Pickup" : "Order pickup"}
           </Link>
+          {canDeliver && (
+            // GuestOrder starts checkout on Delivery when the URL has ?delivery=1.
+            <Link
+              href={`/order/p/${store.id}?delivery=1`}
+              className="flex h-14 flex-1 items-center justify-center rounded-full bg-white text-base font-bold text-brand-700 shadow-lg ring-1 ring-brand-200 transition hover:bg-brand-50 active:scale-[0.97]"
+            >
+              Delivery
+            </Link>
+          )}
         </div>
       )}
     </div>
