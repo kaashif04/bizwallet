@@ -235,8 +235,14 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         ? `Booked for ${pickupLabel(order.pickup_at)}. We start it just before.`
       : order.status === "awaiting_payment" || order.status === "pending"
         ? STEPS[order.status]
+        : order.delivery?.status === "picked_up"
+          ? "On its way to you"
+        : order.delivery?.status === "completed"
+          ? "Delivered. Enjoy!"
         : !order.table_label && order.kitchen_status === "ready"
-          ? "Ready. Collect it at the counter."
+          ? order.delivery
+            ? "Ready. Your driver picks it up soon."
+            : "Ready. Collect it at the counter."
           : STEPS[order.kitchen_status ?? "queued"];
   const stage: OrbStage =
     order.status === "rejected" || order.status === "cancelled"

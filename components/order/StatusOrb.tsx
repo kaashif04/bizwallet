@@ -39,7 +39,7 @@ export default function StatusOrb({ stage }: { stage: OrbStage }) {
   const pose = POSE[stage];
   if (pose) {
     return (
-      <div className="relative mx-auto flex h-36 w-36 items-center justify-center" aria-hidden="true">
+      <div className={`relative mx-auto flex items-center justify-center ${clip ? "h-44 w-44" : "h-36 w-36"}`} aria-hidden="true">
         {live && (
           <motion.span
             className={`absolute inset-4 rounded-full ${tone}`}
@@ -63,11 +63,12 @@ export default function StatusOrb({ stage }: { stage: OrbStage }) {
               {clip ? (
                 <video
                   src={`/mascot/${clip}.mp4`}
+                  poster={`/mascot/${clip}-poster.jpg`}
                   autoPlay
                   muted
                   loop
                   playsInline
-                  className="h-32 w-32 rounded-full object-cover shadow-md"
+                  className="h-40 w-40 rounded-full object-cover shadow-md ring-4 ring-white"
                 />
               ) : (
                 <Mascot pose={pose} className="h-32 w-32" />
