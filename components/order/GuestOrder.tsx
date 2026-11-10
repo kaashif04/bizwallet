@@ -17,6 +17,7 @@ import { useVisitCheck } from "./TableVisit";
 import MenuView from "./MenuView";
 import AddToCartSheet from "./AddToCartSheet";
 import PickupTime from "./PickupTime";
+import DeliveryAddress, { emptyDelivery, fetchQuote, type DeliveryInfo, type DeliveryState } from "./DeliveryAddress";
 import { useSheet } from "./useSheet";
 import ActiveOrders from "@/components/customer/ActiveOrders";
 import BannerCarousel from "./BannerCarousel";
@@ -48,6 +49,7 @@ export default function GuestOrder(
   const [nudge, setNudge] = useState<{ item: MenuItem; after: string } | null>(null);
   const [vegOnly, setVegOnly] = useVegOnly();
   const [lastOrder, setLastOrder] = useState<PastOrder | null>(null);
+  const [delivery, setDelivery] = useState<DeliveryInfo | null>(null); // null = this branch doesn't deliver
   const againDone = useRef(false);
   // Loyalty is per company: this branch's company, its points rate, and
   // whether the signed-in member has joined it.
@@ -89,6 +91,11 @@ export default function GuestOrder(
           .rpc("guest_menu_suggestions", { p_outlet: m.outlet.id })
           .then(({ data }) => data && setSuggestions(data as Suggestions));
         loadLoyalty(m.outlet.id);
+        if (!props.token) {
+          supabase
+            .rpc("guest_delivery_info", { p_outlet: m.outlet.id })
+            .then(({ data }) => data && setDelivery(data as DeliveryInfo));
+        }
       });
 
     async function loadLoyalty(outletId: string) {
@@ -265,7 +272,7 @@ export default function GuestOrder(
       <MenuView
         title={menu.outlet.name}
         homeHref={props.token ? `/order/t/${props.token}` : `/s/${props.outletId}`}
-        subtitle={menu.table ? `Table ${menu.table.label}` : "Pickup order"}
+        subtitle={menu.table ? `Table ${menu.table.label}` : delivery ? "Pickup or delivery" : "Pickup order"}
         logoUrl={logoUrl}
         account={account}
         items={shown}
@@ -323,6 +330,7 @@ export default function GuestOrder(
             menu={menu}
             token={props.token}
             onlinePay={props.onlinePay ?? true}
+            delivery={delivery}
             pointsPerRm={loyalty?.pointsPerRm ?? null}
             upsell={goesWith(cart.lines.map((l) => l.item), suggestions, oneTap, 4)}
             onClose={() => setReviewing(false)}
@@ -344,6 +352,7 @@ function CartReview({
   menu,
   token,
   onlinePay,
+  delivery,
   upsell,
   pointsPerRm,
   onClose,
@@ -352,6 +361,7 @@ function CartReview({
   menu: GuestMenu;
   token?: string;
   onlinePay: boolean;
+  delivery: DeliveryInfo | null;
   upsell: MenuItem[];
   pointsPerRm: number | null;
   onClose: () => void;
@@ -372,6 +382,7 @@ function CartReview({
     setPhone(c.mobile);
     setEmail(c.email ?? "");
     setName((n) => n || c.name || "");
+    setDs((d) => ({ ...d, name: d.name || c.name || "", phone: d.phone || c.mobile }));
   }, []);
   // Signed-in members order under the name they registered with.
   const [memberName, setMemberName] = useState<string | null>(null);
@@ -383,6 +394,7 @@ function CartReview({
       .then(({ data }) => {
         setSignedIn(!!data);
         setMemberName(data?.full_name?.trim() || null);
+        if (data?.full_name?.trim()) setDs((d) => ({ ...d, name: d.name || data.full_name!.trim() }));
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on open
   }, [supabase]);
@@ -392,6 +404,11 @@ function CartReview({
   const [payWith, setPayWith] = useState<"counter" | "fpx">(onlinePay || !token ? "fpx" : "counter");
   const [note, setNote] = useState("");
   const [pickupAt, setPickupAt] = useState<string | null>(null); // null = now
+  // Delivery (pickup menus at branches that deliver). A WhatsApp link with ?delivery=1 starts on it.
+  const [mode, setMode] = useState<"pickup" | "delivery">(() =>
+    typeof location !== "undefined" && location.search.includes("delivery=1") ? "delivery" : "pickup"
+  );
+  const [ds, setDs] = useState<DeliveryState>(() => emptyDelivery());
   const [slotsRefresh, setSlotsRefresh] = useState(0);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -399,6 +416,13 @@ function CartReview({
   const requestId = useRef<string | null>(null);
 
   const pickup = !token;
+  const isDelivery = pickup && mode === "delivery" && !!delivery;
+  // Same rule as guest_place_order: free when the food comes to the branch's "free above".
+  const deliveryFee =
+    isDelivery && ds.quote ? (ds.quote.free_above != null && cart.totalPrice >= ds.quote.free_above ? 0 : ds.quote.fee) : 0;
+  // Guests paying for a delivery give their phone with the address.
+  const payPhone = isDelivery ? ds.phone : phone;
+  const payName = isDelivery ? ds.name : name;
   // Service charge is for dine-in only. The total is exact without SST (BizPos rounds
   // the same way); SST depends on which dishes carry it, so then it's confirmed at payment.
   const service =
@@ -453,6 +477,7 @@ function CartReview({
   const shown = promo
     ? { sub: Number(promo.subtotal), disc: Number(promo.discount), service: Number(promo.service), sst: Number(promo.sst), total: Number(promo.total) as number | null }
     : { sub: cart.totalPrice, disc: 0, service, sst: 0, total: due };
+  const grand = shown.total === null ? null : Math.round((shown.total + deliveryFee) * 100) / 100;
   const methods = (
     [
       onlinePay && (["fpx", "Pay now", "Online banking"] as const),
@@ -465,23 +490,52 @@ function CartReview({
 
   async function place() {
     // No details is fine, but then it's paid at the counter (pickup can't be).
-    if (guest && payNow && !phoneOk(phone))
+    if (isDelivery) {
+      if (!ds.quote) return setError("Move the map to your address to see the delivery fee.");
+      if (!ds.name.trim() || !phoneOk(ds.phone)) return setError("Add a name and phone number for the driver.");
+    } else if (guest && payNow && !phoneOk(phone))
       return setError(pickup ? "Add your phone number to pay." : "Add your phone number to pay now, or choose Pay at counter.");
     setPlacing(true);
     setError(null);
     // A phone whose party has left this table: the page turns into "visit ended".
     if (!(await visitOk())) return setPlacing(false);
+    // Lalamove holds a price for 5 minutes. Nearly gone: get a new one, and if it went up,
+    // show it and let the customer decide (nobody pays a fee they didn't see).
+    let dq = isDelivery ? ds.quote : null;
+    if (dq && Date.parse(dq.expires_at) - Date.now() < 60_000) {
+      try {
+        const fresh = await fetchQuote(menu.outlet.id, { lat: ds.lat!, lng: ds.lng!, address: ds.address });
+        setDs((d) => ({ ...d, quote: fresh }));
+        if (fresh.fee > dq.fee) {
+          setPlacing(false);
+          return setError(`The delivery fee is now ${sym}${fresh.fee.toFixed(2)}. Tap Pay again to go ahead.`);
+        }
+        dq = fresh;
+      } catch (e) {
+        setPlacing(false);
+        return setError((e as Error).message);
+      }
+    }
     requestId.current ??= crypto.randomUUID();
     const { data, error } = await supabase.rpc("guest_place_order", {
       p_payload: {
         request_id: requestId.current,
         ...(token ? { table_token: token } : { outlet_id: menu.outlet.id }),
-        customer_name: memberName ?? (name.trim() || (token ? guestLabel() : undefined)),
+        customer_name: memberName ?? (payName.trim() || (token ? guestLabel() : undefined)),
         // Guests' contact for the restaurant (BizPos stores it once guest_place_order reads these).
-        ...(guest && phoneOk(phone) && { customer_phone: phone.replace(/\D/g, ""), customer_email: email.trim() || undefined }),
+        ...(guest && phoneOk(payPhone) && { customer_phone: payPhone.replace(/\D/g, ""), customer_email: email.trim() || undefined }),
         note: note.trim() || undefined,
         pay_now: payNow || undefined,
-        pickup_at: pickupAt ?? undefined,
+        pickup_at: (!isDelivery && pickupAt) || undefined,
+        ...(dq && {
+          delivery: {
+            id: dq.id,
+            name: ds.name.trim(),
+            phone: ds.phone.replace(/\D/g, ""),
+            unit: ds.unit.trim() || undefined,
+            note: ds.note.trim() || undefined,
+          },
+        }),
         promo_code: promo?.code,
         items: cart.lines.map(toOrderItem),
       },
@@ -492,7 +546,7 @@ function CartReview({
       return setError(error.message);
     }
     requestId.current = null;
-    if (guest && phoneOk(phone)) contact();
+    if (guest && phoneOk(payPhone)) contact();
     saveClaimToken(data.id, data.claim_token, window.location.pathname, signedIn ? 0 : earns);
     if (data.status !== "awaiting_payment") return onPlaced(data.id);
 
@@ -513,7 +567,7 @@ function CartReview({
 
   // Saved for next time, and sent to Billplz (the receipt goes to the phone or email).
   function contact() {
-    const c = { mobile: phone.trim(), name: name.trim() || undefined, email: email.trim() || undefined };
+    const c = { mobile: payPhone.trim(), name: payName.trim() || undefined, email: email.trim() || undefined };
     saveContact(c);
     return c;
   }
@@ -607,7 +661,29 @@ function CartReview({
             Ordering as <span className="font-bold text-ink-900">{memberName}</span>
           </p>
         )}
-        {pickup && <PickupTime outletId={menu.outlet.id} value={pickupAt} onChange={setPickupAt} refresh={slotsRefresh} />}
+        {pickup && delivery && (
+          <div className="mt-4 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Pickup or delivery">
+            {(["pickup", "delivery"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                role="radio"
+                aria-checked={mode === m}
+                onClick={() => {
+                  setMode(m);
+                  setError(null);
+                }}
+                className={`min-h-12 rounded-xl text-sm font-bold transition ${
+                  mode === m ? "bg-brand-600 text-on shadow-sm" : "bg-ink-50 text-ink-800 shadow-well"
+                }`}
+              >
+                {m === "pickup" ? "Pickup" : "Delivery"}
+              </button>
+            ))}
+          </div>
+        )}
+        {isDelivery && <DeliveryAddress outletId={menu.outlet.id} info={delivery!} value={ds} onChange={setDs} />}
+        {pickup && !isDelivery && <PickupTime outletId={menu.outlet.id} value={pickupAt} onChange={setPickupAt} refresh={slotsRefresh} />}
         <details className="group mt-3 rounded-2xl bg-ink-50 px-4 py-1" open={!!(note || name)}>
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-bold text-ink-800">
             {memberName || guest ? "Note for the kitchen" : "Your name or a note for the kitchen"}
@@ -733,16 +809,26 @@ function CartReview({
             </span>
           </div>
         )}
-        <div className={`flex items-baseline justify-between ${shown.disc > 0 || shown.service > 0 ? "mt-2" : "mt-5"}`}>
-          <span className="text-sm text-ink-600">{shown.total !== null ? "Total" : "Subtotal"}</span>
+        {isDelivery && (
+          <div className="mt-2 flex justify-between text-sm text-ink-500">
+            <span>Delivery</span>
+            <span className="tabular-nums">
+              {!ds.quote ? "Pick your address" : deliveryFee === 0 ? "Free" : `${sym}${deliveryFee.toFixed(2)}`}
+            </span>
+          </div>
+        )}
+        <div className={`flex items-baseline justify-between ${shown.disc > 0 || shown.service > 0 || isDelivery ? "mt-2" : "mt-5"}`}>
+          <span className="text-sm text-ink-600">{grand !== null ? "Total" : "Subtotal"}</span>
           <span className="text-2xl font-bold tabular-nums text-ink-900">
             {sym}
-            {(shown.total ?? shown.sub).toFixed(2)}
+            {(grand ?? shown.sub + deliveryFee).toFixed(2)}
           </span>
         </div>
         <p className="mt-1 text-xs text-ink-500">
           {shown.total === null && `${charges.join(" and ")} added to the total. `}
-          {pickup
+          {isDelivery
+            ? "Paid now. We book a Lalamove driver as soon as the kitchen has your order."
+            : pickup
             ? pickupAt
               ? "Paid now. The kitchen starts it shortly before your pickup time."
               : "Paid before it's made. The kitchen starts once you've paid."
@@ -781,7 +867,7 @@ function CartReview({
           </fieldset>
         )}
 
-        {guest && (
+        {guest && !isDelivery && (
           <div className="mt-4 space-y-2 rounded-2xl bg-ink-50 p-4">
             <p className="text-sm font-bold text-ink-800">Your details</p>
             {!payNow && <p className="text-xs text-ink-500">Optional when you pay at the counter.</p>}
@@ -851,7 +937,7 @@ function CartReview({
             : error
               ? "Try again"
               : payNow
-                ? `Pay${shown.total !== null ? ` ${sym}${shown.total.toFixed(2)}` : ""} and place order`
+                ? `Pay${grand !== null ? ` ${sym}${grand.toFixed(2)}` : ""} and place order`
                 : "Place order"}
         </button>
         </div>

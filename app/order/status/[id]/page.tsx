@@ -27,6 +27,16 @@ const TRACK = [
 ] as const;
 
 // Progress through the kitchen as a 0-based step; -1 = not accepted yet.
+const DELIVERY: Record<string, string> = {
+  waiting: "We book your driver once the kitchen has your order.",
+  booking: "Finding you a driver…",
+  assigning: "Finding you a driver…",
+  on_going: "Your driver is on the way to the restaurant.",
+  picked_up: "Your food is on its way to you.",
+  completed: "Delivered. Enjoy!",
+  cancelled: "Delivery cancelled.",
+};
+
 function stepOf(o: GuestOrderStatus): number {
   if (o.status !== "accepted") return -1;
   return Math.max(0, TRACK.findIndex((t) => t.key === (o.kitchen_status ?? "queued")));
@@ -130,7 +140,9 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
   const ended = order?.status === "rejected" || order?.status === "cancelled";
   const done =
     ended ||
-    (order?.paid && order.member_linked && ["ready", "served"].includes(order.kitchen_status ?? ""));
+    (order?.paid && order.member_linked && ["ready", "served"].includes(order.kitchen_status ?? "") &&
+      // a delivery keeps following the driver until it arrives
+      (!order.delivery || ["completed", "cancelled"].includes(order.delivery.status)));
   useEffect(() => {
     refresh();
     if (done) return;
@@ -271,7 +283,13 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           }
         />
         <span className="rounded-full bg-brand-50 px-2.5 py-1 text-2xs font-bold text-brand-700">
-          {order.table_label ? `Table ${order.table_label}` : order.pickup_at ? `Pickup · ${pickupLabel(order.pickup_at)}` : "Pickup order"}
+          {order.table_label
+            ? `Table ${order.table_label}`
+            : order.delivery
+              ? "Delivery"
+              : order.pickup_at
+                ? `Pickup · ${pickupLabel(order.pickup_at)}`
+                : "Pickup order"}
         </span>
       </span>
       <div className="mt-6">
@@ -329,6 +347,37 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
       )}
 
       {!ended && <Track step={step} pickup={!order.table_label} />}
+      {order.delivery && order.paid && (
+        <div className="mt-5 rounded-2xl bg-white px-4 py-3 text-sm">
+          <p className="font-bold text-ink-900" aria-live="polite">
+            {DELIVERY[order.delivery.status] ?? DELIVERY.booking}
+          </p>
+          <p className="mt-0.5 text-ink-500">
+            {order.delivery.address}
+            {order.delivery.unit ? ` · ${order.delivery.unit}` : ""}
+          </p>
+          {order.delivery.driver && (
+            <p className="mt-2 flex flex-wrap items-center gap-x-3 text-ink-800">
+              <span>
+                {order.delivery.driver.name} · {order.delivery.driver.plate}
+              </span>
+              <a href={`tel:${order.delivery.driver.phone}`} className="font-bold text-brand-700">
+                Call driver
+              </a>
+            </p>
+          )}
+          {order.delivery.share_link && order.delivery.status !== "completed" && (
+            <a
+              href={order.delivery.share_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 flex h-11 items-center justify-center rounded-full bg-ink-900 text-sm font-bold text-ink-50 active:scale-[0.97]"
+            >
+              Track on the map
+            </a>
+          )}
+        </div>
+      )}
       {order.status === "cancelled" && (
         <p className="mt-2 text-center text-sm text-ink-500">
           {order.paid ? "The restaurant will refund what you paid." : "No payment was taken."}
@@ -359,7 +408,9 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
               : order.paid
                 ? order.table_label
                   ? "Paid. Your food comes to your table, and you can leave when you're done."
-                  : "Paid. Collect it at the counter when it's ready."
+                  : order.delivery
+                    ? "Paid. A Lalamove driver brings it to you."
+                    : "Paid. Collect it at the counter when it's ready."
                 : "Pay at the counter when you're done."}
           </span>
         </p>
@@ -427,13 +478,23 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
               {Number(order.subtotal).toFixed(2)}
             </span>
           </div>
-          <div className="flex justify-between text-ink-500">
-            <span>Service charge &amp; tax</span>
-            <span className="tabular-nums">
-              {sym}
-              {(Number(order.amount_due) - Number(order.subtotal)).toFixed(2)}
-            </span>
-          </div>
+          {order.delivery && (
+            <div className="flex justify-between text-ink-500">
+              <span>Delivery</span>
+              <span className="tabular-nums">
+                {Number(order.delivery.fee ?? 0) === 0 ? "Free" : `${sym}${Number(order.delivery.fee).toFixed(2)}`}
+              </span>
+            </div>
+          )}
+          {Number(order.amount_due) - Number(order.subtotal) - Number(order.delivery?.fee ?? 0) > 0.004 && (
+            <div className="flex justify-between text-ink-500">
+              <span>Service charge &amp; tax</span>
+              <span className="tabular-nums">
+                {sym}
+                {(Number(order.amount_due) - Number(order.subtotal) - Number(order.delivery?.fee ?? 0)).toFixed(2)}
+              </span>
+            </div>
+          )}
           <div className="flex justify-between pt-1 font-bold">
             <span>Total</span>
             <span className="tabular-nums">

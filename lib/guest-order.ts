@@ -120,6 +120,16 @@ export type GuestOrderStatus = {
   table_due?: number | null; // still to pay at the counter for this table (open bill)
   member_linked: boolean;
   pickup_at?: string | null; // order ahead: the time the customer chose
+  // Delivery orders (Lalamove): the driver's progress. status: waiting | booking | assigning |
+  // on_going (driver heading to the restaurant) | picked_up | completed | cancelled
+  delivery?: {
+    status: string;
+    fee: number | null;
+    address: string;
+    unit: string | null;
+    share_link: string | null;
+    driver: { name: string; phone: string; plate: string } | null;
+  } | null;
 };
 
 // Flatten the RPC payload into MenuView's shape, items in category order.
