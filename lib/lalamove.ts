@@ -64,7 +64,7 @@ export const quote = (k: Keys, from: { lat: number; lng: number; address: string
   lalamove<Quote>(k, "POST", "/v3/quotations", {
     serviceType: "MOTORCYCLE",
     language: "en_MY",
-    stops: [from, to].map((s) => ({ coordinates: { lat: String(s.lat), lng: String(s.lng) }, address: s.address.slice(0, 300) })),
+    stops: [from, to].map((s) => ({ coordinates: { lat: s.lat.toFixed(6), lng: s.lng.toFixed(6) }, address: s.address.slice(0, 300) })),
   });
 
 const rm = (n: number) => `RM${n.toFixed(2)}`;

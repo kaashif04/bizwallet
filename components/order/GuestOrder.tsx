@@ -916,14 +916,14 @@ function CartReview({
           </p>
         )}
 
+        {/* Pinned to the bottom of the sheet, however long the order gets. The error sits
+            here too, so it is never hidden behind the button. */}
+        <div className="sticky bottom-0 z-10 -mx-5 mt-5 bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_16px_-12px_rgb(0_0_0/0.18)]">
         {error && (
-          <p role="alert" className="mt-4 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700">
+          <p role="alert" className="mb-3 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700">
             {error}
           </p>
         )}
-
-        {/* Pinned to the bottom of the sheet, however long the order gets. */}
-        <div className="sticky bottom-0 z-10 -mx-5 mt-5 bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_16px_-12px_rgb(0_0_0/0.18)]">
         <button
           type="button"
           onClick={place}
