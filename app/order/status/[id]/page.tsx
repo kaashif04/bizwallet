@@ -346,7 +346,13 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         </div>
       )}
 
-      {!ended && <Track step={step} pickup={!order.table_label} />}
+      {!ended && (
+        <Track
+          // A delivery's last step is the driver on the way (from Lalamove), not a counter collection.
+          step={order.delivery && ["picked_up", "completed"].includes(order.delivery.status) ? 3 : step}
+          last={order.table_label ? null : order.delivery ? "On the way" : "Collected"}
+        />
+      )}
       {order.delivery && order.paid && (
         <div className="mt-5 rounded-2xl bg-white px-4 py-3 text-sm">
           <p className="font-bold text-ink-900" aria-live="polite">
@@ -609,11 +615,11 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
   );
 }
 
-// The kitchen stops at Ready; only pickups have a Collected step (POS staff tap it).
-function Track({ step, pickup }: { step: number; pickup: boolean }) {
-  const steps = pickup ? TRACK : TRACK.slice(0, 3);
+// The kitchen stops at Ready. Pickups add Collected (POS staff tap it), deliveries On the way.
+function Track({ step, last }: { step: number; last: string | null }) {
+  const steps = last ? [...TRACK.slice(0, 3), { key: "last", label: last }] : TRACK.slice(0, 3);
   return (
-    <ol className={`mt-6 grid gap-2 ${pickup ? "grid-cols-4" : "grid-cols-3"}`} aria-label="Order progress">
+    <ol className={`mt-6 grid gap-2 ${last ? "grid-cols-4" : "grid-cols-3"}`} aria-label="Order progress">
       {steps.map((t, i) => {
         const done = i <= step;
         const current = i === step;

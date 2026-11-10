@@ -86,7 +86,7 @@ export default function MenuView({
           {logoUrl && <BranchLogo name={title} logoUrl={logoUrl} className="h-11 w-11 rounded-xl" />}
           <span className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-bold leading-tight text-slate-900">{title}</h1>
-            <span className="block text-xs font-semibold text-brand-700">{subtitle}</span>
+            <span className="block truncate text-xs font-semibold text-brand-700">{subtitle}</span>
           </span>
           <AccountChip state={account} />
         </div>

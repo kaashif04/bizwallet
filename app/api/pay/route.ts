@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
   const { data: order } = await admin
     .from("guest_orders")
-    .select("id, claim_token, status, amount_due, payment_ref, outlet_id, created_at, table_id, kiosk_id")
+    .select("id, claim_token, status, amount_due, payment_ref, outlet_id, created_at, table_id, kiosk_id, delivery_fee")
     .eq("id", order_id)
     .maybeSingle();
   if (!order || order.claim_token !== claim_token) {
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       mobile: user?.email ? undefined : phone,
       name: member?.full_name || user?.email?.split("@")[0] || guestName || "Guest",
       amountSen: Math.round(Number(order.amount_due) * 100),
-      description: `${order.table_id ? "Dine-in" : order.kiosk_id ? "Kiosk" : "Pickup"} order at ${outlet?.name ?? "BizWallet"}`,
+      description: `${order.table_id ? "Dine-in" : order.kiosk_id ? "Kiosk" : order.delivery_fee != null ? "Delivery" : "Pickup"} order at ${outlet?.name ?? "BizWallet"}`,
       callbackUrl: `${origin}/api/pay/billplz/callback`,
       redirectUrl: `${origin}/api/pay/billplz/return?order=${order.id}`,
       reference: order.id,

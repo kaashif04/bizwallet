@@ -192,7 +192,7 @@ export default function DeliveryAddress({
           className={input}
         />
       )}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2">
         <input
           value={value.name}
           onChange={(e) => onChange((d) => ({ ...d, name: e.target.value }))}

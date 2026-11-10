@@ -394,8 +394,8 @@ function CartReview({
       .then(({ data }) => {
         setSignedIn(!!data);
         setMemberName(data?.full_name?.trim() || null);
-        // The driver's name and phone start as the member's own.
-        if (data) setDs((d) => ({ ...d, name: d.name || data.full_name?.trim() || "", phone: d.phone || data.phone || "" }));
+        // The driver's name is the member's; the phone is the last one used here, else theirs.
+        if (data) setDs((d) => ({ ...d, name: data.full_name?.trim() || d.name, phone: d.phone || data.phone || "" }));
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on open
   }, [supabase]);
@@ -487,12 +487,13 @@ function CartReview({
   ).filter((m) => !!m) as (readonly ["counter" | "fpx", string, string])[];
 
   const guest = signedIn === false;
-  const earns = pointsPerRm !== null ? Math.floor(cart.totalPrice * pointsPerRm) : 0;
+  // Delivery earns on the fee too (the points trigger adds it).
+  const earns = pointsPerRm !== null ? Math.floor((cart.totalPrice + deliveryFee) * pointsPerRm) : 0;
 
   async function place() {
     // No details is fine, but then it's paid at the counter (pickup can't be).
     if (isDelivery) {
-      if (!ds.quote) return setError(ds.quoting ? "Getting the delivery price. One moment." : "Choose your delivery address first.");
+      if (!ds.quote) return setError(ds.quoting ? "Getting the delivery price. One moment." : ds.error ?? "Choose your delivery address first.");
       if (!ds.name.trim() || !phoneOk(ds.phone)) return setError("Add a name and phone number for the driver.");
     } else if (guest && payNow && !phoneOk(phone))
       return setError(pickup ? "Add your phone number to pay." : "Add your phone number to pay now, or choose Pay at counter.");
@@ -616,7 +617,35 @@ function CartReview({
           </button>
         </div>
 
-        <ul className="mt-4 divide-y divide-slate-100">
+        {memberName && (
+          <p className="-mt-1 text-sm text-ink-500">
+            Ordering as <span className="font-bold text-ink-900">{memberName}</span>
+          </p>
+        )}
+        {pickup && delivery && (
+          <div className="mt-4 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Pickup or delivery">
+            {(["pickup", "delivery"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                role="radio"
+                aria-checked={mode === m}
+                onClick={() => {
+                  setMode(m);
+                  setError(null);
+                }}
+                className={`min-h-12 rounded-xl text-sm font-bold transition ${
+                  mode === m ? "bg-brand-600 text-on shadow-sm" : "bg-ink-50 text-ink-800 shadow-well"
+                }`}
+              >
+                {m === "pickup" ? "Pickup" : "Delivery"}
+              </button>
+            ))}
+          </div>
+        )}
+        {isDelivery && <DeliveryAddress outletId={menu.outlet.id} info={delivery!} value={ds} onChange={setDs} />}
+        {pickup && !isDelivery && <PickupTime outletId={menu.outlet.id} value={pickupAt} onChange={setPickupAt} refresh={slotsRefresh} />}
+        <ul className="mt-3 divide-y divide-slate-100">
           {cart.lines.map((l) => (
             <li key={l.lineId} className="flex items-start gap-3 py-3">
               <div className="min-w-0 flex-1">
@@ -661,34 +690,6 @@ function CartReview({
           ))}
         </ul>
 
-        {memberName && (
-          <p className="mt-4 text-sm text-ink-500">
-            Ordering as <span className="font-bold text-ink-900">{memberName}</span>
-          </p>
-        )}
-        {pickup && delivery && (
-          <div className="mt-4 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Pickup or delivery">
-            {(["pickup", "delivery"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                role="radio"
-                aria-checked={mode === m}
-                onClick={() => {
-                  setMode(m);
-                  setError(null);
-                }}
-                className={`min-h-12 rounded-xl text-sm font-bold transition ${
-                  mode === m ? "bg-brand-600 text-on shadow-sm" : "bg-ink-50 text-ink-800 shadow-well"
-                }`}
-              >
-                {m === "pickup" ? "Pickup" : "Delivery"}
-              </button>
-            ))}
-          </div>
-        )}
-        {isDelivery && <DeliveryAddress outletId={menu.outlet.id} info={delivery!} value={ds} onChange={setDs} />}
-        {pickup && !isDelivery && <PickupTime outletId={menu.outlet.id} value={pickupAt} onChange={setPickupAt} refresh={slotsRefresh} />}
         <details className="group mt-3 rounded-2xl bg-ink-50 px-4 py-1" open={!!(note || name)}>
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-bold text-ink-800">
             {memberName || guest ? "Note for the kitchen" : "Your name or a note for the kitchen"}
@@ -767,7 +768,7 @@ function CartReview({
           </div>
         )}
 
-        {(shown.disc > 0 || shown.service > 0) && (
+        {(shown.disc > 0 || shown.service > 0 || isDelivery) && (
           <div className="mt-5 space-y-1 text-sm text-ink-500">
             <div className="flex justify-between">
               <span>Subtotal</span>
@@ -803,6 +804,14 @@ function CartReview({
                 </span>
               </div>
             )}
+            {isDelivery && (
+              <div className="flex justify-between">
+                <span>Delivery</span>
+                <span className="tabular-nums">
+                  {!ds.quote ? (ds.error ? "Not available" : "Pick your address") : deliveryFee === 0 ? "Free" : `${sym}${deliveryFee.toFixed(2)}`}
+                </span>
+              </div>
+            )}
           </div>
         )}
         {shown.total !== null && Math.abs(shown.total - (shown.sub - shown.disc + shown.service + shown.sst)) >= 0.005 && (
@@ -814,15 +823,7 @@ function CartReview({
             </span>
           </div>
         )}
-        {isDelivery && (
-          <div className="mt-2 flex justify-between text-sm text-ink-500">
-            <span>Delivery</span>
-            <span className="tabular-nums">
-              {!ds.quote ? "Pick your address" : deliveryFee === 0 ? "Free" : `${sym}${deliveryFee.toFixed(2)}`}
-            </span>
-          </div>
-        )}
-        <div className={`flex items-baseline justify-between ${shown.disc > 0 || shown.service > 0 || isDelivery ? "mt-2" : "mt-5"}`}>
+        <div className={`flex items-baseline justify-between ${shown.disc > 0 || shown.service > 0 || isDelivery ? "mt-2 border-t border-ink-100 pt-2" : "mt-5"}`}>
           <span className="text-sm text-ink-600">{grand !== null ? "Total" : "Subtotal"}</span>
           <span className="text-2xl font-bold tabular-nums text-ink-900">
             {sym}
