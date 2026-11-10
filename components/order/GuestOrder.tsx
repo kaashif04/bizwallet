@@ -559,6 +559,9 @@ function CartReview({
     });
     const pay = await res.json().catch(() => ({}));
     if (pay.url) {
+      // Emptying the cart would close this sheet, and closing it goes back in history,
+      // which cancels the trip to Billplz. Stay open until the page is gone.
+      leaving.current = true;
       cart.clear();
       return window.location.assign(pay.url);
     }
@@ -573,8 +576,9 @@ function CartReview({
     return c;
   }
 
+  const leaving = useRef(false);
   useEffect(() => {
-    if (cart.totalItems === 0) onClose();
+    if (cart.totalItems === 0 && !leaving.current) onClose();
   }, [cart.totalItems, onClose]);
 
   return (
