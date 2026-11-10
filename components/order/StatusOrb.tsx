@@ -1,9 +1,12 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Mascot, type Pose } from "@/components/Mascot";
 
-export type OrbStage = "pay" | "pending" | "queued" | "preparing" | "ready" | "served" | "rejected";
+export type OrbStage = "pay" | "pending" | "queued" | "preparing" | "ready" | "delivering" | "served" | "rejected";
+
+// Looping mascot clips (public/mascot/*.mp4); the still pose stays for reduced motion.
+const CLIP: Partial<Record<OrbStage, string>> = { preparing: "cooking", ready: "ready", delivering: "delivering" };
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -13,6 +16,7 @@ const POSE: Partial<Record<OrbStage, Pose>> = {
   queued: "waiting",
   preparing: "waiting",
   ready: "ready",
+  delivering: "ready",
   served: "bye",
   rejected: "oops",
 };
@@ -30,6 +34,8 @@ export default function StatusOrb({ stage }: { stage: OrbStage }) {
           ? "bg-emerald-50 text-emerald-600"
           : "bg-brand-50 text-brand-600";
 
+  const reduce = useReducedMotion();
+  const clip = reduce ? undefined : CLIP[stage];
   const pose = POSE[stage];
   if (pose) {
     return (
@@ -43,18 +49,29 @@ export default function StatusOrb({ stage }: { stage: OrbStage }) {
         )}
         <motion.div
           className="relative"
-          animate={stage === "ready" ? { y: [0, -8, 0] } : { y: 0 }}
-          transition={stage === "ready" ? { duration: 0.9, repeat: Infinity, repeatDelay: 1.2, ease } : { duration: 0.2 }}
+          animate={stage === "ready" && !clip ? { y: [0, -8, 0] } : { y: 0 }}
+          transition={stage === "ready" && !clip ? { duration: 0.9, repeat: Infinity, repeatDelay: 1.2, ease } : { duration: 0.2 }}
         >
           <AnimatePresence mode="wait">
             <motion.div
-              key={pose}
+              key={clip ?? pose}
               initial={{ scale: 0.7, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.7, opacity: 0 }}
               transition={{ type: "spring", stiffness: 380, damping: 24 }}
             >
-              <Mascot pose={pose} className="h-32 w-32" />
+              {clip ? (
+                <video
+                  src={`/mascot/${clip}.mp4`}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="h-32 w-32 rounded-full object-cover shadow-md"
+                />
+              ) : (
+                <Mascot pose={pose} className="h-32 w-32" />
+              )}
             </motion.div>
           </AnimatePresence>
         </motion.div>

@@ -245,7 +245,9 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
         ? "pay"
         : order.status === "pending"
           ? "pending"
-          : (order.kitchen_status ?? "queued");
+          : order.delivery?.status === "picked_up"
+            ? "delivering"
+            : (order.kitchen_status ?? "queued");
 
   return (
     <Shell>
