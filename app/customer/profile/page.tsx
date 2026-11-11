@@ -3,6 +3,7 @@ import { PageHeader, screen } from "@/components/customer/ui";
 import ProfileView, { type ProfileData } from "@/components/customer/ProfileView";
 import { storeNames, type Place } from "@/lib/places";
 import { currentPlace } from "@/lib/place-server";
+import { tableParam, tablePath } from "@/lib/table-return";
 
 const DEMO: ProfileData = {
   name: "Aisyah",
@@ -20,9 +21,10 @@ const DEMO: ProfileData = {
   marketingConsent: null,
 };
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }: { searchParams: { table?: string } }) {
   let data: ProfileData = DEMO;
   let back = "/";
+  const tableToken = tableParam(searchParams.table); // opened from a table: back goes to the table
 
   try {
     const supabase = createClient();
@@ -77,7 +79,7 @@ export default async function ProfilePage() {
   return (
     <div className="min-h-dvh bg-ink-50">
       <div className={screen}>
-        <PageHeader title="Profile" back={back} />
+        <PageHeader title="Profile" back={tableToken ? tablePath(tableToken) : back} backLabel={tableToken ? "Back to table" : undefined} />
 
         <ProfileView data={data} />
       </div>

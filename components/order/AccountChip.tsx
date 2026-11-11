@@ -24,7 +24,7 @@ export default function AccountChip({ state }: { state: AccountState }) {
       aria-label={state.joined ? `My account, ${state.points} points here` : "My account"}
       className="flex h-10 items-center gap-1.5 rounded-full bg-white px-3.5 text-sm font-bold text-ink-900 shadow-sm transition hover:bg-brand-100"
     >
-      <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 text-brand-600" fill="currentColor" aria-hidden="true">
+      <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 text-accent-600" fill="currentColor" aria-hidden="true">
         <path d="M10 1.5l2.5 5.2 5.7.8-4.1 4 1 5.6L10 14.4l-5.1 2.7 1-5.6-4.1-4 5.7-.8L10 1.5Z" />
       </svg>
       {state.joined ? `${state.points.toLocaleString()} pts` : "My wallet"}

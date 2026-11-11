@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { DayTabs, TimeGrid, chip } from "@/components/order/TimePicker";
 import {
   type BookingConfig,
   type SavedBooking,
   bookingMoney,
   depositFor,
   klDateTime,
-  klTime,
   klToday,
   rememberBooking,
   savedBookings,
@@ -18,9 +18,10 @@ import {
 
 type Outlet = { id: string; name: string; address: string | null };
 type Picked = { outlet: Outlet; cfg: BookingConfig };
-type Step = "outlet" | "date" | "party" | "time" | "details";
+type Step = "outlet" | "when" | "details";
 
-// Book a table: outlet, date, party, time, then name and phone, then the deposit.
+// Book a table: outlet, then guests + day + time on one screen (a closed or full day shows
+// at once), then name and phone, then the deposit.
 // Outlets come from the public list, kept only if their booking is switched on.
 export default function BookFlow({ outletId }: { outletId?: string }) {
   const router = useRouter();
@@ -66,13 +67,20 @@ export default function BookFlow({ outletId }: { outletId?: string }) {
   }, []);
 
   useEffect(() => {
-    if (step !== "time" || !picked || !date || !party) return;
+    if (step !== "when" || !picked || !date || !party) return;
+    let live = true; // a quick change of day or guests: only the latest answer counts
     setSlots(null);
-    setSlot(null);
     supabase.rpc("booking_slots", { p_outlet: picked.outlet.id, p_date: date, p_party: party }).then(({ data, error }) => {
+      if (!live) return;
       if (error) setError(error.message);
-      setSlots((data ?? []) as { slot: string; available: boolean }[]);
+      const list = (data ?? []) as { slot: string; available: boolean }[];
+      setSlots(list);
+      // Keep the pick (e.g. back from Your details) while it's still free on this day for this party.
+      setSlot((cur) => (cur && list.some((x) => x.slot === cur && x.available) ? cur : null));
     });
+    return () => {
+      live = false;
+    };
   }, [step, picked, date, party, supabase]);
 
   function go(next: Step) {
@@ -91,11 +99,11 @@ export default function BookFlow({ outletId }: { outletId?: string }) {
 
   function choose(p: Picked, skipOutlet = false) {
     setPicked(p);
-    setDate("");
-    setParty(0);
+    setDate(klToday());
+    setParty(Math.min(Math.max(2, p.cfg.min_party), p.cfg.max_party));
     setSlot(null);
     setError(null);
-    setStep("date");
+    setStep("when");
     if (skipOutlet) setSteps([]);
     else setSteps(["outlet"]);
   }
@@ -135,8 +143,9 @@ export default function BookFlow({ outletId }: { outletId?: string }) {
   }
 
   const today = klToday();
-  const maxDate = picked ? addDays(today, picked.cfg.days_ahead) : today;
-  const title = { outlet: "Book a table", date: "Pick a date", party: "How many guests?", time: "Pick a time", details: "Your details" }[step];
+  const title = { outlet: "Book a table", when: "Book a table", details: "Your details" }[step];
+  const dates = picked ? range(0, picked.cfg.days_ahead).map((n) => addDays(today, n)) : [];
+  const free = slots?.filter((s) => s.available).map((s) => s.slot) ?? [];
 
   return (
     <div className="min-h-dvh bg-ink-50">
@@ -144,7 +153,7 @@ export default function BookFlow({ outletId }: { outletId?: string }) {
         <button
           type="button"
           onClick={back}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-brand-100"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-brand-100"
           aria-label="Back"
         >
           <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
@@ -197,68 +206,40 @@ export default function BookFlow({ outletId }: { outletId?: string }) {
           </section>
         )}
 
-        {step === "date" && picked && (
-          <section className="mt-6">
-            <input
-              type="date"
-              value={date}
-              min={today}
-              max={maxDate}
-              onChange={(e) => setDate(e.target.value)}
-              className="h-14 w-full rounded-2xl bg-white px-4 text-base text-slate-900 shadow-sm"
-            />
-            <p className="mt-2 text-xs text-slate-500">Up to {picked.cfg.days_ahead} days ahead.</p>
-            <Next disabled={!date} onClick={() => go("party")} />
-          </section>
-        )}
-
-        {step === "party" && picked && (
-          <section className="mt-6">
-            <div className="grid grid-cols-4 gap-2">
-              {range(picked.cfg.min_party, picked.cfg.max_party).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setParty(n)}
-                  className={`h-14 rounded-2xl text-base font-bold shadow-sm transition ${party === n ? "bg-brand-600 text-on" : "bg-white text-slate-800"}`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-            <Next disabled={!party} onClick={() => go("time")} />
-          </section>
-        )}
-
-        {step === "time" && picked && (
-          <section className="mt-6">
-            {slots === null && <p className="text-sm text-slate-500">Checking times…</p>}
-            {slots?.length === 0 && <p className="rounded-2xl bg-white p-6 text-sm text-slate-600">The restaurant is closed that day. Pick another date.</p>}
-            {slots && slots.length > 0 && (
-              <div className="grid grid-cols-3 gap-2">
-                {slots.map((s) => (
-                  <button
-                    key={s.slot}
-                    type="button"
-                    disabled={!s.available}
-                    onClick={() => setSlot(s.slot)}
-                    className={`h-12 rounded-2xl text-sm font-bold shadow-sm transition ${
-                      !s.available
-                        ? "bg-ink-100 text-ink-400 line-through"
-                        : slot === s.slot
-                          ? "bg-brand-600 text-on"
-                          : "bg-white text-slate-800"
-                    }`}
-                  >
-                    {klTime(s.slot)}
+        {step === "when" && picked && (
+          <section className="mt-6 space-y-6">
+            <div>
+              <h2 className="mb-2 text-xs font-semibold text-ink-500">Guests</h2>
+              <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {range(picked.cfg.min_party, picked.cfg.max_party).map((n) => (
+                  <button key={n} type="button" aria-pressed={party === n} aria-label={`${n} guest${n > 1 ? "s" : ""}`} onClick={() => setParty(n)} className={`${chip(party === n, true)} w-12 shrink-0`}>
+                    {n}
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div>
+              <h2 className="mb-1 text-xs font-semibold text-ink-500">Day</h2>
+              <DayTabs id="booking" days={dates.map((d) => ({ key: d, label: dayLabel(d, today) }))} value={date} onPick={setDate} />
+            </div>
+
+            <div>
+              <h2 className="mb-2 text-xs font-semibold text-ink-500">Time</h2>
+              {slots === null && <div className="h-24 animate-pulse rounded-2xl bg-white" aria-label="Checking times" />}
+              {slots?.length === 0 && <p className="rounded-2xl bg-white p-5 text-sm text-ink-600">Closed that day. Pick another day.</p>}
+              {slots && slots.length > 0 && free.length === 0 && (
+                <p className="rounded-2xl bg-white p-5 text-sm text-ink-600">Fully booked that day. Try another day or fewer guests.</p>
+              )}
+              {free.length > 0 && <TimeGrid key={`${date}-${party}`} page times={free} value={slot} onPick={setSlot} />}
+            </div>
+
+            {error && (
+              <p role="alert" className="rounded-2xl bg-rose-50 p-3 text-sm font-semibold text-rose-700">
+                {error}
+              </p>
             )}
-            {slots && slots.length > 0 && !slots.some((s) => s.available) && (
-              <p className="mt-3 text-sm text-slate-600">Sorry, that day is full. Try another date or party size.</p>
-            )}
-            <Next disabled={!slot} onClick={() => go("details")} />
+            <Next disabled={!slot || slots === null} onClick={() => go("details")} />
           </section>
         )}
 
@@ -352,6 +333,13 @@ function Field({
 }
 
 const range = (a: number, b: number) => Array.from({ length: Math.max(0, b - a + 1) }, (_, i) => a + i);
+
+// "Today", "Tomorrow", "Sat 15" for a YYYY-MM-DD.
+function dayLabel(ymd: string, today: string) {
+  if (ymd === today) return "Today";
+  if (ymd === addDays(today, 1)) return "Tomorrow";
+  return new Date(`${ymd}T12:00:00+08:00`).toLocaleDateString("en-MY", { timeZone: "Asia/Kuala_Lumpur", weekday: "short", day: "numeric" });
+}
 
 // YYYY-MM-DD plus n days, in Malaysia's calendar.
 function addDays(ymd: string, n: number) {

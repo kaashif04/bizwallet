@@ -8,6 +8,7 @@ import type { Place } from "@/lib/places";
 import ActiveOrders from "@/components/customer/ActiveOrders";
 import { Mascot } from "@/components/Mascot";
 import { PageHeader, SectionTitle, screen } from "@/components/customer/ui";
+import { tableParam, tablePath } from "@/lib/table-return";
 
 // BizPos transaction_status: open | completed | voided | refunded
 const STATUS_META: Record<string, { label: string; cls: string }> = {
@@ -17,7 +18,8 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
   refunded: { label: "Refunded", cls: "bg-ink-100 text-ink-600" },
 };
 
-export default async function OrdersListPage() {
+export default async function OrdersListPage({ searchParams }: { searchParams: { table?: string } }) {
+  const tableToken = tableParam(searchParams.table);
   const supabase = createClient();
   const {
     data: { user },
@@ -56,7 +58,7 @@ export default async function OrdersListPage() {
   return (
     <div className="min-h-dvh bg-ink-50">
       <div className={screen}>
-        <PageHeader title="My orders" subtitle={here ? `Every bill at ${here.name}` : undefined} back="/customer/profile" />
+        <PageHeader title="My orders" subtitle={here ? `Every bill at ${here.name}` : undefined} back={tableToken ? tablePath(tableToken) : "/customer/profile"} backLabel={tableToken ? "Back to table" : undefined} />
 
         <div className="mb-8">
           <ActiveOrders names={Object.fromEntries(nameMap)} outletId={here?.id} />

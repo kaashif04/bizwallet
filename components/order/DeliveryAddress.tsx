@@ -117,7 +117,7 @@ export default function DeliveryAddress({
       <p className="text-sm font-bold text-ink-800">Deliver to</p>
       {picked ? (
         <div className="flex items-start gap-3 rounded-xl bg-white px-4 py-3">
-          <svg viewBox="0 0 24 24" aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-brand-600">
+          <svg viewBox="0 0 24 24" aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-accent-600">
             <path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" />
           </svg>
           <p className="min-w-0 flex-1 text-sm font-semibold text-ink-900">{value.address}</p>
@@ -133,7 +133,7 @@ export default function DeliveryAddress({
             disabled={busy !== null}
             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-ink-900 shadow-sm active:scale-[0.98] disabled:opacity-60"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 text-brand-600" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+            <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 text-accent-600" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
               <circle cx="12" cy="12" r="4" />
               <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
             </svg>
@@ -151,7 +151,7 @@ export default function DeliveryAddress({
             <button
               type="submit"
               disabled={busy !== null}
-              className="shrink-0 rounded-xl bg-ink-900 px-4 text-sm font-bold text-ink-50 active:scale-95 disabled:opacity-60"
+              className="min-h-11 shrink-0 rounded-xl bg-white px-4 text-sm font-bold text-brand-700 ring-1 ring-brand-200 active:scale-95 disabled:opacity-60"
             >
               {busy === "search" ? "…" : "Find"}
             </button>

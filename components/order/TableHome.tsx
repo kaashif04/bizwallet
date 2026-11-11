@@ -180,8 +180,23 @@ export default function TableHome({
                 <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-transparent" />
               </>
             )}
-            <div className="absolute right-4 top-4">
-              <AccountChip state={me === null ? null : me === "guest" ? "guest" : { points: me.points, joined: me.joined, href: `/s/${home.outlet.id}?rewards=1` }} />
+            <div className="absolute right-4 top-4 flex items-center gap-2">
+              <AccountChip state={me === null ? null : me === "guest" ? "guest" : { points: me.points, joined: me.joined, href: `/s/${home.outlet.id}?rewards=1&table=${token}` }} />
+              {/* Profile and settings, one tap from the table; its back button returns here, no new scan. */}
+              {me && me !== "guest" && (
+                <Link
+                  href={`/customer/profile?table=${token}`}
+                  aria-label="Profile and settings"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sm font-bold text-ink-800 shadow-sm transition hover:bg-brand-100 active:scale-90"
+                >
+                  {me.name?.trim().charAt(0).toUpperCase() || (
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true">
+                      <circle cx="12" cy="8" r="3.5" />
+                      <path d="M5 20c1-4 4-5.5 7-5.5s6 1.5 7 5.5" />
+                    </svg>
+                  )}
+                </Link>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3 px-5">
@@ -253,7 +268,7 @@ export default function TableHome({
             </Link>
           )}
 
-          <Points me={me} outletId={home.outlet.id} signIn={signIn} />
+          <Points me={me} outletId={home.outlet.id} token={token} signIn={signIn} />
 
 
           {!home.hide?.feedback ? (
@@ -520,7 +535,7 @@ function CallStaff({
   );
 }
 
-function Points({ me, outletId, signIn }: { me: Me; outletId: string; signIn: string }) {
+function Points({ me, outletId, token, signIn }: { me: Me; outletId: string; token: string; signIn: string }) {
   if (!me) return null;
   if (me === "guest") {
     return (
@@ -536,11 +551,11 @@ function Points({ me, outletId, signIn }: { me: Me; outletId: string; signIn: st
   }
   return (
     <section>
-      <SectionTitle href="/customer/orders" action="My orders">
+      <SectionTitle href={`/customer/orders?table=${token}`} action="My orders">
         Your points here
       </SectionTitle>
       <Link
-        href={`/s/${outletId}?rewards=1`}
+        href={`/s/${outletId}?rewards=1&table=${token}`}
         className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 transition hover:bg-ink-100"
       >
         <Star />

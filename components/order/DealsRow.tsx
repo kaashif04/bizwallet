@@ -59,12 +59,12 @@ export default function DealsRow({
               </span>
               <span className="mt-2.5 block px-1">
                 <span className="line-clamp-2 block text-[15px] font-bold leading-snug text-ink-900">{dealTitle(d)}</span>
-                <span className="mt-1 flex flex-wrap items-baseline gap-x-1.5 text-sm">
+                <span className="mt-1 flex items-baseline gap-x-1.5 overflow-hidden whitespace-nowrap text-sm tabular-nums">
                   <span className="font-bold text-brand-700">
                     {!dish && d.items.length > 1 ? "From " : ""}
                     {money(shown.price)}
                   </span>
-                  <s className="text-xs text-ink-400">
+                  <s className="text-xs text-ink-500">
                     <span className="sr-only">was </span>
                     {money(shown.regular_price)}
                   </s>

@@ -113,8 +113,12 @@ export default function PointsCard({
           <RewardsCatalog
             onClose={() => {
               setOpen(false);
-              // Drop ?rewards=1 so a refresh doesn't reopen it.
-              if (openAtStart) router.replace(pathname, { scroll: false });
+              // Drop ?rewards=1 so a refresh doesn't reopen it (keep the rest, e.g. ?table=).
+              if (openAtStart) {
+                const q = new URLSearchParams(window.location.search);
+                q.delete("rewards");
+                router.replace(q.size ? `${pathname}?${q}` : pathname, { scroll: false });
+              }
             }}
             points={points}
             userId={userId}

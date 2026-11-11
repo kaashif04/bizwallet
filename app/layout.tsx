@@ -12,7 +12,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F2EFE9", // light by default, whatever the phone's setting
+  // Auto by default: the browser bar follows the phone. (A pinned Light/Dark in Profile
+  // > Appearance changes the page, not this bar.)
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F2EFE9" },
+    { media: "(prefers-color-scheme: dark)", color: "#121110" },
+  ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -24,13 +29,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={body.variable} data-theme="light" suppressHydrationWarning>
+    <html lang="en" className={body.variable} suppressHydrationWarning>
       <head>
-        {/* Light unless a signed-in customer picked Dark or Auto (Profile > Appearance).
+        {/* Auto (follows the phone) unless the customer pinned Light or Dark in Profile > Appearance.
             Applied before paint, so there's no flash. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem("theme"),r=document.documentElement;if(t==="dark")r.dataset.theme="dark";else if(t==="auto")delete r.dataset.theme}catch(e){}`,
+            __html: `try{var t=localStorage.getItem("theme"),r=document.documentElement;if(t==="dark"||t==="light")r.dataset.theme=t}catch(e){}`,
           }}
         />
       </head>

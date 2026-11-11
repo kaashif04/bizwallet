@@ -7,24 +7,9 @@ import { useSheet } from "./useSheet";
 import { createClient } from "@/lib/supabase/client";
 import { pickupSlots } from "@/lib/guest-order";
 
-const KL = "Asia/Kuala_Lumpur";
-const fmt = (iso: string, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("en-MY", { timeZone: KL, ...o }).format(new Date(iso));
-const dayKey = (iso: string) => fmt(iso, { year: "numeric", month: "2-digit", day: "2-digit" });
-export const pickupLabel = (iso: string) =>
-  `${fmt(iso, { weekday: "short", day: "numeric", month: "short" })}, ${fmt(iso, { hour: "numeric", minute: "2-digit", hour12: true })}`;
+import { clock, dayKey, dayName, fmt, DayTabs, TimeGrid } from "./TimePicker";
 
-const clock = (iso: string) => fmt(iso, { hour: "numeric", minute: "2-digit", hour12: true }).replace(" ", "");
-const today = () => dayKey(new Date().toISOString());
-const dayName = (iso: string) => {
-  const d = dayKey(iso);
-  if (d === today()) return "Today";
-  if (d === dayKey(new Date(Date.now() + 864e5).toISOString())) return "Tomorrow";
-  return fmt(iso, { weekday: "short", day: "numeric", month: "short" });
-};
-const period = (iso: string) => {
-  const h = Number(fmt(iso, { hour: "numeric", hour12: false }));
-  return h < 12 ? "Morning" : h < 17 ? "Afternoon" : "Evening";
-};
+export const pickupLabel = (iso: string) => `${fmt(iso, { weekday: "short", day: "numeric", month: "short" })}, ${clock(iso)}`;
 
 // Pickup time, as one quiet row in the checkout ("Now", or "Today, 1:30pm") that opens a
 // sheet to change it. Only shows when the outlet takes orders ahead (BizPos returns no slots
@@ -125,9 +110,11 @@ function TimeSheet({
   const days = useMemo(() => Array.from(new Set(slots.map(dayKey))), [slots]);
   const [day, setDay] = useState(value ? dayKey(value) : days[0]);
   const times = slots.filter((s) => dayKey(s) === day);
-  const periods = Array.from(new Set(times.map(period)));
-  const pick = (on: boolean) =>
-    `rounded-xl px-2 py-2.5 text-sm font-bold transition active:scale-[0.97] ${on ? "bg-accent-600 text-on shadow-sm" : "bg-ink-50 text-ink-800 shadow-well"}`;
+  const title = closed ? "Schedule pickup" : "Pickup time";
+  // The one big choice at the top: as soon as possible, or (closed now) the earliest time there is.
+  const quick = closed
+    ? { on: value === slots[0], label: "Earliest", hint: `${dayName(slots[0])}, ${clock(slots[0])}`, pick: slots[0] }
+    : { on: value === null, label: "As soon as possible", hint: prepMinutes ? `about ${prepMinutes} min` : "", pick: null };
 
   return (
     <>
@@ -135,7 +122,7 @@ function TimeSheet({
       <motion.div
         role="dialog"
         aria-modal="true"
-        aria-label="Pickup time"
+        aria-label={title}
         className="fixed inset-x-0 bottom-0 z-[60] mx-auto flex max-h-[85dvh] max-w-md flex-col rounded-t-sheet bg-white px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 shadow-sheet"
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
@@ -143,51 +130,33 @@ function TimeSheet({
         transition={{ type: "spring", damping: 32, stiffness: 340 }}
       >
         <div className="flex items-center gap-3">
-          <h2 className="flex-1 text-xl font-semibold text-ink-900">Pickup time</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="flex h-10 w-10 items-center justify-center rounded-full bg-ink-100 text-ink-700 active:scale-90">
+          <h2 className="flex-1 text-xl font-semibold text-ink-900">{title}</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="flex h-11 w-11 items-center justify-center rounded-full bg-ink-100 text-ink-700 active:scale-90">
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
           </button>
         </div>
 
-        {closed ? (
-          <p className="mt-2 text-sm text-ink-600">We&apos;re closed now. Choose when you&apos;ll pick it up.</p>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onPick(null)}
-            aria-pressed={value === null}
-            className={`mt-4 flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3.5 text-left transition active:scale-[0.99] ${value === null ? "bg-accent-600 text-on shadow-sm" : "bg-ink-50 text-ink-900 shadow-well"}`}
-          >
-            <span className="text-[15px] font-bold">As soon as possible</span>
-            {prepMinutes ? <span className="text-xs font-medium opacity-80">about {prepMinutes} min</span> : null}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => onPick(quick.pick)}
+          aria-pressed={quick.on}
+          className={`mt-4 flex min-h-[3.25rem] w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition active:scale-[0.99] ${quick.on ? "bg-accent-600 text-on shadow-sm" : "bg-ink-50 text-ink-900 shadow-well"}`}
+        >
+          <span className="text-[15px] font-bold">{quick.label}</span>
+          {quick.hint ? <span className="text-sm font-medium tabular-nums opacity-80">{quick.hint}</span> : null}
+        </button>
+        {closed && <p className="mt-2 px-1 text-xs text-ink-500">We&apos;re closed now. It&apos;ll be ready at the time you pick.</p>}
 
         {days.length > 1 && (
-          <div role="tablist" aria-label="Day" className="-mx-5 mt-4 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {days.map((d) => (
-              <button key={d} type="button" role="tab" aria-selected={d === day} onClick={() => setDay(d)} className={`${pick(d === day)} shrink-0 px-4`}>
-                {dayName(slots.find((s) => dayKey(s) === d)!)}
-              </button>
-            ))}
+          <div className="mt-4">
+            <DayTabs id="pickup" days={days.map((d) => ({ key: d, label: dayName(slots.find((s) => dayKey(s) === d)!) }))} value={day} onPick={setDay} />
           </div>
         )}
 
-        <div className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto pb-1">
-          {periods.map((p) => (
-            <div key={p}>
-              {periods.length > 1 && <p className="mb-2 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">{p}</p>}
-              <div className="grid grid-cols-3 gap-2 min-[360px]:grid-cols-4">
-                {times.filter((s) => period(s) === p).map((s) => (
-                  <button key={s} type="button" aria-pressed={s === value} className={pick(s === value)} onClick={() => onPick(s)}>
-                    {clock(s)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+        <div className="mt-4 min-h-0 flex-1 overflow-y-auto pb-1">
+          <TimeGrid key={day} times={times} value={value} onPick={onPick} />
         </div>
       </motion.div>
     </>

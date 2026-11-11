@@ -16,6 +16,7 @@ import DealsRow from "@/components/order/DealsRow";
 import type { Deal } from "@/lib/deals";
 import NotificationBell from "@/components/customer/NotificationBell";
 import { SectionTitle } from "@/components/customer/ui";
+import { tableParam, tablePath } from "@/lib/table-return";
 
 type Store = PickupOutlet & StoreHours & { ordering: boolean };
 
@@ -31,7 +32,7 @@ export default async function StorePage({
   searchParams,
 }: {
   params: { outletId: string };
-  searchParams: { rewards?: string };
+  searchParams: { rewards?: string; table?: string };
 }) {
   if (!/^[0-9a-f-]{36}$/i.test(params.outletId)) notFound();
   const supabase = createClient();
@@ -106,6 +107,8 @@ export default async function StorePage({
   const ahead = canPickup && closed && (await pickupSlots(supabase, store.id)).length > 0;
   const here = `/s/${store.id}`;
   const signIn = `/login?redirect=${encodeURIComponent(here)}`;
+  const tableToken = tableParam(searchParams.table); // came from a table: offer the way back, no pickup bar
+  const profileHref = tableToken ? `/customer/profile?table=${tableToken}` : "/customer/profile";
   const dishHref = canPickup ? `/order/p/${store.id}` : null;
 
   const actions = [
@@ -130,7 +133,7 @@ export default async function StorePage({
   return (
     <div className="min-h-dvh bg-ink-50">
       <RememberPlace outletId={store.id} />
-      <main className={`mx-auto max-w-md ${!canPickup ? "pb-16" : closed ? "pb-[calc(9.5rem+env(safe-area-inset-bottom))]" : "pb-[calc(7rem+env(safe-area-inset-bottom))]"}`}>
+      <main className={`mx-auto max-w-md ${!canPickup || tableToken ? "pb-16" : "pb-[calc(7.5rem+env(safe-area-inset-bottom))]"}`}>
         {/* Cover, logo, name, open now */}
         <header className="relative">
           {/* No photo: no empty block. The header shrinks to a bar for the buttons and the logo sits under it. */}
@@ -145,18 +148,15 @@ export default async function StorePage({
             <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))]">
               {member ? (
                 <>
-                  <Link
-                    href="/customer/profile"
-                    aria-label="My account"
-                    className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-base font-bold text-ink-700 shadow-sm transition hover:bg-brand-100"
-                  >
-                    {(member.full_name?.trim() || user?.email || "U").charAt(0).toUpperCase()}
-                  </Link>
-                  <NotificationBell />
+                  {tableToken ? <BackToTable href={tablePath(tableToken)} /> : <Avatar href={profileHref} member={member} email={user?.email} />}
+                  <span className="flex items-center gap-2">
+                    {tableToken && <Avatar href={profileHref} member={member} email={user?.email} />}
+                    <NotificationBell />
+                  </span>
                 </>
               ) : (
                 <>
-                  <span />
+                  {tableToken ? <BackToTable href={tablePath(tableToken)} /> : <span />}
                   <Link href={signIn} className="inline-flex h-11 items-center rounded-full bg-white px-4 text-sm font-bold text-ink-900 shadow-sm transition hover:bg-brand-100">
                     Sign in
                   </Link>
@@ -332,15 +332,9 @@ export default async function StorePage({
         </div>
       </main>
 
-      {canPickup && (
-        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          {closed && (
-            <p className="mb-2 text-center text-xs font-semibold text-ink-600">
-              <span className="rounded-full bg-white px-3 py-1.5 shadow-sm">
-                {ordering!.text}
-              </span>
-            </p>
-          )}
+      {canPickup && !tableToken && (
+        // Fades the page out behind the buttons. Closed hours are already under the name, so not repeated here.
+        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-md bg-gradient-to-t from-ink-50 from-60% to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6">
           <div className="flex gap-2">
             <Link
               href={`/order/p/${store.id}`}
@@ -422,3 +416,22 @@ function JoinCard({
   );
 }
 
+
+const pill = "inline-flex h-11 items-center rounded-full bg-white text-sm font-bold text-ink-900 shadow-sm transition hover:bg-brand-100 active:scale-[0.97]";
+
+// The way back to the table the guest scanned: no new scan needed.
+function BackToTable({ href }: { href: string }) {
+  return (
+    <Link href={href} className={`${pill} gap-1 pl-3 pr-4`}>
+      <span aria-hidden="true">‹</span> Back to table
+    </Link>
+  );
+}
+
+function Avatar({ href, member, email }: { href: string; member: { full_name: string | null }; email?: string | null }) {
+  return (
+    <Link href={href} aria-label="My account" className={`${pill} w-11 justify-center text-base text-ink-700`}>
+      {(member.full_name?.trim() || email || "U").charAt(0).toUpperCase()}
+    </Link>
+  );
+}

@@ -669,7 +669,7 @@ function CartReview({
             type="button"
             onClick={onClose}
             aria-label="Close and keep browsing"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200 active:scale-90"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200 active:scale-90"
           >
             <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true">
               <path d="M4 4l8 8M12 4l-8 8" />
@@ -683,7 +683,7 @@ function CartReview({
           </p>
         )}
         {pickup && delivery && (
-          <div className="mt-4 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Pickup or delivery">
+          <div className="mt-4 grid grid-cols-2 gap-1 rounded-full bg-ink-100 p-1" role="radiogroup" aria-label="Pickup or delivery">
             {(["pickup", "delivery"] as const).map((m) => (
               <button
                 key={m}
@@ -695,8 +695,8 @@ function CartReview({
                   setMode(m);
                   setError(null);
                 }}
-                className={`min-h-12 rounded-xl text-sm font-bold transition disabled:opacity-60 ${
-                  mode === m ? "bg-brand-600 text-on shadow-sm" : "bg-ink-50 text-ink-800 shadow-well"
+                className={`min-h-11 rounded-full text-sm font-bold leading-tight transition disabled:opacity-60 ${
+                  mode === m ? "bg-white text-ink-900 shadow-sm ring-1 ring-ink-200" : "text-ink-500"
                 }`}
               >
                 {m === "pickup" ? "Pickup" : "Delivery"}

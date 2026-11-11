@@ -2,7 +2,7 @@ import Link from "next/link";
 
 // One header and one section title for every customer screen.
 
-export function PageHeader({ title, subtitle, back }: { title: string; subtitle?: string; back?: string }) {
+export function PageHeader({ title, subtitle, back, backLabel = "Back" }: { title: string; subtitle?: string; back?: string; backLabel?: string }) {
   return (
     <header className="mb-6">
       {back && (
@@ -10,7 +10,7 @@ export function PageHeader({ title, subtitle, back }: { title: string; subtitle?
           href={back}
           className="-ml-2 mb-2 inline-flex h-11 items-center gap-1 rounded-full px-2 text-sm font-bold text-brand-700 transition hover:bg-brand-50"
         >
-          <span aria-hidden="true">‹</span> Back
+          <span aria-hidden="true">‹</span> {backLabel}
         </Link>
       )}
       <h1 className="text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">{title}</h1>
