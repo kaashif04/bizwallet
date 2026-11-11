@@ -109,15 +109,18 @@ export default function MenuView({
         </div>
 
         {groups.length > 0 && (
-          <div role="tablist" className="mx-5 mb-2 flex gap-1 rounded-2xl bg-ink-100 p-1">
+          <div role="tablist" className="mx-4 mb-2 flex gap-0.5 overflow-x-auto min-[360px]:mx-5 min-[360px]:gap-1 rounded-2xl bg-ink-100 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {groups.map((g) => (
               <button
                 key={g}
+                ref={(el) => {
+                  if (el && tab === g) el.scrollIntoView({ inline: "nearest", block: "nearest" });
+                }}
                 role="tab"
                 aria-selected={tab === g}
                 type="button"
                 onClick={() => pickTab(g)}
-                className={`min-w-0 flex-1 truncate rounded-xl px-2 py-2 text-sm font-bold transition-colors ${
+                className={`flex-1 shrink-0 whitespace-nowrap rounded-xl px-1.5 py-2 text-xs font-bold min-[360px]:px-3 min-[360px]:text-sm transition-colors ${
                   tab === g ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
                 }`}
               >
