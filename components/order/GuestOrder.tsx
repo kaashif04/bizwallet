@@ -1025,8 +1025,8 @@ function ClosedNotice({ text, ahead, table }: { text: string; opens: string | nu
   );
 }
 
-// Scroll the menu to a category's section; MenuView switches to its menu tab first if needed.
+// Scroll the menu to a category's section (MenuView marks each with data-category).
 function jumpToCategory(items: MenuItem[], categoryId: string) {
   const name = items.find((i) => i.categoryId === categoryId)?.category;
-  if (name) window.dispatchEvent(new CustomEvent("menu-jump", { detail: name }));
+  if (name) document.querySelector(`[data-category="${CSS.escape(name)}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }

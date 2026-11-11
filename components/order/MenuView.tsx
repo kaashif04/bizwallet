@@ -39,22 +39,22 @@ export default function MenuView({
     const g = Array.from(new Set(items.map((i) => i.menuGroup ?? "Other")));
     return g.length > 1 && items.some((i) => i.menuGroup) ? g : [];
   }, [items]);
-  const [group, setGroup] = useState("");
-  const tab = groups.includes(group) ? group : groups[0];
-  const inTab = (i: MenuItem) => !tab || (i.menuGroup ?? "Other") === tab;
-  const shownItems = useMemo(() => items.filter(inTab), [items, tab]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Inside the Steamboat tab, "Steamboat · Sets" reads just "Sets".
-  const label = (c: string) => (tab && c.startsWith(`${tab} · `) ? c.slice(tab.length + 3) : c);
   const categories = useMemo(
-    () => Array.from(new Set(shownItems.map((i) => i.category))),
-    [shownItems]
+    () => Array.from(new Set(items.map((i) => i.category))),
+    [items]
   );
+  const groupOf = (c: string) => items.find((i) => i.category === c)?.menuGroup ?? "Other";
 
   const [active, setActive] = useState(categories[0] ?? "");
   // A filter (Vegetarian only) can hide the highlighted category.
   useEffect(() => {
     if (!categories.includes(active)) setActive(categories[0] ?? "");
   }, [categories, active]);
+  // The tab follows the section on screen; the pills show that tab's categories only.
+  const tab = groups.length ? groupOf(active) : "";
+  const pills = groups.length ? categories.filter((c) => groupOf(c) === tab) : categories;
+  // Inside the Steamboat tab, "Steamboat · Sets" reads just "Sets".
+  const label = (c: string) => (tab && c.startsWith(`${tab} · `) ? c.slice(tab.length + 3) : c);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const clickScrolling = useRef(false);
 
@@ -69,7 +69,7 @@ export default function MenuView({
         const top = visible[0]?.target as HTMLElement | undefined;
         if (top?.dataset.category) setActive(top.dataset.category);
       },
-      { rootMargin: `-${groups.length ? 176 : 128}px 0px -60% 0px`, threshold: 0 }
+      { rootMargin: `-${groups.length ? 192 : 128}px 0px -60% 0px`, threshold: 0 }
     );
     Object.values(sectionRefs.current).forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
@@ -81,27 +81,9 @@ export default function MenuView({
     chips.current[active]?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
   }, [active]);
 
-  // Switching tab (or a deal pointing at another tab) lands on that category's section.
-  useEffect(() => {
-    const go = (e: Event) => {
-      const cat = (e as CustomEvent<string>).detail;
-      const g = items.find((i) => i.category === cat)?.menuGroup ?? "Other";
-      clickScrolling.current = true;
-      window.setTimeout(() => (clickScrolling.current = false), 700);
-      if (groups.length) setGroup(g);
-      setActive(cat);
-      requestAnimationFrame(() => {
-        sectionRefs.current[cat]?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    };
-    window.addEventListener("menu-jump", go);
-    return () => window.removeEventListener("menu-jump", go);
-  }, [items, groups]);
-
   function pickTab(g: string) {
-    setGroup(g);
-    const first = items.find((i) => (i.menuGroup ?? "Other") === g)?.category;
-    if (first) window.dispatchEvent(new CustomEvent("menu-jump", { detail: first }));
+    const first = categories.find((c) => groupOf(c) === g);
+    if (first) jumpTo(first);
   }
 
   function jumpTo(cat: string) {
@@ -146,7 +128,7 @@ export default function MenuView({
         )}
 
         <div className="mx-5 mb-3 flex gap-1.5 overflow-x-auto rounded-full bg-white p-1.5 shadow-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {categories.map((c) => (
+          {pills.map((c) => (
             <button
               key={c}
               ref={(el) => {
@@ -189,7 +171,7 @@ export default function MenuView({
           >
             <h2 className="mb-3 px-1 text-xl text-slate-900">{label(cat)}</h2>
             {(() => {
-              const list = shownItems.filter((i) => i.category === cat);
+              const list = items.filter((i) => i.category === cat);
               // Photos lead where there are photos; dishes without one read better as plain rows.
               const cards = list.filter((i) => i.imageUrl).length * 2 >= list.length;
               return (
@@ -203,7 +185,7 @@ export default function MenuView({
           </section>
         ))}
 
-        {shownItems.length === 0 && (
+        {items.length === 0 && (
           <p className="py-16 text-center text-sm text-slate-500">
             Nothing on the menu right now.
           </p>
