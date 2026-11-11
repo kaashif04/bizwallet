@@ -707,9 +707,11 @@ function Feedback({ token, reviewUrl, canCallStaff }: { token: string; reviewUrl
                 href={reviewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-flex h-10 items-center rounded-full bg-ink-100 px-4 text-sm font-bold text-ink-900 transition hover:bg-ink-200"
+                className={`mt-3 inline-flex h-10 items-center rounded-full px-4 text-sm font-bold transition ${
+                  rating >= 4 ? "bg-brand-600 text-on shadow-sm hover:brightness-95" : "bg-ink-100 text-ink-900 hover:bg-ink-200"
+                }`}
               >
-                Also review us on Google
+                {rating >= 4 ? "Post it on Google" : "Also review us on Google"}
               </a>
             )}
           </div>
@@ -743,11 +745,31 @@ function Feedback({ token, reviewUrl, canCallStaff }: { token: string; reviewUrl
                   transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
                 >
+                  {/* Everyone can reach Google (Google bans showing it only to happy guests);
+                      the rating just decides what comes first. Tapping Google also saves the rating for the owner. */}
+                  {rating >= 4 && reviewUrl && (
+                    <>
+                      <p className="mt-3 text-sm font-bold text-ink-900">Glad you enjoyed it! Mind sharing that on Google?</p>
+                      <a
+                        href={reviewUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => void send()}
+                        className="mt-3 flex h-11 w-full items-center justify-center gap-1.5 rounded-full bg-brand-600 text-sm font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.98]"
+                      >
+                        Post it on Google
+                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M7 17 17 7M8 7h9v9" />
+                        </svg>
+                      </a>
+                    </>
+                  )}
+                  {rating <= 3 && <p className="mt-3 text-sm font-bold text-ink-900">Sorry about that. What went wrong?</p>}
                   <textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value.slice(0, 1000))}
                     rows={3}
-                    placeholder={rating <= 3 ? "What could we do better? Only the owner sees this." : "Anything to add? (optional)"}
+                    placeholder={rating <= 3 ? "Only the owner sees this." : "Anything for the owner? (optional)"}
                     aria-label="Your note to the owner"
                     className="mt-3 w-full resize-none rounded-xl bg-ink-50 px-3 py-2.5 text-base text-ink-900 outline-none placeholder:text-ink-400"
                   />
@@ -756,10 +778,22 @@ function Feedback({ token, reviewUrl, canCallStaff }: { token: string; reviewUrl
                     type="button"
                     onClick={send}
                     disabled={sending}
-                    className="mt-3 h-11 w-full rounded-full bg-ink-900 text-sm font-bold text-ink-50 transition active:scale-[0.98] disabled:opacity-60"
+                    className={`mt-3 h-11 w-full rounded-full text-sm font-bold transition active:scale-[0.98] disabled:opacity-60 ${
+                      rating >= 4 && reviewUrl ? "bg-ink-100 text-ink-900 hover:bg-ink-200" : "bg-ink-900 text-ink-50"
+                    }`}
                   >
                     {sending ? "Sending…" : "Send to the owner"}
                   </button>
+                  {rating <= 3 && reviewUrl && (
+                    <a
+                      href={reviewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 flex h-10 items-center justify-center text-sm font-semibold text-ink-500 transition hover:text-ink-800"
+                    >
+                      Review on Google ›
+                    </a>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
