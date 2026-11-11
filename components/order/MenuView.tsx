@@ -108,8 +108,14 @@ export default function MenuView({
           <AccountChip state={account} />
         </div>
 
+        {/* Menus (Chinese / Steamboat / Beverages): text tabs on an underline, so they read as
+            the level above the category pills rather than a second row of pills. */}
         {groups.length > 0 && (
-          <div role="tablist" className="mx-4 mb-2 flex gap-0.5 overflow-x-auto min-[360px]:mx-5 min-[360px]:gap-1 rounded-2xl bg-ink-100 p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div
+            role="tablist"
+            aria-label="Menus"
+            className="mx-4 mb-3 flex overflow-x-auto border-b border-ink-200 min-[360px]:mx-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {groups.map((g) => (
               <button
                 key={g}
@@ -120,11 +126,18 @@ export default function MenuView({
                 aria-selected={tab === g}
                 type="button"
                 onClick={() => pickTab(g)}
-                className={`flex-1 shrink-0 whitespace-nowrap rounded-xl px-1.5 py-2 text-xs font-bold min-[360px]:px-3 min-[360px]:text-sm transition-colors ${
-                  tab === g ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                className={`relative min-h-11 flex-1 shrink-0 whitespace-nowrap px-2 pb-2.5 pt-1 text-sm font-bold transition-colors min-[360px]:px-3 min-[360px]:text-[0.9375rem] ${
+                  tab === g ? "text-ink-900" : "text-ink-500 hover:text-ink-700"
                 }`}
               >
                 {g}
+                {tab === g && (
+                  <motion.span
+                    layoutId="menu-group-bar"
+                    className="absolute inset-x-2 -bottom-px h-[3px] rounded-full bg-accent-600"
+                    transition={{ type: "spring", stiffness: 500, damping: 38 }}
+                  />
+                )}
               </button>
             ))}
           </div>
@@ -148,7 +161,7 @@ export default function MenuView({
             >
               {active === c && (
                 <motion.span
-                  layoutId="menu-cat-pill"
+                  layoutId={`menu-cat-pill-${tab}`}
                   className="absolute inset-0 rounded-full bg-brand-600"
                   transition={{ type: "spring", stiffness: 400, damping: 32 }}
                 />
@@ -172,6 +185,13 @@ export default function MenuView({
             }}
             className={groups.length ? "scroll-mt-44" : "scroll-mt-28"}
           >
+            {groups.length > 0 && categories.find((c) => groupOf(c) === groupOf(cat)) === cat && (
+              <GroupBanner
+                name={groupOf(cat)}
+                sections={categories.filter((c) => groupOf(c) === groupOf(cat)).length}
+                dishes={items.filter((i) => (i.menuGroup ?? "Other") === groupOf(cat)).length}
+              />
+            )}
             <h2 className="mb-3 px-1 text-xl text-slate-900">{label(cat)}</h2>
             {(() => {
               const list = items.filter((i) => i.category === cat);
@@ -194,6 +214,21 @@ export default function MenuView({
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+// Where one menu starts in the long scroll ("Steamboat · 6 sections · 52 dishes").
+function GroupBanner({ name, sections, dishes }: { name: string; sections: number; dishes: number }) {
+  return (
+    <div className="mb-6 flex items-center gap-4 rounded-3xl bg-accent-50 px-5 py-4">
+      <span aria-hidden="true" className="h-10 w-1.5 shrink-0 rounded-full bg-accent-600" />
+      <span className="min-w-0">
+        <span className="block text-2xl font-bold leading-tight tracking-[-0.02em] text-ink-900">{name}</span>
+        <span className="block text-sm font-semibold text-accent-700">
+          {sections} {sections === 1 ? "section" : "sections"}, {dishes} {dishes === 1 ? "dish" : "dishes"}
+        </span>
+      </span>
     </div>
   );
 }

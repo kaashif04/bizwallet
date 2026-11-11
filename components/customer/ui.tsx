@@ -21,8 +21,8 @@ export function PageHeader({ title, subtitle, back }: { title: string; subtitle?
 
 export function SectionTitle({ children, href, action = "See all" }: { children: React.ReactNode; href?: string; action?: string }) {
   return (
-    <div className="mb-3 flex items-end justify-between px-1">
-      <h2 className="text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">{children}</h2>
+    <div className="mb-3 flex items-baseline justify-between px-1">
+      <h2 className="text-lg font-bold tracking-[-0.01em] text-ink-900">{children}</h2>
       {href && (
         <Link href={href} className="text-sm font-bold text-brand-700 hover:underline">
           {action}

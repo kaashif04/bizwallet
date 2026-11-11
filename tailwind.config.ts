@@ -20,6 +20,9 @@ const marple = {
 };
 const emerald = { 50: "#E6FAF3", 100: "#C2F2E1", 500: "#00A877", 600: "#008A62", 700: "#006E4F" };
 const amber = { 50: "#FFF7E6", 100: "#FFEBC2", 200: "#FFD98A", 300: "#FFC24D", 500: "#F09A00", 700: "#9A5C00", 800: "#7A4800" };
+// Second colour (crimson's partner): wayfinding only, i.e. where you are (menu tabs,
+// section banners). Crimson stays the "do something" colour. 600 on ivory 5.3:1.
+const accent = { 50: "#E7F4F1", 100: "#CBE8E1", 500: "#1A8F82", 600: "#11766B", 700: "#0C5F57" };
 const rose = { 50: "#FFF1F0", 100: "#FFDEDB", 200: "#FFBCB6", 400: "#FF6257", 500: "#F04438", 600: "#D92D20", 700: "#B42318" };
 
 // Dark mode (the Hub's night palette): night ground, charcoal cards, light
@@ -36,9 +39,10 @@ const dark: Record<string, Ramp> = {
   },
   emerald: { 50: "#0D2A21", 100: "#123A2D", 500: "#12C48C", 600: "#4AD6A7", 700: "#4AD6A7" },
   amber: { 50: "#2E2108", 100: "#3D2C0A", 200: "#5C3600", 300: "#FFC24D", 500: "#FFB020", 700: "#FFC24D", 800: "#FFD98A" },
+  accent: { 50: "#0E2623", 100: "#12332F", 500: "#3FC2B0", 600: "#4FD1BF", 700: "#7ADCCD" },
   rose: { 50: "#33130F", 100: "#451109", 200: "#7A271A", 400: "#FF8F86", 500: "#FF6257", 600: "#FF8F86", 700: "#FF8F86" },
 };
-const light: Record<string, Ramp> = { ink, brand: marple, emerald, amber, rose };
+const light: Record<string, Ramp> = { ink, brand: marple, emerald, amber, rose, accent };
 
 const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(" ");
 const vars = (pal: Record<string, Ramp>, card: string) => ({
@@ -85,6 +89,7 @@ const config: Config = {
         emerald: themed("emerald"),
         amber: themed("amber"),
         rose: themed("rose"),
+        accent: themed("accent"),
         red: themed("rose"),
         // Old playful accents fold into the status trio and the accent.
         sun: themed("amber"),

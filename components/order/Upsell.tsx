@@ -43,36 +43,63 @@ const price = (item: MenuItem, currency: string) => `${currencySymbol(currency)}
 // "Popular here": a swipeable row at the top of the menu.
 export function PopularRow({ items, currency, onPick }: { items: MenuItem[]; currency: string; onPick: (i: MenuItem) => void }) {
   if (items.length < 3) return null;
+  const photos = items.filter((i) => i.imageUrl).length * 2 >= items.length;
   return (
     <section>
       <h2 className="mb-3 px-1 text-xl text-ink-900">Popular here</h2>
-      <div className="-mx-5 flex snap-x scroll-px-5 gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {items.map((item, i) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onPick(item)}
-            className="w-36 shrink-0 snap-start text-left transition active:scale-[0.97]"
-          >
-            <span className="relative block">
-              <Thumb item={item} className="aspect-square w-full rounded-2xl" />
-              <span className="absolute left-2 top-2 rounded-full bg-white px-2 py-0.5 text-2xs font-bold text-ink-800 shadow-sm">
-                #{i + 1}
+      <div className="-mx-5 flex items-stretch snap-x scroll-px-5 gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {items.map((item, i) =>
+          // Photos lead where there are photos; without most of them a big letter
+          // square says nothing, so the row becomes compact rank cards.
+          photos ? (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onPick(item)}
+              className="w-36 shrink-0 snap-start text-left transition active:scale-[0.97]"
+            >
+              <span className="relative block">
+                <Thumb item={item} className="aspect-square w-full rounded-2xl" />
+                <span className="absolute left-2 top-2 rounded-full bg-white px-2 py-0.5 text-2xs font-bold text-ink-800 shadow-sm">
+                  #{i + 1}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-lg font-bold text-on shadow-md"
+                >
+                  +
+                </span>
               </span>
-              <span
-                aria-hidden="true"
-                className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-lg font-bold text-on shadow-md"
-              >
-                +
+              <span className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink-900">
+                {item.vegetarian && <VegMark className="mr-1" />}
+                {item.name}
               </span>
-            </span>
-            <span className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink-900">
-              {item.vegetarian && <VegMark className="mr-1" />}
-              {item.name}
-            </span>
-            <span className="block text-xs font-semibold text-ink-500">{price(item, currency)}</span>
-          </button>
-        ))}
+              <span className="block text-xs font-semibold text-ink-500">{price(item, currency)}</span>
+            </button>
+          ) : (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onPick(item)}
+              className="flex w-40 shrink-0 snap-start flex-col rounded-2xl bg-white p-3 text-left shadow-sm transition active:scale-[0.97]"
+            >
+              <span className="flex items-center justify-between">
+                <span className="text-2xs font-bold text-accent-700">#{i + 1}</span>
+                <span
+                  aria-hidden="true"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-lg font-bold text-on"
+                >
+                  +
+                </span>
+              </span>
+              <span className="mt-1.5 line-clamp-2 text-sm font-bold leading-snug text-ink-900">
+                {item.vegetarian && <VegMark className="mr-1" />}
+                {item.name}
+              </span>
+              <span className="mt-auto block pt-1 text-xs font-semibold text-ink-500">{price(item, currency)}</span>
+            </button>
+          )
+        )}
       </div>
     </section>
   );

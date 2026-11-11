@@ -28,14 +28,29 @@ export default function DishRails({ mine, popular, href }: { mine: Dish[]; popul
 }
 
 function DishRail({ title, dishes, href, mine }: { title: string; dishes: Dish[]; href: string | null; mine?: boolean }) {
+  // Same rule as the menu: photos lead where there are photos. Without them a big
+  // letter square says nothing, so the rail becomes compact name-and-price cards.
+  const photos = dishes.filter((d) => d.image_url).length * 2 >= dishes.length;
   return (
     <section>
       <SectionTitle href={href ?? undefined} action="Order">
         {title}
       </SectionTitle>
-      <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+      <ul className={`-mx-4 flex snap-x ${photos ? "" : "items-stretch pb-3"} snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]`}>
         {dishes.map((d) => {
-          const card = (
+          const card = !photos ? (
+            <span className="flex h-full flex-col rounded-2xl bg-white p-3 shadow-sm">
+              <ItemMark name={d.name} className="h-9 w-9 rounded-xl text-sm" />
+              <span className="mt-2.5 line-clamp-2 text-sm font-bold leading-snug text-ink-900">
+                {d.is_vegetarian && <VegMark className="mr-1" />}
+                {d.name}
+              </span>
+              <span className="mt-auto block pt-1 text-xs text-ink-500">
+                <Price price={Number(d.price)} regular={d.regular_price == null ? null : Number(d.regular_price)} tag={false} />
+                {mine && d.times && d.times > 1 ? ` · ${d.times}×` : ""}
+              </span>
+            </span>
+          ) : (
             <>
               {d.image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -54,9 +69,9 @@ function DishRail({ title, dishes, href, mine }: { title: string; dishes: Dish[]
             </>
           );
           return (
-            <li key={d.id} className="w-32 shrink-0 snap-start">
+            <li key={d.id} className={`shrink-0 snap-start ${photos ? "w-32" : "w-36"}`}>
               {href ? (
-                <Link href={href} className="block transition active:scale-[0.97]">
+                <Link href={href} className="block h-full transition active:scale-[0.97]">
                   {card}
                 </Link>
               ) : (
