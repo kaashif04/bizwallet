@@ -68,6 +68,24 @@ export default function GuestOrder(
     points: number;
   } | null>(null);
 
+  // Keep an open menu in step with BizPos (prices, order, sold out): refetch every
+  // minute and whenever the phone comes back to the page.
+  // ponytail: polling, not realtime; BizPos's menu tables aren't ours to publish.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      supabase
+        .rpc("guest_get_menu", props.token ? { p_token: props.token } : { p_outlet: props.outletId })
+        .then(({ data }) => data && setMenu(data as GuestMenu));
+    };
+    const t = window.setInterval(refresh, 60_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(t);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [supabase, props.token, props.outletId]);
+
   // The bottom bar's cart button (or ?cart=1 from another page) opens the order.
   useEffect(() => {
     const open = () => setReviewing(true);
