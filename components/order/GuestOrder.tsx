@@ -982,7 +982,7 @@ function CartReview({
           type="button"
           onClick={place}
           disabled={placing || (shut && !closed!.ahead)}
-          className="h-14 w-full rounded-full bg-brand-600 px-5 text-base font-bold text-on shadow-sm transition hover:brightness-95 active:scale-[0.97] disabled:opacity-60"
+          className="min-h-14 w-full rounded-full bg-brand-600 px-5 py-2 text-base font-bold leading-tight text-on shadow-sm transition hover:brightness-95 active:scale-[0.97] disabled:opacity-60"
         >
           {shut && !closed!.ahead
             ? closed!.text
@@ -993,7 +993,13 @@ function CartReview({
             : error
               ? "Try again"
               : payNow
-                ? `Pay${grand !== null && (!isDelivery || ds.quote) ? ` ${sym}${grand.toFixed(2)}` : ""} and place order`
+                ? (
+                  <>
+                    Pay{grand !== null && (!isDelivery || ds.quote) ? ` ${sym}${grand.toFixed(2)}` : ""}
+                    {/* Small phones: "Pay RM17.00" stays on one line. */}
+                    <span className="max-[359px]:hidden"> and place order</span>
+                  </>
+                )
                 : "Place order"}
         </button>
         </div>

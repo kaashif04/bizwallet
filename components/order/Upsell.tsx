@@ -66,7 +66,7 @@ export function PopularRow({ items, currency, onPick }: { items: MenuItem[]; cur
                 +
               </span>
             </span>
-            <span className="mt-2 block truncate text-sm font-bold text-ink-900">
+            <span className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink-900">
               {item.vegetarian && <VegMark className="mr-1" />}
               {item.name}
             </span>
@@ -102,8 +102,8 @@ export function PairNudge({
       className="fixed inset-x-0 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-md px-5"
     >
       <div className="flex items-center gap-3 rounded-2xl bg-white p-2.5 pr-3 shadow-lg ring-1 ring-ink-100">
-        <Thumb item={item} className="h-12 w-12 shrink-0 rounded-xl" />
-        <span className="min-w-0 flex-1">
+        <Thumb item={item} className="h-12 w-12 shrink-0 rounded-xl max-[359px]:hidden" />
+        <span className="min-w-0 flex-1 max-[359px]:pl-1.5">
           <span className="block truncate text-2xs font-semibold text-ink-500">Goes well with {after}</span>
           <span className="block truncate text-sm font-bold text-ink-900">
             {item.name} · {price(item, currency)}

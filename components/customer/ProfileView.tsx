@@ -271,7 +271,7 @@ function Row({
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-xs text-ink-500">{label}</p>
-        <p className="truncate text-sm font-bold text-ink-900">{value}</p>
+        <p className="text-sm font-bold text-ink-900 [overflow-wrap:anywhere]">{value}</p>
       </div>
       {verified !== undefined && (
         <span

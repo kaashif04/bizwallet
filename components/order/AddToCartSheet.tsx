@@ -23,9 +23,9 @@ function defaultSelection(groups: VariantGroup[], ask: boolean): Record<string, 
   );
 }
 
-// "Choice of style" -> "Choose style"
+// "Choice of style" -> "Choose style"; "Essentials · pick 2" -> "Choose essentials" (the count is said elsewhere)
 const choose = (label: string) => {
-  const rest = label.replace(/^(choice of|choose( your)?)\s+/i, "");
+  const rest = label.replace(/^(choice of|choose( your)?)\s+/i, "").replace(/\s*[·:,-]\s*(pick|choose)\s+(any\s+)?\d+\s*$/i, "");
   return `Choose ${rest.charAt(0).toLowerCase()}${rest.slice(1)}`;
 };
 
@@ -166,7 +166,9 @@ export default function AddToCartSheet({
 
   const unmetGroup = groups.find((g) => !isMet(g));
   // "Choose essentials", or once started on a pick-8, "3 more to pick".
-  const stillToPick = (g: VariantGroup) => (picked(g) > 0 && need(g) > 1 ? `${need(g) - picked(g)} more to pick` : choose(g.label));
+  // In the step-by-step builder the heading already names the group, so the button only counts.
+  const stillToPick = (g: VariantGroup) =>
+    picked(g) > 0 && need(g) > 1 ? `${need(g) - picked(g)} more to pick` : stepped ? (need(g) > 1 ? `Pick ${need(g)}` : "Pick 1") : choose(g.label);
 
   function shake(g: VariantGroup) {
     setShakeId(g.id);
@@ -190,7 +192,7 @@ export default function AddToCartSheet({
 
   const money = (n: number) => `${sym}${n.toFixed(2)}`;
   const totalTag = (
-    <motion.span key={total.toFixed(2)} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
+    <motion.span key={total.toFixed(2)} className="shrink-0 tabular-nums" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
       {money(total)}
     </motion.span>
   );
@@ -258,8 +260,8 @@ export default function AddToCartSheet({
           {!stepped ? (
             <>
               {hero}
-              <div className="flex items-start gap-4 pr-10 pt-4">
-                {!item.imageUrl && <ItemMark name={dish.name} className="h-16 w-16 rounded-2xl text-3xl" />}
+              <div className="flex items-start gap-3 pr-10 pt-4">
+                {!item.imageUrl && <ItemMark name={dish.name} className="h-14 w-14 shrink-0 rounded-2xl text-2xl" />}
                 <div className="min-w-0 flex-1">
                   {title}
                   {item.description && <p className="mt-1 text-sm text-slate-600">{item.description}</p>}
@@ -304,8 +306,8 @@ export default function AddToCartSheet({
               {step === 0 ? (
                 <>
                   {hero}
-                  <div className="flex items-start gap-4 pr-10 pt-4">
-                    {!item.imageUrl && <ItemMark name={dish.name} className="h-16 w-16 rounded-2xl text-3xl" />}
+                  <div className="flex items-start gap-3 pr-10 pt-4">
+                    {!item.imageUrl && <ItemMark name={dish.name} className="h-14 w-14 shrink-0 rounded-2xl text-2xl" />}
                     <div className="min-w-0 flex-1">
                       {title}
                       {item.description && <p className="mt-1 text-sm text-slate-600">{item.description}</p>}
@@ -324,7 +326,7 @@ export default function AddToCartSheet({
                     <ItemMark name={dish.name} className="h-12 w-12 shrink-0 rounded-xl text-xl" />
                   )}
                   <div className="min-w-0">
-                    <p className="truncate text-[15px] font-bold text-slate-900">{dish.name}</p>
+                    <p className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-900">{dish.name}</p>
                     <p className="truncate text-xs text-ink-500">{pickSummary(selections) || money(item.price)}</p>
                   </div>
                 </div>
@@ -382,7 +384,7 @@ export default function AddToCartSheet({
                             onClick={() => toggleOption(current, o.id)}
                             className={`flex w-full flex-col justify-center rounded-2xl border-2 p-3 text-left transition active:scale-[0.97] ${
                               on ? "border-brand-500 bg-brand-50" : "border-ink-100 bg-white"
-                            } ${multi ? "min-h-[5rem] pr-11" : "min-h-[4rem]"}`}
+                            } ${multi ? "min-h-[5.75rem] pr-11" : "min-h-[4rem]"}`}
                           >
                             <span className={`${multi ? "" : "pr-7 "}text-[15px] font-semibold leading-snug text-ink-900`}>{o.label}</span>
                             {!!o.priceDelta && <span className="mt-1 text-sm font-bold text-ink-700">+{money(o.priceDelta)}</span>}
@@ -446,11 +448,11 @@ export default function AddToCartSheet({
             <button
               type="button"
               onClick={() => (isMet(current) ? go(step + 1) : shake(current))}
-              className={`flex h-12 flex-1 items-center justify-between rounded-full px-5 text-[15px] font-bold transition active:scale-[0.97] ${
+              className={`flex h-12 min-w-0 flex-1 items-center justify-between gap-3 rounded-full px-5 text-[15px] font-bold transition active:scale-[0.97] ${
                 isMet(current) ? "bg-brand-600 text-on shadow-sm hover:brightness-95" : "bg-slate-100 text-slate-600"
               }`}
             >
-              <span className="truncate">
+              <span className="min-w-0 truncate">
                 {!isMet(current) ? stillToPick(current) : picked(current) === 0 ? "Skip" : "Next"}
               </span>
               {totalTag}
@@ -483,11 +485,11 @@ export default function AddToCartSheet({
               <button
                 type="button"
                 onClick={handleAddClick}
-                className={`flex h-12 flex-1 items-center justify-between rounded-full px-5 text-[15px] font-bold transition active:scale-[0.97] ${
+                className={`flex h-12 min-w-0 flex-1 items-center justify-between gap-3 rounded-full px-5 text-[15px] font-bold transition active:scale-[0.97] ${
                   unmetGroup ? "bg-slate-100 text-slate-600" : "bg-brand-600 text-on shadow-sm hover:brightness-95"
                 }`}
               >
-                <span className="truncate">{unmetGroup ? stillToPick(unmetGroup) : "Add"}</span>
+                <span className="min-w-0 truncate">{unmetGroup ? stillToPick(unmetGroup) : "Add"}</span>
                 {totalTag}
               </button>
             </>

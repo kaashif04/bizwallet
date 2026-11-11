@@ -498,15 +498,15 @@ function CallStaff({
               disabled={busy !== null}
               onClick={() => call(kind)}
               aria-live="polite"
-              className={`flex items-center gap-3 rounded-2xl bg-amber-50 px-4 py-3.5 text-left ring-1 transition active:scale-[0.97] ${
+              className={`flex items-center gap-2.5 rounded-2xl bg-amber-50 px-3.5 py-3.5 text-left ring-1 max-[359px]:gap-2 max-[359px]:px-3 transition active:scale-[0.97] ${
                 sent ? "ring-2 ring-amber-300" : "ring-amber-200"
               }`}
             >
-              <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0 text-amber-700" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0 text-amber-700 max-[359px]:h-5 max-[359px]:w-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={icon} />
               </svg>
               <span className="min-w-0">
-                <span className="block text-sm font-bold text-amber-800">{label}</span>
+                <span className="block whitespace-nowrap text-sm font-bold text-amber-800">{label}</span>
                 {(busy === kind || sent) && (
                   <span className="block text-xs text-amber-700">{busy === kind ? "Sending…" : `Coming · ${ago(sent!.at)}`}</span>
                 )}
