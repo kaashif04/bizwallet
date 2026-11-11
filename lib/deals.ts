@@ -1,5 +1,12 @@
 // A running menu deal (BizPos wallet_deals). price is already the deal price everywhere.
-export type DealItem = { id: string; name: string; image_url: string | null; price: number; regular_price: number };
+export type DealItem = {
+  id: string;
+  name: string;
+  image_url: string | null;
+  price: number;
+  regular_price: number;
+  dine_in_only?: boolean; // not sold for pickup (e.g. steamboat sets)
+};
 export type Deal = {
   id: string;
   title: string | null;

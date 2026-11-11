@@ -206,7 +206,11 @@ export default async function StorePage({
           )}
 
           {/* Deals first: tapping one opens that dish (or category) on the menu. */}
-          <DealsRow deals={(dealData ?? []) as Deal[]} href={dishHref} />
+          <DealsRow
+            deals={(dealData ?? []) as Deal[]}
+            href={dishHref}
+            scanHref={store.ordering ? `/scan?at=${encodeURIComponent(store.name)}` : null}
+          />
 
           {/* Points: the member's card, or what joining gets you */}
           {loyaltyOn &&

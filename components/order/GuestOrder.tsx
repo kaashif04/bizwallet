@@ -267,6 +267,9 @@ export default function GuestOrder(
     }
   };
 
+  // Deals on this menu only (pickup leaves out dine-in-only dishes such as steamboat sets).
+  const onMenu = deals.map((d) => ({ ...d, items: d.items.filter((i) => byId.has(i.id)) })).filter((d) => d.items.length > 0);
+
   const account: AccountState = !loyalty
     ? null
     : loyalty.member
@@ -311,10 +314,10 @@ export default function GuestOrder(
           )
         }
         intro={
-          (deals.length > 0 || banners.length > 0 || popular.length >= 3) && (
+          (onMenu.length > 0 || banners.length > 0 || popular.length >= 3) && (
             <>
               <DealsRow
-                deals={deals}
+                deals={onMenu}
                 onDish={(id) => {
                   const i = byId.get(id);
                   if (i && i.isAvailable !== false) setSheetItem(i);
