@@ -78,7 +78,7 @@ export default function RefundForm({ token }: { token: string }) {
 
   return (
     <Shell>
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">{r.outlet}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent-700">{r.outlet}</p>
       <h1 className="mt-1 text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">
         {r.status === "paid" ? "Your refund is paid" : r.status === "sending" ? "We're sending your refund" : `Your ${money} refund`}
       </h1>

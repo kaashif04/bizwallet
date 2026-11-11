@@ -33,7 +33,7 @@ export default function TableNav({ token }: { token: string }) {
       href={href}
       aria-current={path === href ? "page" : undefined}
       className={`flex flex-1 flex-col items-center gap-0.5 rounded-full py-1.5 text-2xs font-semibold transition active:scale-90 ${
-        path === href ? "bg-brand-50 text-brand-700" : "text-ink-500"
+        path === href ? "bg-accent-50 text-accent-700" : "text-ink-500"
       }`}
     >
       <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

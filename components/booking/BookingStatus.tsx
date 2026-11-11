@@ -128,7 +128,7 @@ export default function BookingStatus({ token, justPaid }: { token: string; just
         <div className="mb-5">
           <HomeButton href={`/s/${b.outlet.id}`} />
         </div>
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">{b.outlet.name}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent-700">{b.outlet.name}</p>
         <h1 className="mt-1 text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">{headline(b.status)}</h1>
       </header>
 

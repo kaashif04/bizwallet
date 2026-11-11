@@ -192,9 +192,9 @@ export default async function StorePage({
                   key={a.label}
                   href={a.href}
                   {...(a.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  className="flex h-[4.25rem] min-w-0 flex-col items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl bg-white px-1 text-center text-[12px] font-semibold leading-none text-ink-800 shadow-sm transition hover:bg-brand-50 active:scale-[0.97]"
+                  className="flex h-[4.25rem] min-w-0 flex-col items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl bg-white px-1 text-center text-[12px] font-semibold leading-none text-ink-800 shadow-sm transition hover:bg-accent-50 active:scale-[0.97]"
                 >
-                  <svg viewBox="0 0 24 24" className="h-6 w-6 text-brand-600" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" className="h-6 w-6 text-accent-600" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d={a.icon} />
                   </svg>
                   {a.label}
@@ -364,7 +364,7 @@ export default async function StorePage({
                 // GuestOrder starts checkout on Delivery when the URL has ?delivery=1.
                 <Link
                   href={`/order/p/${store.id}?delivery=1`}
-                  className="flex h-14 flex-1 items-center justify-center rounded-full bg-white text-base font-bold text-brand-700 shadow-lg ring-1 ring-brand-200 transition hover:bg-brand-50 active:scale-[0.97]"
+                  className="flex h-14 flex-1 items-center justify-center rounded-full bg-white text-base font-bold text-brand-700 shadow-lg ring-1 ring-brand-200 transition hover:bg-accent-50 active:scale-[0.97]"
                 >
                   Delivery
                 </Link>
@@ -390,7 +390,7 @@ function JoinCard({
   return (
     <section className="overflow-hidden rounded-3xl bg-white">
       <div className="p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">Rewards here</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent-700">Rewards here</p>
         <h2 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-ink-900">
           Earn {perRm === 1 ? "1 point" : `${perRm} points`} for every {sym}1
         </h2>

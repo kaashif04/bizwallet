@@ -103,7 +103,7 @@ export default function MenuView({
           {logoUrl && <BranchLogo name={title} logoUrl={logoUrl} className="hidden h-11 w-11 rounded-xl min-[360px]:block" />}
           <span className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-bold leading-tight text-slate-900">{title}</h1>
-            <span className="block truncate text-xs font-semibold text-brand-700">{subtitle}</span>
+            <span className="block truncate text-xs font-semibold text-accent-700">{subtitle}</span>
           </span>
           <AccountChip state={account} />
         </div>
@@ -162,7 +162,7 @@ export default function MenuView({
               {active === c && (
                 <motion.span
                   layoutId={`menu-cat-pill-${tab}`}
-                  className="absolute inset-0 rounded-full bg-brand-600"
+                  className="absolute inset-0 rounded-full bg-accent-600"
                   transition={{ type: "spring", stiffness: 400, damping: 32 }}
                 />
               )}

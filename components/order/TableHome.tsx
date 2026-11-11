@@ -192,7 +192,7 @@ export default function TableHome({
             />
             <div className="min-w-0 pt-2">
               <h1 className="truncate text-2xl font-semibold leading-tight tracking-[-0.03em] text-ink-900">{home.outlet.name}</h1>
-              <p className="text-sm font-semibold text-brand-700">
+              <p className="text-sm font-semibold text-accent-700">
                 Table {home.table.label}
                 {me && me !== "guest" && me.name ? <span className="font-normal text-ink-500"> · Hi {me.name}</span> : null}
               </p>
@@ -560,7 +560,7 @@ function Points({ me, outletId, signIn }: { me: Me; outletId: string; signIn: st
 
 function Star() {
   return (
-    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-600">
       <svg viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor" aria-hidden="true">
         <path d="M10 1.5l2.5 5.2 5.7.8-4.1 4 1 5.6L10 14.4l-5.1 2.7 1-5.6-4.1-4 5.7-.8L10 1.5Z" />
       </svg>

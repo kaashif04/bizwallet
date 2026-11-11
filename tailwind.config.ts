@@ -39,7 +39,7 @@ const dark: Record<string, Ramp> = {
   },
   emerald: { 50: "#0D2A21", 100: "#123A2D", 500: "#12C48C", 600: "#4AD6A7", 700: "#4AD6A7" },
   amber: { 50: "#2E2108", 100: "#3D2C0A", 200: "#5C3600", 300: "#FFC24D", 500: "#FFB020", 700: "#FFC24D", 800: "#FFD98A" },
-  accent: { 50: "#0E2623", 100: "#12332F", 500: "#3FC2B0", 600: "#4FD1BF", 700: "#7ADCCD" },
+  accent: { 50: "#0E2623", 100: "#12332F", 500: "#3FC2B0", 600: "#178577", 700: "#7ADCCD" },
   rose: { 50: "#33130F", 100: "#451109", 200: "#7A271A", 400: "#FF8F86", 500: "#FF6257", 600: "#FF8F86", 700: "#FF8F86" },
 };
 const light: Record<string, Ramp> = { ink, brand: marple, emerald, amber, rose, accent };
