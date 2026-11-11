@@ -109,7 +109,6 @@ export default async function StorePage({
   const dishHref = canPickup ? `/order/p/${store.id}` : null;
 
   const actions = [
-    canPickup && { href: `/order/p/${store.id}`, label: "Order", icon: "M5 8h14l-1 12H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2" },
     store.ordering && {
       href: `/scan?at=${encodeURIComponent(store.name)}`,
       label: "Scan table",
@@ -186,19 +185,18 @@ export default async function StorePage({
 
         <div className="mt-5 space-y-8 px-4">
           {actions.length > 0 && (
-            <nav aria-label="Quick actions" className="grid gap-2" style={{ gridTemplateColumns: `repeat(${actions.length}, minmax(0, 1fr))` }}>
+            // Ordering lives in the bottom bar; these are the extras, as pills that read fine one or four at a time.
+            <nav aria-label="Quick actions" className="flex flex-wrap gap-2">
               {actions.map((a) => (
                 <a
                   key={a.label}
                   href={a.href}
                   {...(a.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  className="flex flex-col items-center gap-2 rounded-2xl py-2 text-center text-[13px] font-bold leading-tight text-ink-800 transition active:scale-95"
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-white pl-3.5 pr-4 text-sm font-bold text-ink-800 shadow-sm transition hover:bg-brand-50 active:scale-95"
                 >
-                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand-600 shadow-sm">
-                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d={a.icon} />
-                    </svg>
-                  </span>
+                  <svg viewBox="0 0 24 24" className="h-5 w-5 text-brand-600" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d={a.icon} />
+                  </svg>
                   {a.label}
                 </a>
               ))}
