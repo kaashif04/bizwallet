@@ -43,6 +43,8 @@ export default function MenuView({
   const tab = groups.includes(group) ? group : groups[0];
   const inTab = (i: MenuItem) => !tab || (i.menuGroup ?? "Other") === tab;
   const shownItems = useMemo(() => items.filter(inTab), [items, tab]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Inside the Steamboat tab, "Steamboat · Sets" reads just "Sets".
+  const label = (c: string) => (tab && c.startsWith(`${tab} · `) ? c.slice(tab.length + 3) : c);
   const categories = useMemo(
     () => Array.from(new Set(shownItems.map((i) => i.category))),
     [shownItems]
@@ -166,7 +168,7 @@ export default function MenuView({
                   transition={{ type: "spring", stiffness: 400, damping: 32 }}
                 />
               )}
-              <span className="relative z-10">{c}</span>
+              <span className="relative z-10">{label(c)}</span>
             </button>
           ))}
         </div>
@@ -185,7 +187,7 @@ export default function MenuView({
             }}
             className={groups.length ? "scroll-mt-44" : "scroll-mt-28"}
           >
-            <h2 className="mb-3 px-1 text-xl text-slate-900">{cat}</h2>
+            <h2 className="mb-3 px-1 text-xl text-slate-900">{label(cat)}</h2>
             {(() => {
               const list = shownItems.filter((i) => i.category === cat);
               // Photos lead where there are photos; dishes without one read better as plain rows.
