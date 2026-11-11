@@ -13,7 +13,7 @@ export type GuestMenu = {
     service_charge_rate: number;
     rounding_step?: number | null; // the bill is rounded up to this step (e.g. 0.05)
   };
-  categories: { id: string; name: string }[];
+  categories: { id: string; name: string; menu_group?: string | null }[]; // menu_group: top-level tab (Chinese / Steamboat / Beverages); null = no tabs
   items: {
     id: string;
     name: string;
@@ -138,7 +138,7 @@ export function toMenu(menu: GuestMenu): {
   items: MenuItem[];
   groupsByItem: Record<string, VariantGroup[]>;
 } {
-  const catName = new Map(menu.categories.map((c, i) => [c.id, { name: c.name, i }]));
+  const catName = new Map(menu.categories.map((c, i) => [c.id, { name: c.name, i, group: c.menu_group ?? null }]));
   const rank = (id: string | null) => (id ? catName.get(id)?.i : undefined) ?? 1e9;
 
   const sorted = [...menu.items].sort((a, b) => rank(a.category_id) - rank(b.category_id));
@@ -151,6 +151,7 @@ export function toMenu(menu: GuestMenu): {
     isAvailable: i.is_available !== false,
     category: (i.category_id && catName.get(i.category_id)?.name) || "Other",
     categoryId: i.category_id,
+    menuGroup: (i.category_id && catName.get(i.category_id)?.group) || null,
     price: Number(i.price),
     regularPrice: i.regular_price == null ? null : Number(i.regular_price),
     imageUrl: i.image_url,

@@ -34,9 +34,18 @@ export default function MenuView({
   intro?: React.ReactNode; // offers and best-sellers above the categories
   filter?: React.ReactNode; // the Vegetarian only switch, first thing on the menu
 }) {
+  // Top-level tabs (Chinese / Steamboat / Beverages) when BizPos groups the menu; none otherwise.
+  const groups = useMemo(() => {
+    const g = Array.from(new Set(items.map((i) => i.menuGroup ?? "Other")));
+    return g.length > 1 && items.some((i) => i.menuGroup) ? g : [];
+  }, [items]);
+  const [group, setGroup] = useState("");
+  const tab = groups.includes(group) ? group : groups[0];
+  const inTab = (i: MenuItem) => !tab || (i.menuGroup ?? "Other") === tab;
+  const shownItems = useMemo(() => items.filter(inTab), [items, tab]); // eslint-disable-line react-hooks/exhaustive-deps
   const categories = useMemo(
-    () => Array.from(new Set(items.map((i) => i.category))),
-    [items]
+    () => Array.from(new Set(shownItems.map((i) => i.category))),
+    [shownItems]
   );
 
   const [active, setActive] = useState(categories[0] ?? "");
@@ -58,17 +67,40 @@ export default function MenuView({
         const top = visible[0]?.target as HTMLElement | undefined;
         if (top?.dataset.category) setActive(top.dataset.category);
       },
-      { rootMargin: "-128px 0px -60% 0px", threshold: 0 }
+      { rootMargin: `-${groups.length ? 176 : 128}px 0px -60% 0px`, threshold: 0 }
     );
     Object.values(sectionRefs.current).forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
-  }, [categories]);
+  }, [categories, groups.length]);
 
   // Keep the active category in view in the chip tray as the page scrolls.
   const chips = useRef<Record<string, HTMLButtonElement | null>>({});
   useEffect(() => {
     chips.current[active]?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
   }, [active]);
+
+  // Switching tab (or a deal pointing at another tab) lands on that category's section.
+  useEffect(() => {
+    const go = (e: Event) => {
+      const cat = (e as CustomEvent<string>).detail;
+      const g = items.find((i) => i.category === cat)?.menuGroup ?? "Other";
+      clickScrolling.current = true;
+      window.setTimeout(() => (clickScrolling.current = false), 700);
+      if (groups.length) setGroup(g);
+      setActive(cat);
+      requestAnimationFrame(() => {
+        sectionRefs.current[cat]?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    };
+    window.addEventListener("menu-jump", go);
+    return () => window.removeEventListener("menu-jump", go);
+  }, [items, groups]);
+
+  function pickTab(g: string) {
+    setGroup(g);
+    const first = items.find((i) => (i.menuGroup ?? "Other") === g)?.category;
+    if (first) window.dispatchEvent(new CustomEvent("menu-jump", { detail: first }));
+  }
 
   function jumpTo(cat: string) {
     setActive(cat);
@@ -91,6 +123,25 @@ export default function MenuView({
           </span>
           <AccountChip state={account} />
         </div>
+
+        {groups.length > 0 && (
+          <div role="tablist" className="mx-5 mb-2 flex gap-1 rounded-2xl bg-ink-100 p-1">
+            {groups.map((g) => (
+              <button
+                key={g}
+                role="tab"
+                aria-selected={tab === g}
+                type="button"
+                onClick={() => pickTab(g)}
+                className={`min-w-0 flex-1 truncate rounded-xl px-2 py-2 text-sm font-bold transition-colors ${
+                  tab === g ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                }`}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="mx-5 mb-3 flex gap-1.5 overflow-x-auto rounded-full bg-white p-1.5 shadow-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {categories.map((c) => (
@@ -132,11 +183,11 @@ export default function MenuView({
             ref={(el) => {
               sectionRefs.current[cat] = el;
             }}
-            className="scroll-mt-28"
+            className={groups.length ? "scroll-mt-44" : "scroll-mt-28"}
           >
             <h2 className="mb-3 px-1 text-xl text-slate-900">{cat}</h2>
             {(() => {
-              const list = items.filter((i) => i.category === cat);
+              const list = shownItems.filter((i) => i.category === cat);
               // Photos lead where there are photos; dishes without one read better as plain rows.
               const cards = list.filter((i) => i.imageUrl).length * 2 >= list.length;
               return (
@@ -150,7 +201,7 @@ export default function MenuView({
           </section>
         ))}
 
-        {items.length === 0 && (
+        {shownItems.length === 0 && (
           <p className="py-16 text-center text-sm text-slate-500">
             Nothing on the menu right now.
           </p>

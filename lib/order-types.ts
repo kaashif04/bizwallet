@@ -8,6 +8,7 @@ export type MenuItem = {
   vegetarian?: boolean;
   category: string;
   categoryId?: string | null;
+  menuGroup?: string | null; // top-level menu tab, from BizPos menu_group
   price: number; // already the deal price while a menu deal runs
   regularPrice?: number | null; // the normal price during a deal (struck out)
   // BizPos "free with spend" rule, see lib/free-items.ts.
