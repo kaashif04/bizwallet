@@ -172,7 +172,7 @@ export default function TableHome({
       <main className="mx-auto max-w-md pb-[calc(8rem+env(safe-area-inset-bottom))]">
         {/* Cover with sign-in; logo overlapping its edge; name and table below. */}
         <header className="relative">
-          <div className="relative mx-3 mt-3 h-36 overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-100 via-brand-50 to-ink-50 shadow-md">
+          <div className={`relative overflow-hidden ${home.cover_url ? "mx-3 mt-3 h-36 rounded-[2rem] shadow-md" : "h-16"}`}>
             {home.cover_url && (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -188,7 +188,7 @@ export default function TableHome({
             <BranchLogo
               name={home.outlet.name}
               logoUrl={logo}
-              className="relative -mt-9 h-[4.5rem] w-[4.5rem] shrink-0 rounded-[1.4rem] text-2xl shadow-md ring-4 ring-ink-50"
+              className={`relative h-[4.5rem] w-[4.5rem] shrink-0 rounded-[1.4rem] text-2xl shadow-md ring-4 ring-ink-50 ${home.cover_url ? "-mt-9" : ""}`}
             />
             <div className="min-w-0 pt-2">
               <h1 className="truncate text-2xl font-semibold leading-tight tracking-[-0.03em] text-ink-900">{home.outlet.name}</h1>

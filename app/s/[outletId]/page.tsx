@@ -133,8 +133,8 @@ export default async function StorePage({
       <main className={`mx-auto max-w-md ${!canPickup ? "pb-16" : closed ? "pb-[calc(9.5rem+env(safe-area-inset-bottom))]" : "pb-[calc(7rem+env(safe-area-inset-bottom))]"}`}>
         {/* Cover, logo, name, open now */}
         <header className="relative">
-          {/* No photo: a soft Marple wash, not a scrim over nothing. */}
-          <div className="relative h-60 overflow-hidden bg-gradient-to-br from-brand-100 via-brand-50 to-ink-50">
+          {/* No photo: no empty block. The header shrinks to a bar for the buttons and the logo sits under it. */}
+          <div className={`relative overflow-hidden ${store.cover_url ? "h-60" : "h-[calc(4.5rem+env(safe-area-inset-top))]"}`}>
             {store.cover_url && (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -168,7 +168,7 @@ export default async function StorePage({
             <BranchLogo
               name={store.name}
               logoUrl={logos[store.id]}
-              className="relative -mt-10 h-20 w-20 rounded-[1.5rem] text-3xl shadow-md ring-4 ring-ink-50"
+              className={`relative h-20 w-20 rounded-[1.5rem] text-3xl shadow-md ring-4 ring-ink-50 ${store.cover_url ? "-mt-10" : ""}`}
             />
             <h1 className="mt-3 text-[1.875rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">
               {member?.full_name ? `Hi ${member.full_name.trim().split(/\s+/)[0]}${(orders ?? []).length > 0 || again ? ", welcome back" : ""}` : store.name}
