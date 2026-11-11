@@ -186,11 +186,7 @@ export default function MenuView({
             className={groups.length ? "scroll-mt-44" : "scroll-mt-28"}
           >
             {groups.length > 0 && categories.find((c) => groupOf(c) === groupOf(cat)) === cat && (
-              <GroupBanner
-                name={groupOf(cat)}
-                sections={categories.filter((c) => groupOf(c) === groupOf(cat)).length}
-                dishes={items.filter((i) => (i.menuGroup ?? "Other") === groupOf(cat)).length}
-              />
+              <GroupBanner name={groupOf(cat)} />
             )}
             <h2 className="mb-3 px-1 text-xl text-slate-900">{label(cat)}</h2>
             {(() => {
@@ -218,17 +214,12 @@ export default function MenuView({
   );
 }
 
-// Where one menu starts in the long scroll ("Steamboat · 6 sections · 52 dishes").
-function GroupBanner({ name, sections, dishes }: { name: string; sections: number; dishes: number }) {
+// Where one menu starts in the long scroll.
+function GroupBanner({ name }: { name: string }) {
   return (
-    <div className="mb-6 flex items-center gap-4 rounded-3xl bg-accent-50 px-5 py-4">
+    <div className="mb-6 flex items-center gap-4 rounded-3xl bg-accent-50 px-5 py-3.5">
       <span aria-hidden="true" className="h-10 w-1.5 shrink-0 rounded-full bg-accent-600" />
-      <span className="min-w-0">
-        <span className="block text-2xl font-bold leading-tight tracking-[-0.02em] text-ink-900">{name}</span>
-        <span className="block text-sm font-semibold text-accent-700">
-          {sections} {sections === 1 ? "section" : "sections"}, {dishes} {dishes === 1 ? "dish" : "dishes"}
-        </span>
-      </span>
+      <span className="min-w-0 text-2xl font-bold leading-tight tracking-[-0.02em] text-ink-900">{name}</span>
     </div>
   );
 }
