@@ -12,6 +12,8 @@ import BannerCarousel from "@/components/order/BannerCarousel";
 import RememberPlace from "@/components/order/RememberPlace";
 import PointsCard from "@/components/store/PointsCard";
 import DishRails, { type Dish } from "@/components/store/DishRails";
+import DealsRow from "@/components/order/DealsRow";
+import type { Deal } from "@/lib/deals";
 import NotificationBell from "@/components/customer/NotificationBell";
 import { SectionTitle } from "@/components/customer/ui";
 
@@ -33,7 +35,7 @@ export default async function StorePage({
 }) {
   if (!/^[0-9a-f-]{36}$/i.test(params.outletId)) notFound();
   const supabase = createClient();
-  const [{ data }, logos, { data: bannerData }, { data: dishData }, { data: auth }, { data: bookingCfg }, { data: deliveryInfo }] = await Promise.all([
+  const [{ data }, logos, { data: bannerData }, { data: dishData }, { data: auth }, { data: bookingCfg }, { data: deliveryInfo }, { data: dealData }] = await Promise.all([
     supabase.rpc("guest_store", { p_outlet: params.outletId }),
     outletLogos(supabase),
     supabase.rpc("wallet_banners", { p_outlet: params.outletId }),
@@ -41,6 +43,7 @@ export default async function StorePage({
     supabase.auth.getUser(),
     supabase.rpc("booking_config", { p_outlet: params.outletId }),
     supabase.rpc("guest_delivery_info", { p_outlet: params.outletId }), // null = no delivery here
+    supabase.rpc("wallet_deals", { p_outlet: params.outletId }),
   ]);
   const store = data as Store | null;
   if (!store) notFound();
@@ -202,6 +205,9 @@ export default async function StorePage({
             </nav>
           )}
 
+          {/* Deals first: tapping one opens that dish (or category) on the menu. */}
+          <DealsRow deals={(dealData ?? []) as Deal[]} href={dishHref} />
+
           {/* Points: the member's card, or what joining gets you */}
           {loyaltyOn &&
             (member && place ? (
@@ -291,6 +297,9 @@ export default async function StorePage({
                         <span className="font-normal text-ink-600">
                           {store.hours[todayIdx] ? `${clock(store.hours[todayIdx]!.open)} – ${clock(store.hours[todayIdx]!.close)}` : "Closed"}
                         </span>
+                        {store.hours[todayIdx] && store.last_order_at && (
+                          <span className="block text-xs font-medium text-ink-500">Last orders {clock(store.last_order_at)}</span>
+                        )}
                       </span>
                       <span aria-hidden="true" className="text-ink-400 transition group-open:rotate-90">›</span>
                     </summary>

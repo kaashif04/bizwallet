@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { currencySymbol } from "@/lib/format";
 import ItemMark from "@/components/order/ItemMark";
+import Price from "@/components/order/Price";
 import { SectionTitle } from "@/components/customer/ui";
 import { VegMark, VegToggle, useVegOnly } from "@/components/order/Veg";
 
-export type Dish = { id: string; name: string; price: number; image_url: string | null; times?: number; is_vegetarian?: boolean };
-
-const money = (n: number) => `${currencySymbol("MYR")}${Number(n).toFixed(2)}`;
+export type Dish = { id: string; name: string; price: number; regular_price?: number | null; image_url: string | null; times?: number; is_vegetarian?: boolean };
 
 // "Your usuals" and "Popular here" on the restaurant's home, with the same
 // Vegetarian only switch as the menu (shared on this phone).
@@ -50,7 +48,7 @@ function DishRail({ title, dishes, href, mine }: { title: string; dishes: Dish[]
                 {d.name}
               </span>
               <span className="block text-xs text-ink-500">
-                {money(d.price)}
+                <Price price={Number(d.price)} regular={d.regular_price == null ? null : Number(d.regular_price)} tag={false} />
                 {mine && d.times && d.times > 1 ? ` · ordered ${d.times}×` : ""}
               </span>
             </>

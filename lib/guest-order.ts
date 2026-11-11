@@ -20,13 +20,14 @@ export type GuestMenu = {
     description: string | null;
     is_vegetarian?: boolean;
     is_available?: boolean; // false = sold out today: shown greyed, can't be added
-    price: number;
+    price: number; // the deal price while a menu deal runs
+    regular_price?: number | null; // set while a deal runs: the normal price, struck out
     image_url: string | null;
     category_id: string | null;
     free_from_spend: number | null;
     free_spend_category_ids: string[] | null;
     modifier_groups: GuestGroup[];
-    combos?: { id: string; name: string; price: number; is_available: boolean; modifier_groups: GuestGroup[] }[];
+    combos?: { id: string; name: string; price: number; regular_price?: number | null; is_available: boolean; modifier_groups: GuestGroup[] }[];
   }[];
 };
 type GuestGroup = {
@@ -151,6 +152,7 @@ export function toMenu(menu: GuestMenu): {
     category: (i.category_id && catName.get(i.category_id)?.name) || "Other",
     categoryId: i.category_id,
     price: Number(i.price),
+    regularPrice: i.regular_price == null ? null : Number(i.regular_price),
     imageUrl: i.image_url,
     freeFromSpend: i.free_from_spend == null ? null : Number(i.free_from_spend),
     freeSpendCategoryIds: i.free_spend_category_ids ?? [],
@@ -180,6 +182,7 @@ export function toMenu(menu: GuestMenu): {
       label: g.name,
       required: g.is_required,
       selectionType: g.max_select === 1 ? "single" : "multiple",
+      minSelect: g.min_select,
       maxSelect: g.max_select,
       options: g.modifiers.map((m) => ({
         id: m.id,
@@ -200,6 +203,7 @@ export function toMenu(menu: GuestMenu): {
         id: c.id,
         name: c.name,
         price: Number(c.price),
+        regularPrice: c.regular_price == null ? null : Number(c.regular_price),
         combos: undefined,
         comboOf: i.id,
       }));

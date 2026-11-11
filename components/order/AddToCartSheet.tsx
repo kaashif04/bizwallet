@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useDragControls } from "framer-motion";
-import type { MenuItem, VariantSelection } from "@/lib/order-types";
+import { pickSummary, type MenuItem, type VariantSelection } from "@/lib/order-types";
 import type { VariantGroup } from "@/lib/menu-variants";
 import { currencySymbol } from "@/lib/format";
 import { useCart } from "./cart-context";
 import ItemMark from "./ItemMark";
+import Price from "./Price";
 import { VegMark } from "./Veg";
 import { useSheet } from "./useSheet";
 
@@ -28,10 +29,19 @@ const choose = (label: string) => {
   return `Choose ${rest.charAt(0).toLowerCase()}${rest.slice(1)}`;
 };
 
-const needLabel = (g: VariantGroup) =>
-  g.required
-    ? g.selectionType === "multiple" ? "Pick at least 1" : "Required"
-    : g.maxSelect && g.maxSelect > 1 ? `Up to ${g.maxSelect}` : "Optional";
+// Groups that take more than one pick take the same option more than once (2× Fish Ball).
+const repeats = (g: VariantGroup) => g.selectionType === "multiple";
+// Picks a required group needs (BizPos: at least min_select, and at least 1).
+const need = (g: VariantGroup) => (g.required ? Math.max(g.minSelect ?? 0, 1) : 0);
+// "Pick 8" sets count up: "5 of 8".
+const counted = (g: VariantGroup) => !!g.maxSelect && g.maxSelect > 1 && g.minSelect === g.maxSelect;
+
+const needLabel = (g: VariantGroup, n: number) =>
+  counted(g)
+    ? `${n} of ${g.maxSelect}`
+    : g.required
+      ? g.selectionType === "multiple" ? (need(g) > 1 ? `Pick at least ${need(g)}` : "Pick at least 1") : "Required"
+      : g.maxSelect && g.maxSelect > 1 ? `Up to ${g.maxSelect}` : "Optional";
 
 export default function AddToCartSheet({
   item: dish,
@@ -78,7 +88,7 @@ export default function AddToCartSheet({
           }`}
         >
           <span className="block text-[15px] font-semibold leading-snug text-ink-900">{v.comboOf ? v.name : "Just the dish"}</span>
-          <span className="mt-1 block text-sm font-bold text-ink-700">{currencySymbol(currency)}{v.price.toFixed(2)}</span>
+          <Price price={v.price} regular={v.regularPrice} currency={currency} tag={false} className="mt-1 text-sm font-bold text-ink-700" />
         </button>
       ))}
     </div>
@@ -93,7 +103,10 @@ export default function AddToCartSheet({
 
   const last = step === groups.length - 1;
   const current = groups[step];
-  const isMet = (g: VariantGroup) => !g.required || (sel[g.id]?.length ?? 0) > 0;
+  const picked = (g: VariantGroup) => sel[g.id]?.length ?? 0;
+  const timesPicked = (g: VariantGroup, id: string) => (sel[g.id] ?? []).filter((x) => x === id).length;
+  const full = (g: VariantGroup) => repeats(g) && g.maxSelect != null && picked(g) >= g.maxSelect;
+  const isMet = (g: VariantGroup) => picked(g) >= need(g);
 
   function go(to: number) {
     window.clearTimeout(advance.current);
@@ -103,23 +116,32 @@ export default function AddToCartSheet({
   }
 
   function toggleOption(group: VariantGroup, optionId: string) {
-    setSel((prev) => {
-      const current = prev[group.id] ?? [];
-      if (group.selectionType === "single") {
-        return { ...prev, [group.id]: [optionId] };
+    if (!repeats(group)) {
+      setSel((prev) => ({ ...prev, [group.id]: [optionId] }));
+      // A single pick answers the step: move on, with a beat to see the tick.
+      if (stepped && !last) {
+        window.clearTimeout(advance.current);
+        advance.current = window.setTimeout(() => go(step + 1), 280);
       }
-      if (current.includes(optionId)) {
-        return { ...prev, [group.id]: current.filter((id) => id !== optionId) };
-      }
-      // At the max: drop the oldest pick rather than refusing the tap.
-      const next = [...current, optionId].slice(-(group.maxSelect ?? Infinity));
-      return { ...prev, [group.id]: next };
-    });
-    // A single pick answers the step: move on, with a beat to see the tick.
-    if (stepped && group.selectionType === "single" && !last) {
-      window.clearTimeout(advance.current);
-      advance.current = window.setTimeout(() => go(step + 1), 280);
+      return;
     }
+    // Each tap adds one, up to the group's max.
+    if (full(group)) return shake(group);
+    setSel((prev) => ({ ...prev, [group.id]: [...(prev[group.id] ?? []), optionId] }));
+    // That pick filled the group: on to the next choice.
+    if (stepped && !last && group.maxSelect != null && picked(group) + 1 >= group.maxSelect) {
+      window.clearTimeout(advance.current);
+      advance.current = window.setTimeout(() => go(step + 1), 450);
+    }
+  }
+
+  function removeOne(group: VariantGroup, optionId: string) {
+    window.clearTimeout(advance.current);
+    setSel((prev) => {
+      const list = [...(prev[group.id] ?? [])];
+      list.splice(list.lastIndexOf(optionId), 1);
+      return { ...prev, [group.id]: list };
+    });
   }
 
   const selections: VariantSelection[] = useMemo(() => {
@@ -143,6 +165,8 @@ export default function AddToCartSheet({
   const total = unit * qty;
 
   const unmetGroup = groups.find((g) => !isMet(g));
+  // "Choose essentials", or once started on a pick-8, "3 more to pick".
+  const stillToPick = (g: VariantGroup) => (picked(g) > 0 && need(g) > 1 ? `${need(g) - picked(g)} more to pick` : choose(g.label));
 
   function shake(g: VariantGroup) {
     setShakeId(g.id);
@@ -239,7 +263,7 @@ export default function AddToCartSheet({
                 <div className="min-w-0 flex-1">
                   {title}
                   {item.description && <p className="mt-1 text-sm text-slate-600">{item.description}</p>}
-                  <p className="mt-1.5 text-base font-bold text-slate-900">{money(item.price)}</p>
+                  <Price price={item.price} regular={item.regularPrice} currency={currency} className="mt-1.5 text-base font-bold text-slate-900" />
                 </div>
               </div>
 
@@ -256,7 +280,7 @@ export default function AddToCartSheet({
                 >
                   <div className="mb-2 flex items-center justify-between">
                     <h3 className="font-bold text-ink-900">{g.label}</h3>
-                    <NeedPill g={g} alert={shakeId === g.id} />
+                    <NeedPill g={g} n={picked(g)} alert={shakeId === g.id} />
                   </div>
                   <div className="space-y-2">
                     {g.options.map((o) => (
@@ -265,8 +289,10 @@ export default function AddToCartSheet({
                         group={g}
                         label={o.label}
                         price={o.priceDelta ? `+${money(o.priceDelta)}` : null}
-                        selected={(sel[g.id] ?? []).includes(o.id)}
+                        count={timesPicked(g, o.id)}
+                        dim={full(g)}
                         onToggle={() => toggleOption(g, o.id)}
+                        onRemove={() => removeOne(g, o.id)}
                       />
                     ))}
                   </div>
@@ -283,7 +309,7 @@ export default function AddToCartSheet({
                     <div className="min-w-0 flex-1">
                       {title}
                       {item.description && <p className="mt-1 text-sm text-slate-600">{item.description}</p>}
-                      <p className="mt-1.5 text-base font-bold text-slate-900">{money(item.price)}</p>
+                      <Price price={item.price} regular={item.regularPrice} currency={currency} className="mt-1.5 text-base font-bold text-slate-900" />
                     </div>
                   </div>
                   {versionPicker}
@@ -299,7 +325,7 @@ export default function AddToCartSheet({
                   )}
                   <div className="min-w-0">
                     <p className="truncate text-[15px] font-bold text-slate-900">{dish.name}</p>
-                    <p className="truncate text-xs text-ink-500">{selections.map((s) => s.option).join(", ") || money(item.price)}</p>
+                    <p className="truncate text-xs text-ink-500">{pickSummary(selections) || money(item.price)}</p>
                   </div>
                 </div>
               )}
@@ -340,41 +366,59 @@ export default function AddToCartSheet({
                       </p>
                       <h3 className="mt-0.5 text-xl font-bold leading-tight text-ink-900">{current.label}</h3>
                     </div>
-                    <NeedPill g={current} alert={shakeId === current.id} />
+                    <NeedPill g={current} n={picked(current)} alert={shakeId === current.id} />
                   </motion.div>
 
-                  <div role={current.selectionType === "single" ? "radiogroup" : "group"} aria-label={current.label} className="mt-3 grid grid-cols-2 gap-2.5">
+                  <div role={repeats(current) ? "group" : "radiogroup"} aria-label={current.label} className="mt-3 grid grid-cols-2 gap-2.5">
                     {current.options.map((o) => {
-                      const on = (sel[current.id] ?? []).includes(o.id);
+                      const n = timesPicked(current, o.id);
+                      const on = n > 0;
+                      const multi = repeats(current);
                       return (
-                        <button
-                          key={o.id}
-                          type="button"
-                          role={current.selectionType === "single" ? "radio" : "checkbox"}
-                          aria-checked={on}
-                          onClick={() => toggleOption(current, o.id)}
-                          className={`relative flex min-h-[4rem] flex-col justify-center rounded-2xl border-2 p-3 text-left transition active:scale-[0.97] ${
-                            on ? "border-brand-500 bg-brand-50" : "border-ink-100 bg-white"
-                          }`}
-                        >
-                          <span className="pr-6 text-[15px] font-semibold leading-snug text-ink-900">{o.label}</span>
-                          {!!o.priceDelta && <span className="mt-1 text-sm font-bold text-ink-700">+{money(o.priceDelta)}</span>}
-                          <AnimatePresence>
-                            {on && (
-                              <motion.span
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                exit={{ scale: 0 }}
-                                transition={{ type: "spring", stiffness: 500, damping: 28 }}
-                                className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-600 text-on"
-                              >
-                                <svg viewBox="0 0 12 10" className="h-2.5 w-3 fill-none stroke-current" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                  <path d="M1 5l3.5 3.5L11 1.5" />
-                                </svg>
-                              </motion.span>
-                            )}
-                          </AnimatePresence>
-                        </button>
+                        <div key={o.id} className={`relative transition-opacity ${!on && full(current) ? "opacity-50" : ""}`}>
+                          <button
+                            type="button"
+                            {...(multi ? { "aria-label": `${o.label}${on ? `, ${n} picked` : ""}` } : { role: "radio", "aria-checked": on })}
+                            onClick={() => toggleOption(current, o.id)}
+                            className={`flex w-full flex-col justify-center rounded-2xl border-2 p-3 text-left transition active:scale-[0.97] ${
+                              on ? "border-brand-500 bg-brand-50" : "border-ink-100 bg-white"
+                            } ${multi ? "min-h-[5rem] pr-11" : "min-h-[4rem]"}`}
+                          >
+                            <span className={`${multi ? "" : "pr-7 "}text-[15px] font-semibold leading-snug text-ink-900`}>{o.label}</span>
+                            {!!o.priceDelta && <span className="mt-1 text-sm font-bold text-ink-700">+{money(o.priceDelta)}</span>}
+                            <AnimatePresence>
+                              {on && (
+                                <motion.span
+                                  key={multi ? n : "tick"}
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  exit={{ scale: 0 }}
+                                  transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                                  className="absolute right-2.5 top-2.5 flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-brand-600 px-1.5 text-xs font-bold text-on"
+                                  aria-hidden="true"
+                                >
+                                  {multi ? (
+                                    `${n}×`
+                                  ) : (
+                                    <svg viewBox="0 0 12 10" className="h-2.5 w-3 fill-none stroke-current" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M1 5l3.5 3.5L11 1.5" />
+                                    </svg>
+                                  )}
+                                </motion.span>
+                              )}
+                            </AnimatePresence>
+                          </button>
+                          {multi && on && (
+                            <button
+                              type="button"
+                              onClick={() => removeOne(current, o.id)}
+                              aria-label={`Remove one ${o.label}`}
+                              className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white text-lg font-bold leading-none text-brand-700 shadow-sm ring-1 ring-brand-200 transition active:scale-90"
+                            >
+                              −
+                            </button>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -407,7 +451,7 @@ export default function AddToCartSheet({
               }`}
             >
               <span className="truncate">
-                {!isMet(current) ? choose(current.label) : (sel[current.id]?.length ?? 0) === 0 ? "Skip" : "Next"}
+                {!isMet(current) ? stillToPick(current) : picked(current) === 0 ? "Skip" : "Next"}
               </span>
               {totalTag}
             </button>
@@ -443,7 +487,7 @@ export default function AddToCartSheet({
                   unmetGroup ? "bg-slate-100 text-slate-600" : "bg-brand-600 text-on shadow-sm hover:brightness-95"
                 }`}
               >
-                <span className="truncate">{unmetGroup ? choose(unmetGroup.label) : "Add"}</span>
+                <span className="truncate">{unmetGroup ? stillToPick(unmetGroup) : "Add"}</span>
                 {totalTag}
               </button>
             </>
@@ -454,14 +498,16 @@ export default function AddToCartSheet({
   );
 }
 
-function NeedPill({ g, alert }: { g: VariantGroup; alert: boolean }) {
+function NeedPill({ g, n, alert }: { g: VariantGroup; n: number; alert: boolean }) {
+  const done = counted(g) && n >= g.maxSelect!;
   return (
     <span
-      className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-bold transition-colors ${
-        alert ? "bg-rose-50 text-rose-700" : g.required ? "bg-brand-50 text-brand-700" : "bg-slate-100 text-slate-600"
+      aria-live={counted(g) ? "polite" : undefined}
+      className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-bold tabular-nums transition-colors ${
+        alert ? "bg-rose-50 text-rose-700" : done ? "bg-emerald-50 text-emerald-700" : g.required ? "bg-brand-50 text-brand-700" : "bg-slate-100 text-slate-600"
       }`}
     >
-      {needLabel(g)}
+      {needLabel(g, n)}
     </span>
   );
 }
@@ -470,16 +516,59 @@ function OptionRow({
   group,
   label,
   price,
-  selected,
+  count,
+  dim,
   onToggle,
+  onRemove,
 }: {
   group: VariantGroup;
   label: string;
   price: string | null;
-  selected: boolean;
+  count: number;
+  dim: boolean; // the group is full: only "−" does anything
   onToggle: () => void;
+  onRemove: () => void;
 }) {
-  const single = group.selectionType === "single";
+  const single = !repeats(group);
+  const selected = count > 0;
+  if (!single) {
+    // Each tap adds one more; "−" takes one off.
+    return (
+      <div
+        className={`flex items-center gap-2 rounded-2xl border-2 pr-2 transition ${
+          selected ? "border-brand-500 bg-brand-50" : "border-slate-100 bg-white"
+        } ${dim && !selected ? "opacity-50" : ""}`}
+      >
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={`${label}${selected ? `, ${count} picked` : ""}`}
+          className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 text-left active:scale-[0.98]"
+        >
+          <span
+            className={`flex h-6 min-w-[1.5rem] shrink-0 items-center justify-center rounded-lg border-2 px-1 text-xs font-bold transition-colors ${
+              selected ? "border-brand-500 bg-brand-500 text-on" : "border-slate-300"
+            }`}
+            aria-hidden="true"
+          >
+            {selected ? `${count}×` : ""}
+          </span>
+          <span className="min-w-0 flex-1 text-[15px] font-semibold text-slate-800">{label}</span>
+          {price && <span className="shrink-0 text-sm font-bold text-slate-600">{price}</span>}
+        </button>
+        {selected && (
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label={`Remove one ${label}`}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold leading-none text-brand-700 shadow-sm ring-1 ring-brand-200 transition active:scale-90"
+          >
+            −
+          </button>
+        )}
+      </div>
+    );
+  }
   return (
     <label
       className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-3 transition active:scale-[0.98] ${

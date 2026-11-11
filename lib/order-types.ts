@@ -8,7 +8,8 @@ export type MenuItem = {
   vegetarian?: boolean;
   category: string;
   categoryId?: string | null;
-  price: number;
+  price: number; // already the deal price while a menu deal runs
+  regularPrice?: number | null; // the normal price during a deal (struck out)
   // BizPos "free with spend" rule, see lib/free-items.ts.
   freeFromSpend?: number | null;
   freeSpendCategoryIds?: string[];
@@ -29,6 +30,13 @@ export type VariantSelection = {
   option: string; // e.g. "50%"
   priceDelta: number; // display only; the server prices the order
 };
+
+// "Clear, 2× Fish Ball, Salmon": repeats counted, in the order first picked (like BizPos's summary).
+export function pickSummary(sels: VariantSelection[]): string {
+  const n = new Map<string, number>();
+  for (const s of sels) n.set(s.option, (n.get(s.option) ?? 0) + 1);
+  return Array.from(n, ([o, c]) => (c > 1 ? `${c}× ${o}` : o)).join(", ");
+}
 
 export type CartLine = {
   lineId: string;

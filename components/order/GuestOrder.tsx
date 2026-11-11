@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { currencySymbol } from "@/lib/format";
-import type { MenuItem } from "@/lib/order-types";
+import { pickSummary, type MenuItem } from "@/lib/order-types";
 import { guestLabel, loadContact, outletLogos, phoneOk, saveClaimToken, saveContact, toMenu, toOrderItem, type Banner, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
 import type { AccountState } from "./AccountChip";
 import { rememberPlace } from "@/lib/place";
@@ -26,6 +26,8 @@ import { VegToggle, useVegOnly } from "./Veg";
 import OrderAgain from "./OrderAgain";
 import { rebuild, type PastOrder } from "@/lib/reorder";
 import { CartUpsell, PairNudge, PopularRow, goesWith, type Suggestions } from "./Upsell";
+import DealsRow from "./DealsRow";
+import type { Deal } from "@/lib/deals";
 
 // ponytail: BizPos's guest_get_menu doesn't return a currency yet; every outlet is MYR today.
 const CURRENCY = "MYR";
@@ -48,6 +50,7 @@ export default function GuestOrder(
   const [reviewing, setReviewing] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [deals, setDeals] = useState<Deal[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
   const [nudge, setNudge] = useState<{ item: MenuItem; after: string } | null>(null);
   const [vegOnly, setVegOnly] = useVegOnly();
@@ -90,6 +93,9 @@ export default function GuestOrder(
         supabase
           .rpc("wallet_banners", { p_outlet: m.outlet.id })
           .then(({ data }) => setBanners((data ?? []) as Banner[]));
+        supabase
+          .rpc("wallet_deals", { p_outlet: m.outlet.id })
+          .then(({ data }) => setDeals((data ?? []) as Deal[]));
         supabase
           .rpc("guest_menu_suggestions", { p_outlet: m.outlet.id })
           .then(({ data }) => data && setSuggestions(data as Suggestions));
@@ -180,6 +186,18 @@ export default function GuestOrder(
     history.replaceState(history.state, "", location.pathname);
     if (lines.length) setReviewing(true);
   }, [lastOrder, items, groupsByItem, cart]);
+
+  // From the restaurant page's Deals (?item= opens a dish, ?cat= jumps to a category), once.
+  const linkDone = useRef(false);
+  useEffect(() => {
+    if (linkDone.current || !items.length) return;
+    linkDone.current = true;
+    const q = new URLSearchParams(location.search);
+    const dish = items.find((i) => i.id === q.get("item") && i.isAvailable !== false);
+    if (dish) setSheetItem(dish);
+    else if (q.get("cat")) jumpToCategory(items, q.get("cat")!);
+    if (q.has("item") || q.has("cat")) history.replaceState(history.state, "", location.pathname);
+  }, [items]);
 
   if (loadError) {
     // ponytail: matches BizPos's "…QR code is not valid." wording; a code from guest_get_menu would be sturdier.
@@ -293,8 +311,16 @@ export default function GuestOrder(
           )
         }
         intro={
-          (banners.length > 0 || popular.length >= 3) && (
+          (deals.length > 0 || banners.length > 0 || popular.length >= 3) && (
             <>
+              <DealsRow
+                deals={deals}
+                onDish={(id) => {
+                  const i = byId.get(id);
+                  if (i && i.isAvailable !== false) setSheetItem(i);
+                }}
+                onCategory={(id) => jumpToCategory(shown, id)}
+              />
               <BannerCarousel banners={banners} branches={[]} pickupOpen={false} outletId={menu.outlet.id} browseOnly />
               <PopularRow items={popular} currency={CURRENCY} onPick={addSuggested} />
             </>
@@ -669,7 +695,7 @@ function CartReview({
                 <p className="text-[15px] font-bold text-slate-900">{l.item.name}</p>
                 {l.selections.length > 0 && (
                   <p className="mt-0.5 text-xs text-slate-500">
-                    {l.selections.map((s) => s.option).join(", ")}
+                    {pickSummary(l.selections)}
                   </p>
                 )}
                 {cart.lineTotal(l.lineId) === 0 && l.unitPrice > 0 ? (
@@ -988,4 +1014,10 @@ function ClosedNotice({ text, ahead, table }: { text: string; opens: string | nu
       </p>
     </div>
   );
+}
+
+// Scroll the menu to a category's section (MenuView marks each with data-category).
+function jumpToCategory(items: MenuItem[], categoryId: string) {
+  const name = items.find((i) => i.categoryId === categoryId)?.category;
+  if (name) document.querySelector(`[data-category="${CSS.escape(name)}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }

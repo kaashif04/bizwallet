@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { MenuItem } from "@/lib/order-types";
-import { currencySymbol } from "@/lib/format";
 import { useCart } from "./cart-context";
+import Price from "./Price";
 import ItemMark from "./ItemMark";
 import AccountChip, { type AccountState } from "./AccountChip";
 import HomeButton from "./HomeButton";
@@ -212,12 +212,7 @@ function MenuItemCard({
       </AnimatePresence>
     </span>
   );
-  const price = (
-    <span className="text-[15px] font-bold text-slate-900">
-      {currencySymbol(currency)}
-      {item.price.toFixed(2)}
-    </span>
-  );
+  const price = <Price price={item.price} regular={item.regularPrice} currency={currency} className="text-[15px] font-bold text-slate-900" />;
   const hint = item.freeHint && (
     <span className="mt-1 inline-block rounded-full bg-mint-100 px-2 py-0.5 text-2xs font-semibold text-mint-700">{item.freeHint}</span>
   );

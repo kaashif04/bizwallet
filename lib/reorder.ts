@@ -24,7 +24,10 @@ export function rebuild(order: PastOrder, byId: Map<string, MenuItem>, groupsByI
         if (o) sels.push({ modifierId: o.id, group: g.label, option: o.label, priceDelta: o.priceDelta ?? 0 });
       }
     }
-    const unmet = groups.some((g) => g.required && !g.options.some((o) => sels.some((s) => s.modifierId === o.id)));
+    // A required group short of its picks (e.g. a pick-8 set with a tray gone) can't be re-ordered.
+    const unmet = groups.some(
+      (g) => g.required && sels.filter((s) => g.options.some((o) => o.id === s.modifierId)).length < Math.max(g.minSelect ?? 0, 1)
+    );
     if (unmet) {
       missing++;
       continue;

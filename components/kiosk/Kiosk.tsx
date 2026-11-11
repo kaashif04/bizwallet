@@ -5,9 +5,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/client";
 import { outletLogos, toMenu, toOrderItem, type GuestMenu } from "@/lib/guest-order";
-import type { MenuItem } from "@/lib/order-types";
+import { pickSummary, type MenuItem } from "@/lib/order-types";
 import { currencySymbol } from "@/lib/format";
 import { useCart } from "@/components/order/cart-context";
+import Price from "@/components/order/Price";
 import AddToCartSheet from "@/components/order/AddToCartSheet";
 import ItemMark from "@/components/order/ItemMark";
 import BranchLogo from "@/components/order/BranchLogo";
@@ -291,7 +292,7 @@ export default function Kiosk({ token }: { token: string }) {
                 <li key={l.lineId} className="flex items-center gap-4 px-5 py-4">
                   <div className="min-w-0 flex-1">
                     <p className="text-lg font-bold text-ink-900">{l.item.name}</p>
-                    {l.selections.length > 0 && <p className="text-sm text-ink-500">{l.selections.map((s) => s.option).join(", ")}</p>}
+                    {l.selections.length > 0 && <p className="text-sm text-ink-500">{pickSummary(l.selections)}</p>}
                     <p className="mt-0.5 text-base font-semibold text-ink-700">{money(cart.lineTotal(l.lineId))}</p>
                   </div>
                   <div className="flex items-center gap-2 rounded-full bg-ink-100 p-1.5">
@@ -448,7 +449,7 @@ function DishTile({ item, count, onTap }: { item: MenuItem; count: number; onTap
           {item.name}
         </span>
         {item.description && <span className="mt-1 line-clamp-2 text-sm text-ink-500">{item.description}</span>}
-        <span className="mt-auto pt-3 text-xl font-bold text-ink-900">{money(item.price)}</span>
+        <Price price={item.price} regular={item.regularPrice} className="mt-auto pt-3 text-xl font-bold text-ink-900" />
       </span>
       {soldOut ? (
         <span className="absolute right-3 top-3 rounded-full bg-ink-900/80 px-3 py-1.5 text-sm font-bold text-on">Sold out</span>

@@ -9,7 +9,24 @@ export function clock(hhmm: string): string {
 }
 
 // Malaysia wall-clock time, for "opens tomorrow 10am" on a UTC server.
-export const klNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
+const kl = (d: Date) => new Date(d.toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
+export const klNow = () => kl(new Date());
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// A deal's end: "Ends 7pm" today, "Ends tonight" at midnight, "Ends Sun" this week, else "Ends 20 Nov" (KL time).
+export function endsLabel(endsAt: string | null, now = new Date()): string | null {
+  if (!endsAt) return null;
+  const e = kl(new Date(endsAt));
+  const n = kl(now);
+  const days = Math.round(
+    (new Date(e.getFullYear(), e.getMonth(), e.getDate()).getTime() - new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime()) / 86_400_000
+  );
+  const hhmm = `${e.getHours()}:${String(e.getMinutes()).padStart(2, "0")}`;
+  if (days <= 0) return `Ends ${clock(hhmm)}`;
+  if (days === 1 && hhmm === "0:00") return "Ends tonight";
+  if (days < 7) return `Ends ${DAYS[(e.getDay() + 6) % 7]}`;
+  return `Ends ${e.getDate()} ${MONTHS[e.getMonth()]}`;
+}
 
 // What guest_store says about hours. ordering_open / last_order_at come from BizPos's optional
 // "last orders" cut-off; until it's set (or shipped) they're missing and open_now decides.
@@ -36,7 +53,8 @@ export function orderingStatus(s: StoreHours, now = klNow()) {
   const l = openLabel(s.open_now, s.today, s.hours, now);
   if (l?.open && s.ordering_open === false) {
     const opens = nextOpening(s.hours, now);
-    return { open: false, text: s.last_order_at ? `Last orders were ${clock(s.last_order_at)}` : "Not taking orders now", opens };
+    // Same wording as guest_place_order's refusal.
+    return { open: false, text: s.last_order_at ? `Last orders were at ${clock(s.last_order_at)}.` : "Not taking orders now", opens };
   }
   return l;
 }
