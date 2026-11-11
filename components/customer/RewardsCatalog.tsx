@@ -32,10 +32,12 @@ export default function RewardsCatalog({
   const [localPoints, setLocalPoints] = useState(points);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null); // reward waiting for a second tap
   const [success, setSuccess] = useState<{ code: string; reward: string } | null>(null);
 
   async function redeem(r: Reward) {
     setError(null);
+    setConfirmId(null);
     if (!userId) return setError("Sign in to redeem rewards.");
     if (localPoints < r.points_cost) return setError("Not enough points yet.");
     if (!UUID_RE.test(r.id)) {
@@ -175,9 +177,14 @@ export default function RewardsCatalog({
                             {r.points_cost.toLocaleString()} pts
                           </p>
                         </div>
+                        {confirmId === r.id && (
+                          <button type="button" onClick={() => setConfirmId(null)} className="shrink-0 px-1 text-sm font-semibold text-slate-500">
+                            Cancel
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => redeem(r)}
+                          onClick={() => (confirmId === r.id ? redeem(r) : setConfirmId(r.id))}
                           disabled={!affordable || busyId === r.id}
                           className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition disabled:opacity-60 ${
                             affordable
@@ -185,7 +192,7 @@ export default function RewardsCatalog({
                               : "bg-slate-100 text-slate-400"
                           }`}
                         >
-                          {busyId === r.id ? "…" : affordable ? "Redeem" : "Locked"}
+                          {busyId === r.id ? "…" : !affordable ? "Locked" : confirmId === r.id ? `Spend ${r.points_cost.toLocaleString()} pts` : "Redeem"}
                         </button>
                       </div>
                     );

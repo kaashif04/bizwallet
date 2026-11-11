@@ -172,7 +172,7 @@ export default async function StorePage({
               className="relative -mt-10 h-20 w-20 rounded-[1.5rem] text-3xl shadow-md ring-4 ring-ink-50"
             />
             <h1 className="mt-3 text-[1.875rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">
-              {member?.full_name ? `Hi ${member.full_name.trim().split(/\s+/)[0]}, welcome back` : store.name}
+              {member?.full_name ? `Hi ${member.full_name.trim().split(/\s+/)[0]}${(orders ?? []).length > 0 || again ? ", welcome back" : ""}` : store.name}
             </h1>
             <p className="mt-1 text-sm text-ink-500">{member?.full_name ? store.name : store.tagline}</p>
             {status && (
