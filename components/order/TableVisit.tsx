@@ -100,7 +100,8 @@ export default function TableVisit({ token, children }: { token: string; childre
   }, [check, token]);
 
   // Back from paying the bill online: show them it's paid, even if that just closed the table.
-  const paidReturn = typeof window !== "undefined" && location.pathname.endsWith("/bill") && location.search.includes("paid=");
+  // Read once: the bill page strips ?paid= from the address straight away.
+  const [paidReturn] = useState(() => typeof window !== "undefined" && location.pathname.endsWith("/bill") && location.search.includes("paid="));
   if (ended && !paidReturn) {
     const at = ended.table ? `Table ${ended.table}` : "your table";
     return (

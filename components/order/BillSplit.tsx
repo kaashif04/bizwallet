@@ -30,6 +30,16 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
   const [arrival, setArrival] = useState<"paid" | "unpaid" | null>(null);
   // Paid after the bill was already settled at the counter: the restaurant refunds it.
   const [refund, setRefund] = useState<string | null>(null);
+  // This phone's own payment in progress (left the bank page open, closed it, went back).
+  const mineKey = `bw_bill_pay:${token}`;
+  const [mine, setMine] = useState<string | null>(null);
+  const remember = (id: string | null) => {
+    setMine(id);
+    try {
+      if (id) localStorage.setItem(mineKey, id);
+      else localStorage.removeItem(mineKey);
+    } catch {}
+  };
 
   const load = useCallback(
     () =>
@@ -51,6 +61,11 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
     const q = qs.get("paid");
     const r = qs.get("refund");
     if (r && /^[0-9a-f-]{36}$/i.test(r)) setRefund(r);
+    try {
+      // Back from the bank either way: that payment is settled or cancelled.
+      if (q) localStorage.removeItem(`bw_bill_pay:${token}`);
+      else setMine(localStorage.getItem(`bw_bill_pay:${token}`));
+    } catch {}
     if (q) {
       setArrival(q === "1" ? "paid" : "unpaid");
       history.replaceState(history.state, "", window.location.pathname);
@@ -62,7 +77,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
       window.clearInterval(t);
       document.removeEventListener("visibilitychange", onShow);
     };
-  }, [supabase, load]);
+  }, [supabase, load, token]);
 
   // Items someone else just paid for drop out of my selection.
   useEffect(() => {
@@ -154,16 +169,27 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
       setError(error.message);
       return load();
     }
+    remember((data as { id: string }).id);
+    await open((data as { id: string }).id);
+  }
+
+  // Open (or reopen) the bank page for a payment, or cancel it.
+  async function open(id: string, cancel = false) {
+    setPaying(true);
+    setError(null);
     const res = await fetch("/api/pay/bill", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ payment_id: (data as { id: string }).id, token }),
+      body: JSON.stringify({ payment_id: id, token, cancel }),
     });
     const body = await res.json().catch(() => ({}));
     if (body.url) return window.location.assign(body.url);
     setPaying(false);
-    if (body.paid) load();
-    else setError(body.error ?? "Couldn't open payment. Please try again.");
+    if (body.paid !== undefined || body.gone) {
+      remember(null);
+      if (body.paid) setArrival("paid");
+      load();
+    } else setError(body.error ?? "Couldn't open payment. Please try again.");
   }
 
   return (
@@ -197,7 +223,22 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-ink-100" aria-hidden="true">
           <motion.div className="h-full rounded-full bg-marple" initial={false} animate={{ width: `${pct}%` }} transition={{ duration: 0.4 }} />
         </div>
-        {bill.held > 0 && <p className="mt-3 text-xs font-semibold text-amber-700">Someone is paying {money(bill.held)} right now…</p>}
+        {bill.held > 0 &&
+          (mine && canPay ? (
+            <div className="mt-3 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">
+              <p className="font-semibold">You started paying but didn&apos;t finish.</p>
+              <div className="mt-2 flex gap-2">
+                <button type="button" disabled={paying} onClick={() => open(mine)} className="h-10 rounded-full bg-brand-600 px-4 font-bold text-on transition active:scale-95 disabled:opacity-50">
+                  Continue paying
+                </button>
+                <button type="button" disabled={paying} onClick={() => open(mine, true)} className="h-10 rounded-full bg-white px-4 font-semibold text-ink-700 ring-1 ring-inset ring-ink-200 transition active:scale-95 disabled:opacity-50">
+                  Cancel it
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-3 text-xs font-semibold text-amber-700">Someone is paying {money(bill.held)} right now…</p>
+          ))}
         {bill.payments.length > 0 && (
           <ul className="mt-4 space-y-1.5 border-t border-ink-100 pt-3 text-sm">
             {bill.payments.map((p, i) => (

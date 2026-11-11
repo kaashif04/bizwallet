@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { confirmBill } from "@/lib/pickup-payment";
+import { cancelBillPayment, confirmBill } from "@/lib/pickup-payment";
 
 // The customer comes back from Billplz here after paying for an order or a
 // share of a table bill.
@@ -8,10 +8,14 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const bill = url.searchParams.get("billplz[id]");
   const result = bill ? await confirmBill(bill).catch(() => null) : null;
-  const paid = result?.paid ? 1 : 0;
+  let paid = result?.paid ? 1 : 0;
 
   const table = url.searchParams.get("table") ?? "";
   if (/^[\w-]{1,64}$/.test(table)) {
+    // Back from the bank without paying: free their share now, or the bill shows
+    // "Someone is paying" (them) until the 10-minute cleanup. Voids at Billplz first,
+    // and Billplz can say "paid" by then (it lags the redirect), which settles it.
+    if (bill && result && !result.paid && (await cancelBillPayment(bill).catch(() => null))?.paid) paid = 1;
     const refund = result?.refundToken ? `&refund=${result.refundToken}` : "";
     return NextResponse.redirect(new URL(`/order/t/${table}/bill?paid=${paid}${refund}`, url.origin), 303);
   }
