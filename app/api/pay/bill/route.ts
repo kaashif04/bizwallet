@@ -57,6 +57,8 @@ export async function POST(request: Request) {
       admin.from("members").select("full_name").eq("id", user.id).maybeSingle(),
     ]);
     const bill = await createBill({
+      kind: "dinein",
+      outlet: outlet?.name,
       email: user.email,
       name: member?.full_name || user.email.split("@")[0],
       amountSen: Math.round(Number(pay.amount) * 100),

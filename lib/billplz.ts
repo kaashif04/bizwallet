@@ -31,7 +31,15 @@ async function call(path: string, init?: RequestInit): Promise<Bill> {
   return body as Bill;
 }
 
+// One Billplz collection per kind of payment, so the dashboard filters by it and the payer sees the
+// matching name. A kind with no BILLPLZ_COLLECTION_<KIND> set falls back to BILLPLZ_COLLECTION_ID.
+export type BillKind = "pickup" | "delivery" | "dinein" | "kiosk" | "booking";
+const collectionFor = (kind: BillKind) => process.env[`BILLPLZ_COLLECTION_${kind.toUpperCase()}`] || process.env.BILLPLZ_COLLECTION_ID!;
+
 export function createBill(p: {
+  kind: BillKind;
+  outlet?: string; // shown as reference 2 so bills can be searched by restaurant
+
   email?: string; // Billplz needs an email or a mobile
   mobile?: string;
   name: string;
@@ -42,7 +50,7 @@ export function createBill(p: {
   reference: string;
 }) {
   const form = new URLSearchParams({
-    collection_id: process.env.BILLPLZ_COLLECTION_ID!,
+    collection_id: collectionFor(p.kind),
     ...(p.email ? { email: p.email } : {}),
     ...(p.mobile ? { mobile: p.mobile } : {}),
     name: p.name.slice(0, 255),
@@ -52,6 +60,7 @@ export function createBill(p: {
     redirect_url: p.redirectUrl,
     reference_1_label: "Order",
     reference_1: p.reference,
+    ...(p.outlet ? { reference_2_label: "Restaurant", reference_2: p.outlet.slice(0, 120) } : {}),
   });
   return call("/bills", { method: "POST", body: form });
 }

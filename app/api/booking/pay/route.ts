@@ -45,6 +45,8 @@ export async function POST(request: Request) {
 
     const origin = new URL(request.url).origin;
     const bill = await createBill({
+      kind: "booking",
+      outlet: b.outlet?.name,
       email,
       mobile: email ? undefined : phone,
       name: String(b.name ?? "Guest").slice(0, 255),

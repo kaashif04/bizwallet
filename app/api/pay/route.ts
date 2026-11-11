@@ -56,12 +56,15 @@ export async function POST(request: Request) {
       admin.from("outlets").select("name").eq("id", order.outlet_id).maybeSingle(),
       user ? admin.from("members").select("full_name").eq("id", user.id).maybeSingle() : Promise.resolve({ data: null }),
     ]);
+    const kind = order.table_id ? "dinein" : order.kiosk_id ? "kiosk" : order.delivery_fee != null ? "delivery" : "pickup";
     const bill = await createBill({
+      kind,
+      outlet: outlet?.name,
       email: user?.email ?? guestEmail,
       mobile: user?.email ? undefined : phone,
       name: member?.full_name || user?.email?.split("@")[0] || guestName || "Guest",
       amountSen: Math.round(Number(order.amount_due) * 100),
-      description: `${order.table_id ? "Dine-in" : order.kiosk_id ? "Kiosk" : order.delivery_fee != null ? "Delivery" : "Pickup"} order at ${outlet?.name ?? "BizWallet"}`,
+      description: `${{ dinein: "Dine-in", kiosk: "Kiosk", delivery: "Delivery", pickup: "Pickup" }[kind]} order at ${outlet?.name ?? "BizWallet"}`,
       callbackUrl: `${origin}/api/pay/billplz/callback`,
       redirectUrl: `${origin}/api/pay/billplz/return?order=${order.id}`,
       reference: order.id,
