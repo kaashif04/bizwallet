@@ -111,12 +111,12 @@ export default async function StorePage({
   const actions = [
     store.ordering && {
       href: `/scan?at=${encodeURIComponent(store.name)}`,
-      label: "Scan table",
+      label: "Scan QR",
       icon: "M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 8h3v3H8zM13 13h3v3h-3z",
     },
     (bookingCfg as { enabled?: boolean } | null)?.enabled && {
       href: `/booking?outlet=${store.id}`,
-      label: "Book table",
+      label: "Book",
       icon: "M4 6h16v14H4zM4 10h16M8 4v4M16 4v4",
     },
     store.maps_url && { href: store.maps_url, label: "Directions", icon: "M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12ZM12 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z", external: true },
@@ -185,16 +185,16 @@ export default async function StorePage({
 
         <div className="mt-5 space-y-8 px-4">
           {actions.length > 0 && (
-            // Ordering lives in the bottom bar; these are the extras, as pills that read fine one or four at a time.
-            <nav aria-label="Quick actions" className="flex flex-wrap gap-2">
+            // Ordering lives in the bottom bar; these are the extras: one row of equal tiles, never an orphan on a second line.
+            <nav aria-label="Quick actions" className="grid auto-cols-fr grid-flow-col gap-2">
               {actions.map((a) => (
                 <a
                   key={a.label}
                   href={a.href}
                   {...(a.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  className="inline-flex h-11 items-center gap-2 rounded-full bg-white pl-3.5 pr-4 text-sm font-bold text-ink-800 shadow-sm transition hover:bg-brand-50 active:scale-95"
+                  className="flex h-[4.25rem] min-w-0 flex-col items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl bg-white px-1 text-center text-[12px] font-semibold leading-none text-ink-800 shadow-sm transition hover:bg-brand-50 active:scale-[0.97]"
                 >
-                  <svg viewBox="0 0 24 24" className="h-5 w-5 text-brand-600" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" className="h-6 w-6 text-brand-600" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d={a.icon} />
                   </svg>
                   {a.label}
