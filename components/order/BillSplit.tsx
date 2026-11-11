@@ -123,7 +123,8 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
     (rounds.length > others.length ? 1 : 0);
   // One person ordered: nothing to split, just pay. Equal shares need a table of 2 or more.
   const multi = people >= 2;
-  const mode: Mode = multi ? chosen : "all";
+  // Can't pay here (BILL_SPLIT off): no split tabs or ticks, just the bill.
+  const mode: Mode = multi && canPay ? chosen : "all";
   const of = Math.min(20, Math.max(2, people));
   // Shares round up to the outlet's step (RM0.05 at most outlets), like the bill itself.
   const step = Math.round((bill.rounding_step ?? 0) * 100);
@@ -228,14 +229,16 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-ink-500">Pick your own items, or pay for someone else&apos;s. Whatever you pay is taken off the bill for everyone.</p>
+          {canPay && (
+            <p className="mt-3 text-xs text-ink-500">Pick your own items, or pay for someone else&apos;s. Whatever you pay is taken off the bill for everyone.</p>
+          )}
         </section>
       )}
 
       {bill.remaining > 0 && (
         <>
           {/* How to pay */}
-          {multi && (
+          {multi && canPay && (
           <div role="radiogroup" aria-label="How to pay" className="mt-6 grid grid-cols-3 gap-1 rounded-full bg-ink-100 p-1">
             {(
               [
@@ -322,7 +325,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
       )}
 
       {/* The whole bill */}
-      <details className="group mt-6 rounded-3xl bg-white">
+      <details open={!canPay} className="group mt-6 rounded-3xl bg-white">
         <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-bold text-ink-900">
           Full bill · {lines.length} item{lines.length === 1 ? "" : "s"}
           <span aria-hidden="true" className="text-ink-400 transition group-open:rotate-90">›</span>
@@ -370,7 +373,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
         <div className="fixed inset-x-0 bottom-[calc(5.25rem+max(0.75rem,env(safe-area-inset-bottom)))] z-30 mx-auto max-w-md px-4">
           {!canPay ? (
             <p className="rounded-full bg-white py-4 text-center text-sm font-semibold text-ink-700 shadow-lg">
-              Please pay at the counter. Tap Ask for the bill on the table page.
+              Please pay at the counter. Tap Get the bill on the table page.
             </p>
           ) : signedIn === false ? (
             <Link
