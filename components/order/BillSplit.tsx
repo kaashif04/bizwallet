@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useKept } from "@/lib/kept";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
@@ -21,9 +22,9 @@ type Mode = BillShare["mode"];
 export default function BillSplit({ token, canPay }: { token: string; canPay: boolean }) {
   const cart = useCart();
   const [supabase] = useState(() => createClient());
-  const [bill, setBill] = useState<TableBill | null>(null);
+  const [bill, setBill] = useKept<TableBill | null>(`bill:${token}`, null);
   const [error, setError] = useState<string | null>(null);
-  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [signedIn, setSignedIn] = useKept<boolean | null>("signedIn", null);
   const [chosen, setMode] = useState<Mode>("items");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [paying, setPaying] = useState(false);

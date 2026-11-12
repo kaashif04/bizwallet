@@ -31,6 +31,7 @@ export default function TableNav({ token }: { token: string }) {
   const tab = (href: string, label: string, icon: keyof typeof icons) => (
     <Link
       href={href}
+      prefetch // the whole tab, not just its shell: switching is instant
       aria-current={path === href ? "page" : undefined}
       className={`flex flex-1 flex-col items-center gap-0.5 rounded-full py-1.5 text-2xs font-semibold transition active:scale-90 ${
         path === href ? "bg-accent-50 text-accent-700" : "text-ink-500"

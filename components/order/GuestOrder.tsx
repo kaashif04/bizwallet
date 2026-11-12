@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { useKept } from "@/lib/kept";
 import { currencySymbol } from "@/lib/format";
 import { pickSummary, type MenuItem } from "@/lib/order-types";
 import { guestLabel, loadContact, outletLogos, phoneOk, saveClaimToken, saveContact, toMenu, toOrderItem, type Banner, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
@@ -48,25 +49,26 @@ export default function GuestOrder(
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sheetItem, setSheetItem] = useState<MenuItem | null>(null);
   const [reviewing, setReviewing] = useState(false);
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
+  const k = `go:${props.token ?? props.outletId}:`;
+  const [logoUrl, setLogoUrl] = useKept<string | null>(k + "logo", null);
+  const [banners, setBanners] = useKept<Banner[]>(k + "banners", []);
+  const [deals, setDeals] = useKept<Deal[]>(k + "deals", []);
+  const [suggestions, setSuggestions] = useKept<Suggestions | null>(k + "suggestions", null);
   const [nudge, setNudge] = useState<{ item: MenuItem; after: string } | null>(null);
   const [vegOnly, setVegOnly] = useVegOnly();
-  const [lastOrder, setLastOrder] = useState<PastOrder | null>(null);
-  const [delivery, setDelivery] = useState<DeliveryInfo | null>(null); // null = this branch doesn't deliver
+  const [lastOrder, setLastOrder] = useKept<PastOrder | null>(k + "lastOrder", null);
+  const [delivery, setDelivery] = useKept<DeliveryInfo | null>(k + "delivery", null); // null = this branch doesn't deliver
   const againDone = useRef(false);
   // Loyalty is per company: this branch's company, its points rate, and
   // whether the signed-in member has joined it.
-  const [loyalty, setLoyalty] = useState<{
+  const [loyalty, setLoyalty] = useKept<{
     companyId: string;
     company: string;
     pointsPerRm: number | null; // null = the company runs no points programme
     member: boolean;
     joined: boolean;
     points: number;
-  } | null>(null);
+  } | null>(k + "loyalty", null);
 
   // Keep an open menu in step with BizPos (prices, order, sold out): refetch every
   // minute and whenever the phone comes back to the page.
@@ -78,6 +80,8 @@ export default function GuestOrder(
         .rpc("guest_get_menu", props.token ? { p_token: props.token } : { p_outlet: props.outletId })
         .then(({ data }) => data && setMenu(data as GuestMenu));
     };
+    // The tab bar prefetches this page, so the server's copy can be a few minutes old.
+    refresh();
     const t = window.setInterval(refresh, 60_000);
     document.addEventListener("visibilitychange", refresh);
     return () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useKept } from "@/lib/kept";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
@@ -41,21 +42,21 @@ export default function TableHome({
   pickupPaid?: boolean;
 }) {
   const [supabase] = useState(() => createClient());
-  const [home, setHome] = useState<Home | null>(null);
+  const [home, setHome] = useKept<Home | null>(`th:${token}:home`, null);
   // Takeaway is always shown; greyed out (and says so when tapped) unless the
   // outlet takes pickup orders, online payment is on, and it's open.
-  const [takeaway, setTakeaway] = useState(false);
-  const [shut, setShut] = useState<string | null>(null); // "Closed · opens 10am" / "Last orders were 9:30pm"
+  const [takeaway, setTakeaway] = useKept(`th:${token}:takeaway`, false);
+  const [shut, setShut] = useKept<string | null>(`th:${token}:shut`, null); // "Closed · opens 10am" / "Last orders were 9:30pm"
   const [wifiOpen, setWifiOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [logo, setLogo] = useState<string | null>(null);
-  const [me, setMe] = useState<Me>(null);
-  const [orders, setOrders] = useState<GuestOrderStatus[]>([]);
+  const [logo, setLogo] = useKept<string | null>(`th:${token}:logo`, null);
+  const [me, setMe] = useKept<Me>(`th:${token}:me`, null);
+  const [orders, setOrders] = useKept<GuestOrderStatus[]>(`th:${token}:orders`, []);
 
   // This phone's rounds at this table. Finished ones drop off 3 hours after ordering,
   // so the page is a plain start page again on the next visit.
   // The table's open bill, whoever ordered it (counter or app).
-  const [billLeft, setBillLeft] = useState<number | null>(null);
+  const [billLeft, setBillLeft] = useKept<number | null>(`th:${token}:billLeft`, null);
   const loadOrders = useCallback(async () => {
     supabase.rpc("guest_table_bill", { p_token: token }).then(({ data }) => {
       const b = data as TableBill | null;

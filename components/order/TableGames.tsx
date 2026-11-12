@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { kept } from "@/lib/kept";
 import { createClient } from "@/lib/supabase/client";
 import { guestLabel, loadContact, type GameBoard } from "@/lib/guest-order";
 import StackGame from "./StackGame";
@@ -19,7 +20,7 @@ type Id = keyof typeof GAMES;
 export default function TableGames({ token }: { token: string }) {
   const [supabase] = useState(() => createClient());
   const [id, setId] = useState<Id>("stack");
-  const [board, setBoard] = useState<GameBoard | null>(null);
+  const [board, setBoard] = useState<GameBoard | null>(() => (kept.get(`tg:${token}:stack`) as GameBoard) ?? null);
   const [error, setError] = useState<string | null>(null);
   const current = useRef(id);
   current.current = id;
@@ -42,12 +43,15 @@ export default function TableGames({ token }: { token: string }) {
   }, [supabase]);
 
   useEffect(() => {
-    setBoard(null);
+    setBoard((kept.get(`tg:${token}:${id}`) as GameBoard) ?? null);
     setError(null);
     supabase.rpc("guest_game_board", { p_token: token, p_game: id }).then(({ data, error }) => {
       if (current.current !== id) return;
       if (error) setError(error.message);
-      else setBoard(data as GameBoard);
+      else {
+      kept.set(`tg:${token}:${id}`, data);
+      setBoard(data as GameBoard);
+    }
     });
   }, [supabase, token, id]);
 
@@ -57,7 +61,10 @@ export default function TableGames({ token }: { token: string }) {
     const { data, error } = await supabase.rpc("guest_game_submit", { p_token: token, p_game: game, p_score: score, p_player: me });
     if (current.current !== game) return;
     if (error) setError(error.message);
-    else setBoard(data as GameBoard);
+    else {
+      kept.set(`tg:${token}:${game}`, data);
+      setBoard(data as GameBoard);
+    }
   }
 
   const { name, Game, unit } = GAMES[id];
