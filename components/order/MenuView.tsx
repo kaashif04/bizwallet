@@ -276,7 +276,10 @@ function MenuItemCard({
       </AnimatePresence>
     </span>
   );
-  const price = <Price price={item.price} regular={item.regularPrice} currency={currency} className="text-[15px] font-bold text-slate-900" />;
+  // On a deal: "-26%" on the photo (cards), "Save RM5" beside the price (rows and cards without a photo).
+  const pct = item.regularPrice && item.regularPrice > item.price ? Math.round((1 - item.price / item.regularPrice) * 100) : 0;
+  const ribbon = !row && !!item.imageUrl && pct > 0;
+  const price = <Price price={item.price} regular={item.regularPrice} currency={currency} tag={!ribbon} className="text-[15px] font-bold text-slate-900" />;
   const hint = item.freeHint && (
     <span className="mt-1 inline-block rounded-full bg-mint-100 px-2 py-0.5 text-2xs font-semibold text-mint-700">{item.freeHint}</span>
   );
@@ -325,8 +328,15 @@ function MenuItemCard({
       className={`group flex flex-col rounded-3xl bg-white p-2.5 text-left shadow-sm transition ${soldOut ? "" : "active:scale-[0.97]"}`}
     >
       {item.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className={`aspect-[4/3] w-full rounded-2xl bg-slate-100 object-cover ${soldOut ? "opacity-50 grayscale" : ""}`} />
+        <span className="relative block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className={`aspect-[4/3] w-full rounded-2xl bg-slate-100 object-cover ${soldOut ? "opacity-50 grayscale" : ""}`} />
+          {ribbon && !soldOut && (
+            <span className="absolute left-2 top-2 rounded-full bg-brand-600 px-2.5 py-1 text-xs font-bold tabular-nums text-on shadow-sm">
+              <span className="sr-only">Deal, </span>-{pct}%
+            </span>
+          )}
+        </span>
       ) : (
         <ItemMark name={item.name} className="aspect-[4/3] w-full rounded-2xl text-4xl" />
       )}

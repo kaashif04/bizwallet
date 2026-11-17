@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { currencySymbol } from "@/lib/format";
 import { dealBadge, dealTitle, type Deal } from "@/lib/deals";
 import { endsLabel } from "@/lib/hours";
@@ -35,7 +36,6 @@ export default function DealsRow({
           const cheapest = [...d.items].sort((a, b) => a.price - b.price)[0];
           const shown = dish ?? cheapest;
           const photo = dish?.image_url ?? d.items.find((i) => i.image_url)?.image_url ?? null;
-          const ends = endsLabel(d.ends_at);
           const dineIn = d.items.every((i) => i.dine_in_only);
           const card = (
             <>
@@ -72,7 +72,7 @@ export default function DealsRow({
                     </s>
                   )}
                 </span>
-                {ends && <span className="mt-0.5 block text-xs font-semibold text-ink-500">{ends}</span>}
+                <Ends at={d.ends_at} />
               </span>
             </>
           );
@@ -98,4 +98,25 @@ export default function DealsRow({
       </ul>
     </section>
   );
+}
+
+// "Ends 31 Dec"; in its last 6 hours a live "Ends in 1h 42m", in crimson. Ticks every 30s
+// (a ticking seconds counter would be noise on a menu).
+function Ends({ at }: { at: string | null }) {
+  const [now, setNow] = useState(() => Date.now());
+  const left = at ? new Date(at).getTime() - now : Infinity;
+  const live = left > 0 && left < 6 * 3_600_000;
+  useEffect(() => {
+    if (!live) return;
+    const t = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(t);
+  }, [live]);
+  if (!at) return null;
+  if (!live) {
+    const label = endsLabel(at);
+    return label ? <span className="mt-0.5 block text-xs font-semibold text-ink-500">{label}</span> : null;
+  }
+  const mins = Math.max(1, Math.ceil(left / 60_000));
+  const text = mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  return <span className="mt-0.5 block text-xs font-bold tabular-nums text-brand-700">Ends in {text}</span>;
 }

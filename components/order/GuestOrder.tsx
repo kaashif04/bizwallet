@@ -497,6 +497,8 @@ function CartReview({
   // Same rule as guest_place_order: free when the food comes to the branch's "free above".
   const deliveryFee =
     isDelivery && ds.quote ? (ds.quote.free_above != null && cart.totalPrice >= ds.quote.free_above ? 0 : ds.quote.fee) : 0;
+  // "Add RM8.00 more for free delivery": the branch's threshold, before an address is quoted too.
+  const freeAbove = isDelivery ? ds.quote?.free_above ?? delivery?.free_above ?? null : null;
   // Guests paying for a delivery give their phone with the address.
   const payPhone = isDelivery ? ds.phone : phone;
   const payName = isDelivery ? ds.name : name;
@@ -726,6 +728,34 @@ function CartReview({
             ))}
           </div>
         )}
+        {/* Right under the toggle, where choosing Delivery is decided. */}
+        {freeAbove != null && freeAbove > 0 && (
+          <div className="mt-3 rounded-2xl bg-ink-50 px-4 py-3" role="status">
+            <p className="text-sm font-semibold text-ink-800">
+              {cart.totalPrice >= freeAbove ? (
+                <span className="text-emerald-700">Free delivery unlocked</span>
+              ) : (
+                <>
+                  Add{" "}
+                  <span className="font-bold tabular-nums text-brand-700">
+                    {sym}
+                    {(freeAbove - cart.totalPrice).toFixed(2)}
+                  </span>{" "}
+                  more for free delivery
+                </>
+              )}
+            </p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-200" aria-hidden="true">
+              <motion.div
+                className={`h-full rounded-full ${cart.totalPrice >= freeAbove ? "bg-emerald-500" : "bg-brand-600"}`}
+                initial={false}
+                animate={{ width: `${Math.min(100, (cart.totalPrice / freeAbove) * 100)}%` }}
+                transition={{ type: "spring", stiffness: 200, damping: 30 }}
+              />
+            </div>
+          </div>
+        )}
+
         {isDelivery && <DeliveryAddress outletId={menu.outlet.id} info={delivery!} value={ds} onChange={setDs} />}
         {pickup && !isDelivery && <PickupTime outletId={menu.outlet.id} value={pickupAt} onChange={setPickupAt} refresh={slotsRefresh} closed={!!closed} prepMinutes={prepMinutes} />}
         <ul className="mt-3 divide-y divide-slate-100">
