@@ -46,3 +46,17 @@ export function storeNames(names: string[], fallback: string): string {
 
 export const groupBy = <T extends { company_id: string }>(rows: T[]) =>
   rows.reduce<Record<string, T[]>>((m, r) => ((m[r.company_id] ??= []).push(r), m), {});
+
+// The branch a member was at most recently (their last bill's, else the newest
+// membership's first branch), for a phone that hasn't remembered a restaurant yet:
+// a new phone, or a cleared browser.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function lastPlaceId(supabase: { rpc: (fn: string) => PromiseLike<{ data: any }> }): Promise<string | null> {
+  const [{ data: bills }, { data }] = await Promise.all([supabase.rpc("wallet_my_bills"), supabase.rpc("wallet_my_places")]);
+  const last = ((bills ?? []) as { outlet_id: string; created_at: string }[]).sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+  if (last) return last.outlet_id;
+  const places = ((data ?? []) as Place[]).filter((p) => p.branches.length);
+  const at = (p: Place) => p.last_visit ?? p.joined_at ?? "";
+  places.sort((a, b) => at(b).localeCompare(at(a)));
+  return places[0]?.branches[0]?.id ?? null;
+}

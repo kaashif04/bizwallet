@@ -83,7 +83,14 @@ export default async function OrdersListPage({ searchParams }: { searchParams: {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-bold text-ink-900">{outletName(o)}</span>
                       <span className="block truncate text-xs text-ink-500">
-                        {new Date(o.created_at).toLocaleString("en-MY", { timeZone: "Asia/Kuala_Lumpur", dateStyle: "medium", timeStyle: "short" })}
+                        {new Date(o.created_at).toLocaleString("en-MY", {
+                          timeZone: "Asia/Kuala_Lumpur",
+                          day: "numeric",
+                          month: "short",
+                          ...(o.created_at.slice(0, 4) === String(new Date().getFullYear()) ? {} : { year: "numeric" }),
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
                         {o.table_label ? ` · Table ${o.table_label}` : " · Pickup"}
                         {o.shared ? " · Shared table" : ""}
                         {Number(o.you_paid) > 0 ? ` · You paid ${sym}${Number(o.you_paid).toFixed(2)}` : ""}

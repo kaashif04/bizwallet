@@ -186,13 +186,13 @@ export default function RewardsCatalog({
                           type="button"
                           onClick={() => (confirmId === r.id ? redeem(r) : setConfirmId(r.id))}
                           disabled={!affordable || busyId === r.id}
-                          className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition disabled:opacity-60 ${
+                          className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold tabular-nums transition ${
                             affordable
-                              ? "bg-brand-600 text-on hover:brightness-95"
-                              : "bg-slate-100 text-slate-400"
+                              ? "bg-brand-600 text-on hover:brightness-95 disabled:opacity-60"
+                              : "bg-ink-100 text-ink-600"
                           }`}
                         >
-                          {busyId === r.id ? "…" : !affordable ? "Locked" : confirmId === r.id ? `Spend ${r.points_cost.toLocaleString()} pts` : "Redeem"}
+                          {busyId === r.id ? "…" : !affordable ? `${(r.points_cost - localPoints).toLocaleString()} to go` : confirmId === r.id ? `Spend ${r.points_cost.toLocaleString()} pts` : "Redeem"}
                         </button>
                       </div>
                     );

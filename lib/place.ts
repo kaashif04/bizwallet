@@ -9,7 +9,3 @@ export const placeHome = (outletId?: string | null) =>
 export function rememberPlace(outletId: string) {
   document.cookie = `${PLACE_COOKIE}=${outletId}; path=/; max-age=31536000; samesite=lax`;
 }
-
-export function rememberedHome(): string {
-  return placeHome(document.cookie.match(/(?:^|; )bw_place=([^;]+)/)?.[1]);
-}

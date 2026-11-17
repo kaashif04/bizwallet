@@ -47,10 +47,11 @@ export default function DealsRow({
                     <span className="absolute left-2 top-2 rounded-full bg-brand-600 px-2.5 py-1 text-xs font-bold text-on shadow-sm">{dealBadge(d)}</span>
                   </>
                 ) : (
-                  // No photo: the offer itself is the picture.
-                  <span className="flex aspect-[4/3] w-full flex-col items-center justify-center rounded-2xl bg-marple-card text-on" aria-hidden="true">
+                  // No photo: the offer itself is the picture. A soft tint, not the gradient:
+                  // the points card owns that, and three gradient blocks in a row shout.
+                  <span className="flex aspect-[4/3] w-full flex-col items-center justify-center rounded-2xl bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-100" aria-hidden="true">
                     <span className="text-[2rem] font-extrabold leading-none tracking-[-0.03em]">{dealBadge(d).replace(/ off$/, "")}</span>
-                    <span className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-on/80">off</span>
+                    <span className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-brand-700/80">off</span>
                   </span>
                 )}
                 {dineIn && scanHref !== undefined && ( // on a menu or at a table it goes without saying

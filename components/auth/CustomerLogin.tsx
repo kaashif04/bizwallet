@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { rememberedHome } from "@/lib/place";
 
 // Where to land after auth: the ?redirect= set by middleware or the guest
-// order page (same-origin paths only), else the restaurant they came from.
+// order page (same-origin paths only), else "/": middleware sends members to the
+// restaurant this phone came from, or their own last one, or the scanner.
 function nextPath(): string {
   const r = new URLSearchParams(window.location.search).get("redirect");
-  return r && r.startsWith("/") && !r.startsWith("//") ? r : rememberedHome();
+  return r && r.startsWith("/") && !r.startsWith("//") ? r : "/";
 }
 
 export default function CustomerLogin() {

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import ItemMark from "@/components/order/ItemMark";
 import Price from "@/components/order/Price";
 import { SectionTitle } from "@/components/customer/ui";
@@ -40,14 +39,16 @@ function DishRail({ title, dishes, href, mine }: { title: string; dishes: Dish[]
         {dishes.map((d) => {
           const card = !photos ? (
             <span className="flex h-full flex-col rounded-2xl bg-white p-3 shadow-sm">
-              <ItemMark name={d.name} className="h-9 w-9 rounded-xl text-sm" />
+              <span className="flex items-start justify-between">
+                <ItemMark name={d.name} className="h-9 w-9 rounded-xl text-sm" />
+                {mine && d.times && d.times > 1 ? <span className="text-2xs font-bold tabular-nums text-ink-500">{d.times}× ordered</span> : null}
+              </span>
               <span className="mt-2.5 line-clamp-2 text-sm font-bold leading-snug text-ink-900">
                 {d.is_vegetarian && <VegMark className="mr-1" />}
                 {d.name}
               </span>
               <span className="mt-auto block pt-1 text-xs text-ink-500">
                 <Price price={Number(d.price)} regular={d.regular_price == null ? null : Number(d.regular_price)} tag={false} />
-                {mine && d.times && d.times > 1 ? ` · ${d.times}×` : ""}
               </span>
             </span>
           ) : (
@@ -71,9 +72,10 @@ function DishRail({ title, dishes, href, mine }: { title: string; dishes: Dish[]
           return (
             <li key={d.id} className={`shrink-0 snap-start ${photos ? "w-32" : "w-36"}`}>
               {href ? (
-                <Link href={href} className="block h-full transition active:scale-[0.97]">
+                // A full load, like the Deals cards: the menu reads ?item= on mount.
+                <a href={`${href}?item=${d.id}`} className="block h-full transition active:scale-[0.97]">
                   {card}
-                </Link>
+                </a>
               ) : (
                 card
               )}

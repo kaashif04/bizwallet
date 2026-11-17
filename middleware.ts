@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { PLACE_COOKIE, placeHome } from "@/lib/place";
+import { lastPlaceId } from "@/lib/places";
 
 // Route protection + session refresh.
 //
@@ -77,7 +78,13 @@ export async function middleware(request: NextRequest) {
     }
     if (path === "/" || path === "/login") {
       const next = request.nextUrl.searchParams.get("redirect");
-      return redirectTo(next?.startsWith("/") && !next.startsWith("//") ? next : home);
+      if (next?.startsWith("/") && !next.startsWith("//")) return redirectTo(next);
+      // A phone that hasn't been to a restaurant yet: the member's own, not the camera.
+      const last = home === "/scan" ? await lastPlaceId(supabase) : null;
+      if (!last) return redirectTo(home);
+      const res = redirectTo(placeHome(last));
+      res.cookies.set(PLACE_COOKIE, last, { path: "/", maxAge: 31536000, sameSite: "lax" });
+      return res;
     }
   }
 

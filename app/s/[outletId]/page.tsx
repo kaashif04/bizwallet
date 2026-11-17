@@ -192,7 +192,10 @@ export default async function StorePage({
                   key={a.label}
                   href={a.href}
                   {...(a.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  className="flex h-[4.25rem] min-w-0 flex-col items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl bg-white px-1 text-center text-[12px] font-semibold leading-none text-ink-800 shadow-sm transition hover:bg-accent-50 active:scale-[0.97]"
+                  // One action alone is a slim row, not a tall empty tile.
+                  className={`flex min-w-0 items-center justify-center whitespace-nowrap rounded-2xl bg-white px-1 text-center font-semibold leading-none text-ink-800 shadow-sm transition hover:bg-accent-50 active:scale-[0.97] ${
+                    actions.length === 1 ? "h-12 gap-2 text-sm" : "h-[4.25rem] flex-col gap-1.5 text-[12px]"
+                  }`}
                 >
                   <svg viewBox="0 0 24 24" className="h-6 w-6 text-accent-600" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d={a.icon} />

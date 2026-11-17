@@ -271,7 +271,18 @@ function Row({
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-xs text-ink-500">{label}</p>
-        <p className="text-sm font-bold text-ink-900 [overflow-wrap:anywhere]">{value}</p>
+        <p className="text-sm font-bold text-ink-900 [overflow-wrap:anywhere]">
+          {/* A long email wraps after the @, not mid-word */}
+          {value.includes("@") ? (
+            <>
+              {value.slice(0, value.indexOf("@") + 1)}
+              <wbr />
+              {value.slice(value.indexOf("@") + 1)}
+            </>
+          ) : (
+            value
+          )}
+        </p>
       </div>
       {verified !== undefined && (
         <span

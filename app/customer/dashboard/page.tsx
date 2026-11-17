@@ -13,7 +13,7 @@ export default async function PlacesRedirect({
   searchParams: { rewards?: string; voucher?: string };
 }) {
   const home = placeHome(cookies().get(PLACE_COOKIE)?.value);
-  if (!searchParams.rewards && !searchParams.voucher) redirect(home);
+  if (!searchParams.rewards && !searchParams.voucher) redirect("/"); // middleware picks the restaurant
 
   const supabase = createClient();
   const [{ data: placeData }, { data: voucher }] = await Promise.all([
