@@ -110,6 +110,14 @@ export default async function StorePage({
   const tableToken = tableParam(searchParams.table); // came from a table: offer the way back, no pickup bar
   const profileHref = tableToken ? `/customer/profile?table=${tableToken}` : "/customer/profile";
   const dishHref = canPickup ? `/order/p/${store.id}` : null;
+  const carded = !!(loyaltyOn && member && place); // shows a points card
+  const dealsRow = (
+    <DealsRow
+      deals={(dealData ?? []) as Deal[]}
+      href={dishHref}
+      scanHref={store.ordering ? `/scan?at=${encodeURIComponent(store.name)}` : null}
+    />
+  );
 
   const actions = [
     store.ordering && {
@@ -206,12 +214,9 @@ export default async function StorePage({
             </nav>
           )}
 
-          {/* Deals first: tapping one opens that dish (or category) on the menu. */}
-          <DealsRow
-            deals={(dealData ?? []) as Deal[]}
-            href={dishHref}
-            scanHref={store.ordering ? `/scan?at=${encodeURIComponent(store.name)}` : null}
-          />
+          {/* A member's card is the wallet, so it leads, with Order again under it; then the deals
+              (each opens its dish or category). Without a card, deals lead and the join card follows. */}
+          {!carded && dealsRow}
 
           {/* Points: the member's card, or what joining gets you */}
           {loyaltyOn &&
@@ -233,13 +238,6 @@ export default async function StorePage({
               />
             ))}
 
-          {(bannerData ?? []).length > 0 && (
-            <section>
-              <SectionTitle>Offers</SectionTitle>
-              <BannerCarousel banners={bannerData as Banner[]} branches={[store]} pickupOpen={canPickup} outletId={store.id} />
-            </section>
-          )}
-
           {canPickup && again?.items?.length ? (
             // Pickup opens with this order in the cart (GuestOrder reads ?again=1).
             <Link
@@ -260,6 +258,16 @@ export default async function StorePage({
               <span className="shrink-0 text-sm font-bold text-brand-700">{canDeliver ? "Order ›" : "Pickup ›"}</span>
             </Link>
           ) : null}
+
+          {carded && dealsRow}
+
+          {(bannerData ?? []).length > 0 && (
+            <section>
+              <SectionTitle>Offers</SectionTitle>
+              <BannerCarousel banners={bannerData as Banner[]} branches={[store]} pickupOpen={canPickup} outletId={store.id} />
+            </section>
+          )}
+
           <DishRails mine={dishes.mine} popular={dishes.popular} href={dishHref} />
 
           {member && (orders ?? []).length > 0 && (

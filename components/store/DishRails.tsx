@@ -19,7 +19,12 @@ export default function DishRails({ mine, popular, href }: { mine: Dish[]; popul
 
   return (
     <>
-      {hasVeg && <VegToggle on={vegOnly} onChange={setVegOnly} />}
+      {/* Tucked against the rails it filters, not floating between sections */}
+      {hasVeg && (
+        <div className="-mb-4">
+          <VegToggle on={vegOnly} onChange={setVegOnly} />
+        </div>
+      )}
       {usual.length > 0 && <DishRail title="Your usuals" dishes={usual} href={href} mine />}
       {pop.length > 0 && <DishRail title="Popular here" dishes={pop} href={href} />}
     </>
@@ -32,7 +37,7 @@ function DishRail({ title, dishes, href, mine }: { title: string; dishes: Dish[]
   const photos = dishes.filter((d) => d.image_url).length * 2 >= dishes.length;
   return (
     <section>
-      <SectionTitle href={href ?? undefined} action="Order">
+      <SectionTitle href={href ?? undefined} action="See menu">
         {title}
       </SectionTitle>
       <ul className={`-mx-4 flex snap-x ${photos ? "" : "items-stretch pb-3"} snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]`}>

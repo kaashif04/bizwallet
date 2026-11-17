@@ -80,8 +80,9 @@ export default function NotificationBell() {
       >
         <motion.span
           style={{ transformOrigin: "50% 4px" }}
-          animate={{ rotate: [0, -12, 10, -8, 6, -4, 0] }}
-          transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 3.5 }}
+          // Rings only while something is unread; a bell that never stops is noise.
+          animate={unread > 0 ? { rotate: [0, -12, 10, -8, 6, -4, 0] } : { rotate: 0 }}
+          transition={unread > 0 ? { duration: 1.2, repeat: Infinity, repeatDelay: 3.5 } : { duration: 0.2 }}
         >
           <BellIcon className="h-6 w-6" />
         </motion.span>
