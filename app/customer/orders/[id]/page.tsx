@@ -1,14 +1,22 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { currencySymbol } from "@/lib/format";
 import { outletNames } from "@/lib/guest-order";
+import { BackButton } from "@/components/customer/ui";
 
 const KITCHEN: Record<string, string> = {
   queued: "In the queue",
   preparing: "Preparing",
   ready: "Ready",
   served: "Served",
+};
+
+// Same pills as the orders list.
+const STATUS: Record<string, { label: string; cls: string }> = {
+  open: { label: "Open bill", cls: "bg-amber-50 text-amber-700" },
+  completed: { label: "Paid", cls: "bg-emerald-50 text-emerald-700" },
+  voided: { label: "Voided", cls: "bg-rose-50 text-rose-700" },
+  refunded: { label: "Refunded", cls: "bg-ink-100 text-ink-600" },
 };
 
 export default async function OrderDetailPage({ params }: { params: { id: string } }) {
@@ -49,20 +57,17 @@ export default async function OrderDetailPage({ params }: { params: { id: string
     <div className="min-h-dvh bg-ink-50">
       <div className="mx-auto max-w-md px-4 pb-12 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <div className="mb-4 flex items-center gap-3">
-          <Link
-            href="/customer/orders"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-ink-700 shadow-sm transition active:scale-95"
-            aria-label="Back to orders"
-          >
-            <span className="text-lg">←</span>
-          </Link>
+          <BackButton href="/customer/orders" />
           <div>
             <h1 className="text-lg font-bold text-slate-900">{outletName}</h1>
             <p className="text-xs text-slate-500">
               {new Date(tx.created_at).toLocaleString("en-MY", { timeZone: "Asia/Kuala_Lumpur", dateStyle: "medium", timeStyle: "short" })}
-              {tx.table_label ? ` · Table ${tx.table_label}` : ""}
+              {tx.table_label ? ` · Table ${tx.table_label}` : " · Pickup"}
             </p>
           </div>
+          <span className={`ml-auto shrink-0 rounded-full px-2.5 py-1 text-2xs font-bold ${STATUS[tx.status]?.cls ?? STATUS.open.cls}`}>
+            {STATUS[tx.status]?.label ?? STATUS.open.label}
+          </span>
         </div>
 
         <ul className="divide-y divide-slate-100 rounded-2xl bg-white px-4 shadow-sm">

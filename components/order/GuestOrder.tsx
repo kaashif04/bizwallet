@@ -824,7 +824,7 @@ function CartReview({
                 maxLength={60}
                 autoComplete="given-name"
                 placeholder={token ? "Leave blank and we'll call you a Guest number" : undefined}
-                className="w-full rounded-2xl border-2 border-slate-100 bg-white px-4 py-3 text-base outline-none transition placeholder:text-ink-400 focus:border-brand-400"
+                className="w-full rounded-2xl border-2 border-slate-100 bg-white px-4 py-3 text-base outline-none transition placeholder:text-ink-400 focus:border-accent-500"
               />
             </label>
           )}
@@ -835,7 +835,7 @@ function CartReview({
               onChange={(e) => setNote(e.target.value)}
               maxLength={200}
               rows={2}
-              className="w-full resize-none rounded-2xl border-2 border-slate-100 bg-white px-4 py-3 text-base outline-none transition focus:border-brand-400"
+              className="w-full resize-none rounded-2xl border-2 border-slate-100 bg-white px-4 py-3 text-base outline-none transition focus:border-accent-500"
             />
           </label>
         </details>

@@ -2,16 +2,27 @@ import Link from "next/link";
 
 // One header and one section title for every customer screen.
 
+// The round chevron every screen goes back with (a 44pt target).
+export function BackButton({ href, label = "Back" }: { href: string; label?: string }) {
+  return (
+    <Link href={href} className="inline-flex items-center gap-2 text-sm font-bold text-ink-700" aria-label={label}>
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm transition active:scale-95">
+        <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+          <path d="M10 3L5 8l5 5" />
+        </svg>
+      </span>
+      {label !== "Back" && <span aria-hidden="true">{label}</span>}
+    </Link>
+  );
+}
+
 export function PageHeader({ title, subtitle, back, backLabel = "Back" }: { title: string; subtitle?: string; back?: string; backLabel?: string }) {
   return (
     <header className="mb-6">
       {back && (
-        <Link
-          href={back}
-          className="-ml-2 mb-2 inline-flex h-11 items-center gap-1 rounded-full px-2 text-sm font-bold text-brand-700 transition hover:bg-brand-50"
-        >
-          <span aria-hidden="true">‹</span> {backLabel}
-        </Link>
+        <div className="mb-4">
+          <BackButton href={back} label={backLabel} />
+        </div>
       )}
       <h1 className="text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-ink-900">{title}</h1>
       {subtitle && <p className="mt-1 text-sm text-ink-500">{subtitle}</p>}

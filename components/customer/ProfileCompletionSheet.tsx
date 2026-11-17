@@ -18,7 +18,7 @@ const GENDER_OPTIONS = ["Female", "Male", "Non-binary", "Prefer not to say"];
 const TODAY = new Date().toISOString().slice(0, 10);
 
 const inputClass =
-  "w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-400/30";
+  "w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30";
 
 export type ProfileCompletionData = {
   phone: string;

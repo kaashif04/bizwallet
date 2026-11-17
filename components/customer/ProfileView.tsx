@@ -97,7 +97,7 @@ export default function ProfileView({ data }: { data: ProfileData }) {
                 onKeyDown={(e) => e.key === "Enter" && save()}
                 autoFocus
                 aria-label="Your name"
-                className="w-full rounded-xl bg-ink-50 px-3 py-2 text-base font-semibold text-ink-900 shadow-pressed outline-none focus:ring-2 focus:ring-brand-400/40"
+                className="w-full rounded-xl bg-ink-50 px-3 py-2 text-base font-semibold text-ink-900 shadow-pressed outline-none focus:ring-2 focus:ring-accent-500/40"
               />
               <div className="mt-2 flex gap-2">
                 <button

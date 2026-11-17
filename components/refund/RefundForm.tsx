@@ -16,7 +16,7 @@ type Refund = {
   banks: { code: string; name: string }[];
 };
 
-const field = "w-full rounded-xl bg-white px-4 py-3.5 text-base text-ink-900 outline-none ring-1 ring-ink-100 placeholder:text-ink-400 focus:ring-2 focus:ring-brand-600";
+const field = "w-full rounded-xl bg-white px-4 py-3.5 text-base text-ink-900 outline-none ring-1 ring-ink-100 placeholder:text-ink-400 focus:ring-2 focus:ring-accent-600";
 
 // Tell us where to send your refund: name on the account, bank, account number.
 export default function RefundForm({ token }: { token: string }) {
