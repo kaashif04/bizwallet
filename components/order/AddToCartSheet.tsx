@@ -88,7 +88,15 @@ export default function AddToCartSheet({
           }`}
         >
           <span className="block text-[15px] font-semibold leading-snug text-ink-900">{v.comboOf ? v.name : "Just the dish"}</span>
-          <Price price={v.price} regular={v.regularPrice} currency={currency} tag={false} className="mt-1 text-sm font-bold text-ink-700" />
+          {/* A set reads as the step up from the dish ("+RM4.50"), the way counters sell it. */}
+          {v.comboOf && v.price > dish.price ? (
+            <span className="mt-1 block text-sm font-bold text-brand-700">
+              +{currencySymbol(currency)}
+              {(v.price - dish.price).toFixed(2)}
+            </span>
+          ) : (
+            <Price price={v.price} regular={v.regularPrice} currency={currency} tag={false} className="mt-1 text-sm font-bold text-ink-700" />
+          )}
         </button>
       ))}
     </div>

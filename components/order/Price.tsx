@@ -1,6 +1,6 @@
 import { currencySymbol } from "@/lib/format";
 
-// A dish's price; during a menu deal, the normal price struck out and a "Deal" tag.
+// A dish's price; during a menu deal, the normal price struck out and what you save ("Save RM5").
 export default function Price({
   price,
   regular,
@@ -16,6 +16,7 @@ export default function Price({
 }) {
   const sym = currencySymbol(currency);
   const deal = regular != null && regular > price;
+  const off = deal ? regular - price : 0;
   return (
     <span className={`inline-flex flex-wrap items-baseline gap-x-1.5 ${className}`}>
       <span className={deal ? "text-brand-700" : undefined}>
@@ -29,7 +30,12 @@ export default function Price({
             {sym}
             {regular.toFixed(2)}
           </s>
-          {tag && <span className="self-center rounded-full bg-brand-50 px-1.5 py-px text-2xs font-bold text-brand-700">Deal</span>}
+          {tag && (
+            <span className="self-center whitespace-nowrap rounded-full bg-brand-600 px-2 py-0.5 text-2xs font-bold text-on">
+              Save {sym}
+              {Number.isInteger(Math.round(off * 100) / 100) ? off.toFixed(0) : off.toFixed(2)}
+            </span>
+          )}
         </>
       )}
     </span>

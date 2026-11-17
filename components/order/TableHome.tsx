@@ -16,6 +16,8 @@ import {
   type PickupOutlet,
 } from "@/lib/guest-order";
 import { SectionTitle } from "@/components/customer/ui";
+import DealsRow from "./DealsRow";
+import type { Deal } from "@/lib/deals";
 import { orderingStatus, type StoreHours } from "@/lib/hours";
 import AccountChip from "./AccountChip";
 import { rememberPlace } from "@/lib/place";
@@ -56,6 +58,7 @@ export default function TableHome({
   // This phone's rounds at this table. Finished ones drop off 3 hours after ordering,
   // so the page is a plain start page again on the next visit.
   // The table's open bill, whoever ordered it (counter or app).
+  const [deals, setDeals] = useKept<Deal[]>(`th:${token}:deals`, []);
   const [billLeft, setBillLeft] = useKept<number | null>(`th:${token}:billLeft`, null);
   const loadOrders = useCallback(async () => {
     supabase.rpc("guest_table_bill", { p_token: token }).then(({ data }) => {
@@ -89,6 +92,7 @@ export default function TableHome({
       if (!h) return;
       rememberPlace(h.outlet.id);
       outletLogos(supabase).then((l) => setLogo(l[h.outlet.id] ?? null));
+      supabase.rpc("wallet_deals", { p_outlet: h.outlet.id }).then(({ data }) => setDeals((data ?? []) as Deal[]));
       supabase.rpc("guest_store", { p_outlet: h.outlet.id }).then(({ data }) => {
         const o = data as (PickupOutlet & StoreHours) | null;
         const st = o && orderingStatus(o);
@@ -238,6 +242,9 @@ export default function TableHome({
               Please order with our staff today
             </p>
           )}
+
+          {/* Today's deals, right under Order now: a tap opens that dish (or section) on the menu. */}
+          {home.ordering && !shut && <DealsRow deals={deals} href={`/order/t/${token}/menu`} />}
 
           {/* Staff come to the table: amber, so they stand apart from ordering. */}
           <CallStaff token={token} calls={home.calls} hide={home.hide} onCalled={load} />

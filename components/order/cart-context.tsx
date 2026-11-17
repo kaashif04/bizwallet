@@ -96,6 +96,7 @@ type CartValue = {
   lines: CartLine[];
   totalItems: number;
   totalPrice: number;
+  saved: number; // menu deals: what the struck-out prices would have cost more
   lineTotal: (lineId: string) => number; // after free-with-spend items
   add: (item: MenuItem, quantity: number, selections: VariantSelection[]) => void;
   inc: (lineId: string) => void;
@@ -151,6 +152,7 @@ export function CartProvider({ children, storageKey }: { children: React.ReactNo
       lines: state.lines,
       totalItems,
       totalPrice: Array.from(totals.values()).reduce((s, n) => s + n, 0),
+      saved: state.lines.reduce((s, l) => s + Math.max(0, (l.item.regularPrice ?? l.item.price) - l.item.price) * l.quantity, 0),
       lineTotal: (lineId: string) => totals.get(lineId) ?? 0,
       add,
       inc,

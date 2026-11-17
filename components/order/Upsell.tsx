@@ -1,18 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { MenuItem } from "@/lib/order-types";
-import { currencySymbol } from "@/lib/format";
 import ItemMark from "./ItemMark";
 import { VegMark } from "./Veg";
+import Price from "./Price";
+import { useCart } from "./cart-context";
 
 // Upselling from the outlet's own sales (guest_menu_suggestions): best-sellers,
 // and dishes often on the same bill. No AI, just what customers here order.
 export type Suggestions = { popular: string[]; pairs: Record<string, string[]> };
 
 // Up to n dishes that go with what's in the cart: their usual partners first,
-// then best-sellers from categories the cart doesn't have yet, then (new outlets,
-// little sales yet) the first dish of each such category.
+// then dishes on a deal right now, then best-sellers from categories the cart
+// doesn't have yet, then (new outlets, little sales yet) the first dish of each such category.
 export function goesWith(cart: MenuItem[], s: Suggestions | null, menu: Map<string, MenuItem>, n: number): MenuItem[] {
   s ??= { popular: [], pairs: {} };
   const inCart = new Set(cart.map((i) => i.id));
@@ -20,10 +22,12 @@ export function goesWith(cart: MenuItem[], s: Suggestions | null, menu: Map<stri
   const score = new Map<string, number>();
   for (const c of cart) (s.pairs[c.id] ?? []).forEach((p, r) => score.set(p, (score.get(p) ?? 0) + 3 - r));
   const paired = Array.from(score).sort((a, b) => b[1] - a[1]).map(([id]) => id);
+  const onDeal: string[] = [];
+  menu.forEach((i) => (i.regularPrice ?? 0) > i.price && onDeal.push(i.id));
   const other = s.popular.filter((id) => !cats.has(menu.get(id)?.category ?? ""));
   const firsts = new Map<string, string>();
   menu.forEach((i) => !cats.has(i.category) && !firsts.has(i.category) && firsts.set(i.category, i.id));
-  return Array.from(new Set([...paired, ...other, ...Array.from(firsts.values())]))
+  return Array.from(new Set([...paired, ...onDeal, ...other, ...Array.from(firsts.values())]))
     .map((id) => menu.get(id))
     .filter((i): i is MenuItem => !!i && !inCart.has(i.id) && i.isAvailable !== false)
     .slice(0, n);
@@ -38,7 +42,9 @@ function Thumb({ item, className }: { item: MenuItem; className: string }) {
   );
 }
 
-const price = (item: MenuItem, currency: string) => `${currencySymbol(currency)}${item.price.toFixed(2)}`;
+const dealPrice = (item: MenuItem, currency: string, className: string, tag = false) => (
+  <Price price={item.price} regular={item.regularPrice} currency={currency} tag={tag} className={className} />
+);
 
 // "Popular here": a swipeable row at the top of the menu.
 export function PopularRow({ items, currency, onPick }: { items: MenuItem[]; currency: string; onPick: (i: MenuItem) => void }) {
@@ -74,7 +80,7 @@ export function PopularRow({ items, currency, onPick }: { items: MenuItem[]; cur
                 {item.vegetarian && <VegMark className="mr-1" />}
                 {item.name}
               </span>
-              <span className="block text-xs font-semibold text-ink-500">{price(item, currency)}</span>
+              {dealPrice(item, currency, "text-xs font-semibold text-ink-500", true)}
             </button>
           ) : (
             <button
@@ -96,7 +102,7 @@ export function PopularRow({ items, currency, onPick }: { items: MenuItem[]; cur
                 {item.vegetarian && <VegMark className="mr-1" />}
                 {item.name}
               </span>
-              <span className="mt-auto block pt-1 text-xs font-semibold text-ink-500">{price(item, currency)}</span>
+              <span className="mt-auto block pt-1">{dealPrice(item, currency, "text-xs font-semibold text-ink-500", true)}</span>
             </button>
           )
         )}
@@ -132,9 +138,8 @@ export function PairNudge({
         <Thumb item={item} className="h-12 w-12 shrink-0 rounded-xl max-[359px]:hidden" />
         <span className="min-w-0 flex-1 max-[359px]:pl-1.5">
           <span className="block truncate text-2xs font-semibold text-ink-500">Goes well with {after}</span>
-          <span className="block truncate text-sm font-bold text-ink-900">
-            {item.name} · {price(item, currency)}
-          </span>
+          <span className="block truncate text-sm font-bold text-ink-900">{item.name}</span>
+          {dealPrice(item, currency, "text-xs font-semibold text-ink-500")}
         </span>
         <button
           type="button"
@@ -151,30 +156,55 @@ export function PairNudge({
   );
 }
 
-// In the cart: "Add to your order", one tap each.
+// In the cart: "Complete your meal", one tap each. The row holds still while you add
+// (an added dish shows a tick instead of vanishing from under your thumb).
 export function CartUpsell({ items, currency, onAdd }: { items: MenuItem[]; currency: string; onAdd: (i: MenuItem) => void }) {
-  if (!items.length) return null;
+  const { lines } = useCart();
+  const [shown, setShown] = useState(items);
+  useEffect(() => {
+    if (!shown.length && items.length) setShown(items); // suggestions arrived after the cart opened
+  }, [items, shown.length]);
+  if (!shown.length) return null;
   return (
     <section className="mt-5">
-      <h3 className="mb-2 text-2xs font-semibold uppercase tracking-[0.14em] text-ink-500">Add to your order</h3>
+      <h3 className="mb-2 text-base font-bold text-ink-900">Complete your meal</h3>
       <div className="-mx-5 flex gap-2.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {items.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onAdd(item)}
-            className="flex w-56 shrink-0 items-center gap-3 rounded-2xl bg-ink-50 p-2.5 text-left shadow-well transition active:scale-[0.98]"
-          >
-            <Thumb item={item} className="h-12 w-12 shrink-0 rounded-xl" />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-bold text-ink-900">{item.name}</span>
-              <span className="block text-xs font-semibold text-ink-500">{price(item, currency)}</span>
-            </span>
-            <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-lg font-bold text-on">
-              +
-            </span>
-          </button>
-        ))}
+        {shown.map((item) => {
+          const added = lines.some((l) => l.item.id === item.id);
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onAdd(item)}
+              aria-label={`${added ? "Add another" : "Add"} ${item.name}`}
+              className="flex w-56 shrink-0 items-center gap-3 rounded-2xl bg-ink-50 p-2.5 text-left shadow-well transition active:scale-[0.98]"
+            >
+              <Thumb item={item} className="h-12 w-12 shrink-0 rounded-xl" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-bold text-ink-900">{item.name}</span>
+                {added ? (
+                  <span className="block text-xs font-bold text-accent-700">Added</span>
+                ) : (
+                  dealPrice(item, currency, "text-xs font-semibold text-ink-500")
+                )}
+              </span>
+              <span
+                aria-hidden="true"
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg font-bold text-on transition-colors ${
+                  added ? "bg-accent-600" : "bg-brand-600"
+                }`}
+              >
+                {added ? (
+                  <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3.5 8.5l3 3 6-7" />
+                  </svg>
+                ) : (
+                  "+"
+                )}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </section>
   );

@@ -12,7 +12,7 @@ export default function ViewCartBar({
   currency: string;
   onClick: () => void;
 }) {
-  const { totalItems, totalPrice } = useCart();
+  const { totalItems, totalPrice, saved } = useCart();
   const sym = currencySymbol(currency);
 
   return (
@@ -49,7 +49,15 @@ export default function ViewCartBar({
               >
                 {totalItems}
               </motion.span>
-              <span className="text-base font-bold">View order</span>
+              <span className="flex flex-col items-start leading-tight">
+                <span className="text-base font-bold">View order</span>
+                {saved > 0 && (
+                  <span className="text-xs font-semibold text-on/85">
+                    Saving {sym}
+                    {saved.toFixed(2)}
+                  </span>
+                )}
+              </span>
             </span>
             <span className="relative text-base font-bold">
               {sym}

@@ -53,7 +53,7 @@ export default function DealsRow({
                     <span className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-on/80">off</span>
                   </span>
                 )}
-                {dineIn && !onDish && ( // on a menu it goes without saying
+                {dineIn && scanHref !== undefined && ( // on a menu or at a table it goes without saying
                   <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2 py-0.5 text-2xs font-bold text-ink-800 shadow-sm">Dine in</span>
                 )}
               </span>
@@ -64,10 +64,13 @@ export default function DealsRow({
                     {!dish && d.items.length > 1 ? "From " : ""}
                     {money(shown.price)}
                   </span>
-                  <s className="text-xs text-ink-500">
-                    <span className="sr-only">was </span>
-                    {money(shown.regular_price)}
-                  </s>
+                  {/* "From RM24.40" plus a struck price doesn't fit a card; the badge already says the saving. */}
+                  {(dish || d.items.length === 1) && (
+                    <s className="text-xs text-ink-500">
+                      <span className="sr-only">was </span>
+                      {money(shown.regular_price)}
+                    </s>
+                  )}
                 </span>
                 {ends && <span className="mt-0.5 block text-xs font-semibold text-ink-500">{ends}</span>}
               </span>
@@ -75,7 +78,7 @@ export default function DealsRow({
           );
           const cls = "flex h-full flex-col rounded-3xl bg-white p-2 text-left shadow-sm transition active:scale-[0.97]";
           const go = dish ? onDish && (() => onDish(dish.id)) : d.category_id && onCategory && (() => onCategory(d.category_id!));
-          const link = dineIn ? scanHref : href && (dish ? `${href}?item=${dish.id}` : d.category_id ? `${href}?cat=${d.category_id}` : href);
+          const link = dineIn && scanHref !== undefined ? scanHref : href && (dish ? `${href}?item=${dish.id}` : d.category_id ? `${href}?cat=${d.category_id}` : href);
           return (
             <li key={d.id} className="w-44 shrink-0 snap-start">
               {go ? (

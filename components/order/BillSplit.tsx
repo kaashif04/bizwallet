@@ -203,7 +203,7 @@ export default function BillSplit({ token, canPay }: { token: string; canPay: bo
             exit={{ opacity: 0 }}
             role="status"
             className={`mb-4 rounded-2xl px-4 py-3 text-sm font-semibold ${
-              arrival === "paid" ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"
+              arrival === "paid" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"
             }`}
           >
             {arrival === "paid"

@@ -389,6 +389,7 @@ export default function GuestOrder(
             closed={props.closed ?? null}
             prepMinutes={props.prepMinutes ?? null}
             pointsPerRm={loyalty?.pointsPerRm ?? null}
+            companyId={loyalty?.companyId ?? null}
             upsell={goesWith(cart.lines.map((l) => l.item), suggestions, oneTap, 4)}
             onClose={() => setReviewing(false)}
             onPlaced={(id, paid) => {
@@ -414,6 +415,7 @@ function CartReview({
   prepMinutes,
   upsell,
   pointsPerRm,
+  companyId,
   onClose,
   onPlaced,
 }: {
@@ -425,6 +427,7 @@ function CartReview({
   prepMinutes: number | null;
   upsell: MenuItem[];
   pointsPerRm: number | null;
+  companyId: string | null;
   onClose: () => void;
   onPlaced: (id: string, paid?: boolean) => void;
 }) {
@@ -462,6 +465,18 @@ function CartReview({
   }, [supabase]);
   // null until we know; a guest (false) gives their details before ordering.
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  // The member's own RM-off vouchers here: one tap fills the promo box (BizPos takes them like a code).
+  // Free-item vouchers stay at the counter.
+  const [vouchers, setVouchers] = useState<{ code: string; title: string; value: number | null }[]>([]);
+  useEffect(() => {
+    if (!signedIn || !companyId) return;
+    supabase
+      .from("vouchers")
+      .select("code, title, value, kind")
+      .eq("company_id", companyId)
+      .eq("status", "active")
+      .then(({ data }) => setVouchers((data ?? []).filter((v) => v.kind !== "free_item")));
+  }, [supabase, signedIn, companyId]);
   // Paying online is the default (pickup always); the counter is the fallback.
   const [payWith, setPayWith] = useState<"counter" | "fpx">(onlinePay || !token ? "fpx" : "counter");
   const [note, setNote] = useState("");
@@ -731,6 +746,13 @@ function CartReview({
                   <p className="mt-1 text-sm tabular-nums text-slate-700">
                     {sym}
                     {cart.lineTotal(l.lineId).toFixed(2)}
+                    {(l.item.regularPrice ?? 0) > l.item.price && (
+                      <s className="ml-1.5 text-xs text-ink-400">
+                        <span className="sr-only">was </span>
+                        {sym}
+                        {(cart.lineTotal(l.lineId) + (l.item.regularPrice! - l.item.price) * l.quantity).toFixed(2)}
+                      </s>
+                    )}
                   </p>
                 )}
               </div>
@@ -795,14 +817,37 @@ function CartReview({
             {promo ? (
               <div className="flex items-center gap-3 rounded-xl bg-emerald-50 px-4 py-2.5">
                 <span className="min-w-0 flex-1 text-sm">
-                  <span className="font-mono font-bold tracking-wider text-emerald-800">{promo.code}</span>
+                  <span className="font-mono font-bold tracking-wider text-emerald-700">{promo.code}</span>
                   <span className="text-emerald-700"> · {promo.label}</span>
                 </span>
-                <button type="button" onClick={() => setPromo(null)} className="shrink-0 text-sm font-bold text-emerald-800">
+                <button type="button" onClick={() => setPromo(null)} className="shrink-0 text-sm font-bold text-emerald-700">
                   Remove
                 </button>
               </div>
             ) : (
+              <>
+              {vouchers.length > 0 && (
+                <ul className="mb-2 space-y-2" aria-label="Your vouchers">
+                  {vouchers.map((v) => (
+                    <li key={v.code}>
+                      <button
+                        type="button"
+                        disabled={promoBusy}
+                        onClick={() => applyPromo(v.code)}
+                        className="flex min-h-12 w-full items-center gap-3 rounded-2xl border-2 border-dashed border-emerald-500 bg-emerald-50 px-4 py-2 text-left transition active:scale-[0.98] disabled:opacity-60"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-bold text-emerald-700">
+                            {v.value ? `${sym}${Number(v.value).toFixed(2).replace(/\.00$/, "")} off` : v.title}
+                          </span>
+                          <span className="block truncate text-xs text-emerald-700">Your voucher{v.value ? ` · ${v.title}` : ""}</span>
+                        </span>
+                        <span className="shrink-0 rounded-full bg-emerald-100 px-3.5 py-1.5 text-sm font-bold text-emerald-700">Use</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -827,6 +872,7 @@ function CartReview({
                   {promoBusy ? "…" : "Apply"}
                 </button>
               </form>
+              </>
             )}
             {promoError && (
               <p role="alert" className="mt-1.5 text-xs font-semibold text-rose-700">
@@ -834,6 +880,24 @@ function CartReview({
               </p>
             )}
           </div>
+        )}
+
+        {/* What the deals and the promo take off, in one line: the number people screenshot. */}
+        {cart.saved + shown.disc > 0 && (
+          <p className="mt-5 flex items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+            <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 12V4h8l10 10-8 8L3 12Z" />
+              <circle cx="7.5" cy="8.5" r="1.5" />
+            </svg>
+            <span>
+              You&apos;re saving{" "}
+              <span className="font-bold tabular-nums">
+                {sym}
+                {(cart.saved + shown.disc).toFixed(2)}
+              </span>{" "}
+              on this order
+            </span>
+          </p>
         )}
 
         {(shown.disc > 0 || shown.service > 0 || isDelivery) && (
