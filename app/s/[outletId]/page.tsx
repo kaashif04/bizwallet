@@ -11,6 +11,7 @@ import BranchLogo from "@/components/order/BranchLogo";
 import BannerCarousel from "@/components/order/BannerCarousel";
 import RememberPlace from "@/components/order/RememberPlace";
 import PointsCard from "@/components/store/PointsCard";
+import InviteCard from "@/components/store/InviteCard";
 import DishRails, { type Dish } from "@/components/store/DishRails";
 import DealsRow from "@/components/order/DealsRow";
 import type { Deal } from "@/lib/deals";
@@ -63,6 +64,10 @@ export default async function StorePage({
     supabase.from("loyalty_programs").select("is_enabled,points_per_rm").eq("company_id", store.company_id).maybeSingle(),
   ]);
   const rewards = (rewardRows ?? []) as Reward[];
+  const { data: invite } = member
+    ? await supabase.rpc("wallet_referral_code", { p_company: store.company_id })
+    : { data: null };
+  const ref = invite as { code: string; points: number; invited: number; rewarded: number } | null;
   const [{ data: placeData }, { data: voucherRows }, { data: orders }, { data: lastOrder }] = member
     ? await Promise.all([
         supabase.rpc("wallet_my_places"),
@@ -237,6 +242,8 @@ export default async function StorePage({
                 rewards={rewards.slice(0, 3)}
               />
             ))}
+
+          {ref && <InviteCard {...ref} outletId={store.id} storeName={store.name} />}
 
           {canPickup && again?.items?.length ? (
             // Pickup opens with this order in the cart (GuestOrder reads ?again=1).
