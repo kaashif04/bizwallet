@@ -67,8 +67,14 @@ export default function AddToCartSheet({
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
 
+  // A dish with no choices already in the cart (quick-added with +): the sheet edits that line.
+  const lineOf = (it: MenuItem) =>
+    groupsByItem[it.id]?.length ? undefined : cart.lines.find((l) => l.item.id === it.id && !l.selections.length);
+  const inCart = lineOf(item);
+
   function pickVersion(to: MenuItem) {
     const g = groupsByItem[to.id] ?? [];
+    setQty(lineOf(to)?.quantity ?? 1);
     setItem(to);
     setSel(defaultSelection(g, g.length >= 2));
     setStep(0);
@@ -102,7 +108,7 @@ export default function AddToCartSheet({
     </div>
   );
 
-  const [qty, setQty] = useState(1);
+  const [qty, setQty] = useState(() => lineOf(dish)?.quantity ?? 1);
   const groupRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const scroller = useRef<HTMLDivElement>(null);
   const advance = useRef<number>();
@@ -193,7 +199,9 @@ export default function AddToCartSheet({
       shake(unmetGroup);
       return;
     }
-    cart.add(item, qty, selections);
+    if (!inCart) cart.add(item, qty, selections);
+    else if (!qty) cart.remove(inCart.lineId);
+    else if (qty !== inCart.quantity) cart.add(item, qty - inCart.quantity, []); // merges into the line
     navigator.vibrate?.(12);
     onClose();
   }
@@ -471,8 +479,8 @@ export default function AddToCartSheet({
                 <div className="flex items-center gap-1 rounded-full bg-slate-100 p-1">
                   <button
                     type="button"
-                    onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    disabled={qty <= 1}
+                    onClick={() => setQty((q) => Math.max(inCart ? 0 : 1, q - 1))}
+                    disabled={qty <= (inCart ? 0 : 1)}
                     className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl font-bold text-slate-800 shadow-sm transition active:scale-90 disabled:opacity-40"
                     aria-label="Decrease quantity"
                   >
@@ -497,8 +505,10 @@ export default function AddToCartSheet({
                   unmetGroup ? "bg-slate-100 text-slate-600" : "bg-brand-600 text-on shadow-sm hover:brightness-95"
                 }`}
               >
-                <span className="min-w-0 truncate">{unmetGroup ? stillToPick(unmetGroup) : "Add"}</span>
-                {totalTag}
+                <span className="min-w-0 truncate">
+                  {unmetGroup ? stillToPick(unmetGroup) : !inCart ? "Add" : !qty ? "Remove" : qty === inCart.quantity ? "Done" : "Update"}
+                </span>
+                {qty > 0 && totalTag}
               </button>
             </>
           )}
