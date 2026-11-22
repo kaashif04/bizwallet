@@ -323,7 +323,8 @@ export default function GuestOrder(
         account={account}
         items={shown}
         currency={CURRENCY}
-        onItemClick={addSuggested} // no choices: straight into the cart
+        onItemClick={addSuggested} // the +: no choices goes straight into the cart
+        onItemOpen={(i) => i.isAvailable !== false && (setNudge(null), setSheetItem(i))}
         filter={
           (props.closed || lastOrder || hasVeg) && (
             <>
@@ -347,7 +348,7 @@ export default function GuestOrder(
                 onCategory={(id) => jumpToCategory(shown, id)}
               />
               <BannerCarousel banners={banners} branches={[]} pickupOpen={false} outletId={menu.outlet.id} browseOnly />
-              <PopularRow items={popular} currency={CURRENCY} onPick={addSuggested} />
+              <PopularRow items={popular} currency={CURRENCY} onPick={addSuggested} onOpen={setSheetItem} />
             </>
           )
         }

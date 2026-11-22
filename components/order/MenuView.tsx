@@ -19,6 +19,7 @@ export default function MenuView({
   items,
   currency,
   onItemClick,
+  onItemOpen,
   intro,
   filter,
   homeHref,
@@ -30,7 +31,8 @@ export default function MenuView({
   account: AccountState;
   items: MenuItem[]; // already in category display order
   currency: string;
-  onItemClick: (item: MenuItem) => void;
+  onItemClick: (item: MenuItem) => void; // the + button: quick add
+  onItemOpen: (item: MenuItem) => void; // the card itself: photo, description, quantity
   intro?: React.ReactNode; // offers and best-sellers above the categories
   filter?: React.ReactNode; // the Vegetarian only switch, first thing on the menu
 }) {
@@ -196,7 +198,7 @@ export default function MenuView({
               return (
                 <div className={cards ? "grid grid-cols-2 gap-3" : "divide-y divide-ink-100 overflow-hidden rounded-3xl bg-white shadow-sm"}>
                   {list.map((item, i) => (
-                    <MenuItemCard key={item.id} index={i} item={item} row={!cards} currency={currency} onClick={() => onItemClick(item)} />
+                    <MenuItemCard key={item.id} index={i} item={item} row={!cards} currency={currency} onAdd={() => onItemClick(item)} onOpen={() => onItemOpen(item)} />
                   ))}
                 </div>
               );
@@ -229,13 +231,15 @@ function MenuItemCard({
   index,
   row,
   currency,
-  onClick,
+  onAdd,
+  onOpen,
 }: {
   item: MenuItem;
   index: number;
   row: boolean;
   currency: string;
-  onClick: () => void;
+  onAdd: () => void;
+  onOpen: () => void;
 }) {
   const { lines } = useCart();
   const count = lines
@@ -246,7 +250,12 @@ function MenuItemCard({
   const badge = soldOut ? (
     <span className="shrink-0 rounded-full bg-ink-100 px-2.5 py-1 text-2xs font-bold text-ink-600">Sold out</span>
   ) : (
-    <span className="relative flex h-11 min-w-[2.75rem] shrink-0 items-center justify-center">
+    <button
+      type="button"
+      onClick={onAdd}
+      aria-label={count ? `Add another ${item.name}, ${count} in cart` : `Add ${item.name}`}
+      className="pointer-events-auto relative z-10 flex h-11 min-w-[2.75rem] shrink-0 items-center justify-center rounded-full transition active:scale-90"
+    >
       <AnimatePresence mode="popLayout" initial={false}>
         {count > 0 ? (
           <motion.span
@@ -256,7 +265,6 @@ function MenuItemCard({
             exit={{ scale: 0.4, opacity: 0 }}
             transition={{ type: "spring", stiffness: 600, damping: 26 }}
             className="flex h-10 min-w-[2.5rem] items-center justify-center rounded-full bg-brand-50 px-2 text-sm font-bold text-brand-700 shadow-well"
-            aria-label={`${count} in cart`}
           >
             {count}
           </motion.span>
@@ -266,7 +274,7 @@ function MenuItemCard({
             initial={{ scale: 0.4, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.4, opacity: 0 }}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-600 text-on shadow-sm transition-colors group-hover:brightness-95"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-600 text-on shadow-sm transition-colors [@media(hover:hover)]:hover:brightness-95"
           >
             <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
               <path d="M8 3v10M3 8h10" />
@@ -274,7 +282,12 @@ function MenuItemCard({
           </motion.span>
         )}
       </AnimatePresence>
-    </span>
+    </button>
+  );
+  // The whole card opens the dish (big photo, full description, quantity); the + adds one.
+  // Content ignores taps so they land on this button; only the + sits above it.
+  const open = (
+    <button type="button" onClick={onOpen} disabled={soldOut} aria-label={item.name} className={`open pointer-events-auto absolute inset-0 ${row ? "" : "rounded-3xl"}`} />
   );
   // On a deal: "-26%" on the photo (cards), "Save RM5" beside the price (rows and cards without a photo).
   const pct = item.regularPrice && item.regularPrice > item.price ? Math.round((1 - item.price / item.regularPrice) * 100) : 0;
@@ -292,15 +305,13 @@ function MenuItemCard({
 
   if (row) {
     return (
-      <motion.button
-        type="button"
-        onClick={onClick}
-        disabled={soldOut}
+      <motion.div
         {...enter}
-        className={`group flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${
-          soldOut ? "" : "[@media(hover:hover)]:hover:bg-brand-50/60 active:bg-brand-50"
+        className={`pointer-events-none relative flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${
+          soldOut ? "" : "[@media(hover:hover)]:has-[.open:hover]:bg-brand-50/60 has-[.open:active]:bg-brand-50"
         }`}
       >
+        {open}
         {item.imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className={`h-16 w-16 shrink-0 rounded-2xl bg-slate-100 object-cover ${soldOut ? "opacity-50 grayscale" : ""}`} />
@@ -315,18 +326,16 @@ function MenuItemCard({
           {hint}
         </span>
         {badge}
-      </motion.button>
+      </motion.div>
     );
   }
 
   return (
-    <motion.button
-      type="button"
-      onClick={onClick}
-      disabled={soldOut}
+    <motion.div
       {...enter}
-      className={`group flex flex-col rounded-3xl bg-white p-2.5 text-left shadow-sm transition ${soldOut ? "" : "active:scale-[0.97]"}`}
+      className={`pointer-events-none relative flex flex-col rounded-3xl bg-white p-2.5 text-left shadow-sm transition ${soldOut ? "" : "has-[.open:active]:scale-[0.97]"}`}
     >
+      {open}
       {item.imageUrl ? (
         <span className="relative block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -352,6 +361,6 @@ function MenuItemCard({
         {price}
         {badge}
       </span>
-    </motion.button>
+    </motion.div>
   );
 }

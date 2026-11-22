@@ -47,8 +47,24 @@ const dealPrice = (item: MenuItem, currency: string, className: string, tag = fa
 );
 
 // "Popular here": a swipeable row at the top of the menu.
-export function PopularRow({ items, currency, onPick }: { items: MenuItem[]; currency: string; onPick: (i: MenuItem) => void }) {
+export function PopularRow({ items, currency, onPick, onOpen }: { items: MenuItem[]; currency: string; onPick: (i: MenuItem) => void; onOpen: (i: MenuItem) => void }) {
   if (items.length < 3) return null;
+  // Card opens the dish, + adds one (same as the menu cards).
+  const open = (item: MenuItem) => (
+    <button type="button" onClick={() => onOpen(item)} aria-label={item.name} className="open pointer-events-auto absolute inset-0 rounded-2xl" />
+  );
+  const plus = (item: MenuItem, className: string) => (
+    <button
+      type="button"
+      onClick={() => onPick(item)}
+      aria-label={`Add ${item.name}`}
+      className={`pointer-events-auto z-10 flex h-11 w-11 items-center justify-center transition active:scale-90 ${className}`}
+    >
+      <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-lg font-bold text-on shadow-md">
+        +
+      </span>
+    </button>
+  );
   const photos = items.filter((i) => i.imageUrl).length * 2 >= items.length;
   return (
     <section>
@@ -58,52 +74,37 @@ export function PopularRow({ items, currency, onPick }: { items: MenuItem[]; cur
           // Photos lead where there are photos; without most of them a big letter
           // square says nothing, so the row becomes compact rank cards.
           photos ? (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onPick(item)}
-              className="w-36 shrink-0 snap-start text-left transition active:scale-[0.97]"
-            >
+            <div key={item.id} className="pointer-events-none relative w-36 shrink-0 snap-start text-left transition has-[.open:active]:scale-[0.97]">
+              {open(item)}
               <span className="relative block">
                 <Thumb item={item} className="aspect-square w-full rounded-2xl" />
                 <span className="absolute left-2 top-2 rounded-full bg-white px-2 py-0.5 text-2xs font-bold text-ink-800 shadow-sm">
                   #{i + 1}
                 </span>
-                <span
-                  aria-hidden="true"
-                  className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-lg font-bold text-on shadow-md"
-                >
-                  +
-                </span>
+                {plus(item, "absolute bottom-0.5 right-0.5")}
               </span>
               <span className="mt-2 line-clamp-2 text-sm font-bold leading-snug text-ink-900">
                 {item.vegetarian && <VegMark className="mr-1" />}
                 {item.name}
               </span>
               {dealPrice(item, currency, "text-xs font-semibold text-ink-500", true)}
-            </button>
+            </div>
           ) : (
-            <button
+            <div
               key={item.id}
-              type="button"
-              onClick={() => onPick(item)}
-              className="flex w-40 shrink-0 snap-start flex-col rounded-2xl bg-white p-3 text-left shadow-sm transition active:scale-[0.97]"
+              className="pointer-events-none relative flex w-40 shrink-0 snap-start flex-col rounded-2xl bg-white p-3 text-left shadow-sm transition has-[.open:active]:scale-[0.97]"
             >
-              <span className="flex items-center justify-between">
+              {open(item)}
+              <span className="-my-1.5 -mr-1.5 flex items-center justify-between">
                 <span className="text-2xs font-bold text-accent-700">#{i + 1}</span>
-                <span
-                  aria-hidden="true"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-lg font-bold text-on"
-                >
-                  +
-                </span>
+                {plus(item, "relative")}
               </span>
               <span className="mt-1.5 line-clamp-2 text-sm font-bold leading-snug text-ink-900">
                 {item.vegetarian && <VegMark className="mr-1" />}
                 {item.name}
               </span>
               <span className="mt-auto block pt-1">{dealPrice(item, currency, "text-xs font-semibold text-ink-500", true)}</span>
-            </button>
+            </div>
           )
         )}
       </div>
