@@ -19,6 +19,7 @@ export default function RewardsCatalog({
   rewards,
   vouchers,
   onRedeemed,
+  where,
 }: {
   onClose: () => void;
   points: number;
@@ -26,6 +27,7 @@ export default function RewardsCatalog({
   rewards: Reward[];
   vouchers: Voucher[];
   onRedeemed: (newPoints: number) => void;
+  where?: string | null; // sister stores sharing these points: fine print here, not on the card
 }) {
   const router = useRouter();
   const [supabase] = useState(() => createClient());
@@ -90,6 +92,7 @@ export default function RewardsCatalog({
               {localPoints.toLocaleString()} pts
             </span>
           </div>
+          {where && <p className="mt-1 text-xs text-ink-500">Earn and use them at {where}</p>}
 
           {success ? (
             <div className="py-8 text-center">

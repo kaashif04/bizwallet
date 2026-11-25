@@ -92,7 +92,6 @@ export default function PointsCard({
             </span>
           )}
         </span>
-        {shared && <span className="relative mt-3 block text-xs text-on/80">Your points work at {shared}</span>}
       </button>
 
       {googleWallet && !ios && (
@@ -125,6 +124,7 @@ export default function PointsCard({
             rewards={rewards}
             vouchers={vouchers}
             onRedeemed={setPoints}
+            where={shared}
           />
         )}
       </AnimatePresence>
