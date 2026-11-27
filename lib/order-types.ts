@@ -14,6 +14,7 @@ export type MenuItem = {
   // BizPos "free with spend" rule, see lib/free-items.ts.
   freeFromSpend?: number | null;
   freeSpendCategoryIds?: string[];
+  freeByCount?: boolean; // freeFromSpend counts items (trays), not RM
   freeHint?: string; // e.g. "Free with RM20 of Steamboat"
   imageUrl?: string | null; // BizPos photo (public URL, <=1200px) or null
   emoji?: string;

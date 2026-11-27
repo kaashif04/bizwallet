@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useKept } from "@/lib/kept";
 import { currencySymbol } from "@/lib/format";
 import { pickSummary, type MenuItem } from "@/lib/order-types";
+import type { VariantGroup } from "@/lib/menu-variants";
 import { guestLabel, loadContact, outletLogos, phoneOk, saveClaimToken, saveContact, toMenu, toOrderItem, type Banner, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
 import type { AccountState } from "./AccountChip";
 import { rememberPlace } from "@/lib/place";
@@ -179,6 +180,19 @@ export default function GuestOrder(
     () => (menu ? toMenu(menu) : { items: [], groupsByItem: {} }),
     [menu]
   );
+
+  // Steamboat trays but no soup base: an item free with some categories (the soup
+  // base) is what they need. A set that picks from the same options counts as having it.
+  const missingBase = useMemo(() => {
+    const base = items.find(
+      (i) => i.freeFromSpend != null && i.isAvailable !== false && cart.lines.some((l) => l.item.categoryId && i.freeSpendCategoryIds?.includes(l.item.categoryId))
+    );
+    if (!base) return null;
+    const groups = groupsByItem[base.id] ?? [];
+    const ids = new Set(groups.map((g) => g.id));
+    if (cart.lines.some((l) => l.item.id === base.id || (groupsByItem[l.item.id] ?? []).some((g) => ids.has(g.id)))) return null;
+    return { item: base, groups };
+  }, [items, groupsByItem, cart.lines]);
 
   // A dish just went into the cart: suggest the one most often ordered with it
   // here, for a few seconds. Lines already in the cart on arrival don't count.
@@ -392,6 +406,7 @@ export default function GuestOrder(
             pointsPerRm={loyalty?.pointsPerRm ?? null}
             companyId={loyalty?.companyId ?? null}
             upsell={goesWith(cart.lines.map((l) => l.item), suggestions, oneTap, 4)}
+            missingBase={missingBase}
             onClose={() => setReviewing(false)}
             onPlaced={(id, paid) => {
               // The sheet would drop its history entry on close (history.back),
@@ -415,6 +430,7 @@ function CartReview({
   closed,
   prepMinutes,
   upsell,
+  missingBase,
   pointsPerRm,
   companyId,
   onClose,
@@ -427,6 +443,7 @@ function CartReview({
   closed: { text: string; opens: string | null; ahead: boolean } | null;
   prepMinutes: number | null;
   upsell: MenuItem[];
+  missingBase: { item: MenuItem; groups: VariantGroup[] } | null;
   pointsPerRm: number | null;
   companyId: string | null;
   onClose: () => void;
@@ -810,6 +827,29 @@ function CartReview({
             </li>
           ))}
         </ul>
+
+        {missingBase && missingBase.groups.length === 1 && (
+          <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-bold text-amber-900">No {missingBase.item.name.toLowerCase()} yet. Which one?</p>
+            <p className="text-xs text-amber-800">Already have one at the table? You can skip this.</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {missingBase.groups[0].options.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() =>
+                    cart.add(missingBase.item, 1, [
+                      { modifierId: m.id, group: missingBase.groups[0].label, option: m.label, priceDelta: m.priceDelta ?? 0 },
+                    ])
+                  }
+                  className="min-h-11 rounded-full border border-amber-300 bg-white px-4 text-sm font-bold text-amber-900 transition active:scale-95"
+                >
+                  + {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <details className="group mt-3 rounded-2xl bg-ink-50 px-4 py-1" open={!!(note || name)}>
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-bold text-ink-800">

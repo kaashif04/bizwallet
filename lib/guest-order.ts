@@ -25,6 +25,7 @@ export type GuestMenu = {
     image_url: string | null;
     category_id: string | null;
     free_from_spend: number | null;
+    free_by_count?: boolean;
     free_spend_category_ids: string[] | null;
     modifier_groups: GuestGroup[];
     combos?: { id: string; name: string; price: number; regular_price?: number | null; is_available: boolean; modifier_groups: GuestGroup[] }[];
@@ -158,10 +159,11 @@ export function toMenu(menu: GuestMenu): {
     imageUrl: i.image_url,
     freeFromSpend: i.free_from_spend == null ? null : Number(i.free_from_spend),
     freeSpendCategoryIds: i.free_spend_category_ids ?? [],
+    freeByCount: !!i.free_by_count,
     freeHint:
       i.free_from_spend == null
         ? undefined
-        : `Free with RM${Number(i.free_from_spend).toFixed(0)} of ${
+        : `Free with ${i.free_by_count ? `${Number(i.free_from_spend)} trays` : `RM${Number(i.free_from_spend).toFixed(0)}`} of ${
             // "Steamboat · Meat & Seafood", "Steamboat · Vegetable" -> "Steamboat"
             Array.from(
               new Set(
