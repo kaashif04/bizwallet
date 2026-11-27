@@ -607,16 +607,7 @@ function CartReview({
         customer_name: memberName ?? (payName.trim() || (token ? guestLabel() : undefined)),
         // Guests' contact for the restaurant (BizPos stores it once guest_place_order reads these).
         ...(guest && phoneOk(payPhone) && { customer_phone: payPhone.replace(/\D/g, ""), customer_email: email.trim() || undefined }),
-        // Each dish's note also goes in the order note, the one the kitchen sees today
-        // (BizPos doesn't keep a note per item yet).
-        // ponytail: the server keeps 200 chars, so a long list of dish notes gets cut; drop this once items carry note.
-        note:
-          [
-            ...cart.lines.filter((l) => l.note?.trim()).map((l) => `${l.item.name}${l.quantity > 1 ? ` ×${l.quantity}` : ""}: ${l.note!.trim()}`),
-            note.trim(),
-          ]
-            .filter(Boolean)
-            .join(" · ") || undefined,
+        note: note.trim() || undefined,
         pay_now: payNow || undefined,
         pickup_at: (!isDelivery && pickupAt) || undefined,
         ...(dq && {
