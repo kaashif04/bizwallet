@@ -261,14 +261,16 @@ function center(el: HTMLElement | null | undefined) {
   row.scrollLeft += r.left - p.left - (p.width - r.width) / 2;
 }
 
-// Menu tabs + category chips. Its own component so the highlight changing re-renders
-// only this bar, never the dish cards below (that re-render was the stutter).
+// Menu tabs + category chips, in their own component so a highlight change
+// re-renders only this bar, never the dish cards.
 //
-// The pill is driven by the scroll itself: while the next section rises under the
-// header (the last GLIDE px) it slides chip to chip in step with the finger, and the
-// tray scrolls with it. Positions are measured once (and on resize / images loading),
-// so a frame only reads scrollY and writes transforms. White labels sit on a copy of
-// the row clipped to the pill, so text turns white exactly at its edge.
+// Done the way Apple's category bars work: the highlight snaps to a category as its
+// section reaches the header, and the pill slides there with a short CSS transition
+// the GPU runs by itself. (Tracking the scroll pixel by pixel always trails the page
+// on iPhone, where scrolling runs ahead of the page's code.) The chip row only moves
+// when the active chip would leave view. Tapping a chip highlights it at once and
+// holds it while the page glides there, rather than flicking through every category
+// on the way.
 function CategoryBar({
   categories,
   groups,
@@ -287,81 +289,91 @@ function CategoryBar({
   const pills = groups.length ? categories.filter((c) => groupOf(c) === tab) : categories;
   const tray = useRef<HTMLDivElement>(null);
   const pill = useRef<HTMLSpanElement>(null);
-  const pillText = useRef<HTMLSpanElement>(null);
   const chips = useRef<Record<string, HTMLButtonElement | null>>({});
-  const m = useRef({ tops: [] as number[], end: 0, chip: {} as Record<string, [number, number]>, trayW: 0 });
+  const tops = useRef<number[]>([]);
+  const held = useRef(false); // a tapped chip holds until the page stops gliding
+  const release = useRef(0);
+  const shown = useRef({ tab: "", placed: false });
 
   const measure = useRef(() => {});
   measure.current = () => {
     const y = window.scrollY;
-    m.current.tops = categories.map((c) => (sectionRefs.current[c]?.getBoundingClientRect().top ?? Infinity) + y);
-    m.current.end = document.documentElement.scrollHeight - window.innerHeight - 2;
-    m.current.chip = {};
-    for (const c of pills) {
-      const el = chips.current[c];
-      if (el) m.current.chip[c] = [el.offsetLeft, el.offsetWidth];
-    }
-    m.current.trayW = tray.current?.clientWidth ?? 0;
+    tops.current = categories.map((c) => (sectionRefs.current[c]?.getBoundingClientRect().top ?? Infinity) + y);
   };
 
-  const place = useRef(() => {});
-  place.current = () => {
-    const { tops, end, chip, trayW } = m.current;
+  // Which section sits under the header. Cheap: cached positions + scrollY only.
+  const spy = useRef(() => {});
+  spy.current = () => {
     const y = window.scrollY;
-    const line = y + (groups.length ? 192 : 128); // just under the sticky header
-    const GLIDE = 96;
+    const line = y + (groups.length ? 192 : 128);
     let i = 0;
-    while (i + 1 < tops.length && tops[i + 1] <= line) i++;
-    const atEnd = y >= end; // short last sections never reach the header
-    if (atEnd) i = categories.length - 1;
-    const cur = categories[i];
-    const next = atEnd ? undefined : categories[i + 1];
-    const t = next ? Math.min(1, Math.max(0, 1 - (tops[i + 1] - line) / GLIDE)) : 0;
-    if (cur !== undefined) setActive(t > 0.5 && next ? next : cur);
-
-    const from = chip[cur ?? ""];
-    const to = (next && chip[next]) || from; // next menu's chips aren't shown yet: hold
-    if (!from || !to || !pill.current || !pillText.current || !tray.current) return;
-    const x = from[0] + (to[0] - from[0]) * t;
-    const w = from[1] + (to[1] - from[1]) * t;
-    pill.current.style.transform = `translate3d(${x}px,0,0)`;
-    pill.current.style.width = `${w}px`;
-    pillText.current.style.transform = `translate3d(${-x}px,0,0)`;
-    const left = Math.round(x + w / 2 - trayW / 2);
-    if (Math.abs(tray.current.scrollLeft - left) >= 1) tray.current.scrollLeft = left;
+    while (i + 1 < tops.current.length && tops.current[i + 1] <= line) i++;
+    // Short last sections never reach the header: at the bottom, the last one is current.
+    if (y >= document.documentElement.scrollHeight - window.innerHeight - 2) i = categories.length - 1;
+    if (categories[i] !== undefined) setActive(categories[i]);
   };
 
   useEffect(() => {
     let raf = 0;
-    const frame = () => {
-      if (!raf) raf = requestAnimationFrame(() => ((raf = 0), place.current()));
+    const onScroll = () => {
+      if (held.current) {
+        window.clearTimeout(release.current);
+        release.current = window.setTimeout(() => ((held.current = false), spy.current()), 150);
+        return;
+      }
+      if (!raf) raf = requestAnimationFrame(() => ((raf = 0), spy.current()));
     };
-    const remeasure = () => (measure.current(), frame());
-    window.addEventListener("scroll", frame, { passive: true });
+    const remeasure = () => (measure.current(), onScroll());
+    window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", remeasure);
     // Photos, the best-sellers row and the vegetarian filter all move the sections.
     const ro = new ResizeObserver(remeasure);
     const list = Object.values(sectionRefs.current).find(Boolean)?.parentElement;
     if (list) ro.observe(list);
+    measure.current();
+    spy.current();
     return () => {
-      window.removeEventListener("scroll", frame);
+      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", remeasure);
       ro.disconnect();
       cancelAnimationFrame(raf);
+      window.clearTimeout(release.current);
     };
   }, [categories, sectionRefs]);
-  // New chips (another menu's tab, a filter): measure and place before the frame paints.
+
+  // Move the pill under the active chip before the frame paints. A new row of chips
+  // (another menu tab) places it without sliding across from the old row.
   useLayoutEffect(() => {
-    measure.current();
-    place.current();
-  }, [tab, categories]);
+    const el = chips.current[active];
+    const p = pill.current;
+    const row = tray.current;
+    if (!el || !p || !row) return;
+    const jump = !shown.current.placed || shown.current.tab !== tab;
+    shown.current = { tab, placed: true };
+    p.style.transition = jump ? "none" : "";
+    p.style.transform = `translate3d(${el.offsetLeft}px,0,0)`;
+    p.style.width = `${el.offsetWidth}px`;
+    p.style.opacity = "1";
+    // Keep the chip in view with room to spare; leave the row alone otherwise.
+    const pad = 32;
+    const l = el.offsetLeft - pad;
+    const r = el.offsetLeft + el.offsetWidth + pad - row.clientWidth;
+    if (l < row.scrollLeft || r > row.scrollLeft) {
+      const still = jump || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      row.scrollTo({ left: el.offsetLeft + el.offsetWidth / 2 - row.clientWidth / 2, behavior: still ? "auto" : "smooth" });
+    }
+  }, [active, tab, pills.length]);
 
   function pickTab(g: string) {
     const first = categories.find((c) => groupOf(c) === g);
     if (first) jumpTo(first);
   }
-  // The page glides there and the pill rides along with it.
   function jumpTo(cat: string) {
+    held.current = true;
+    setActive(cat);
+    // Released 150 ms after the glide stops (or at once if the page had nowhere to go).
+    window.clearTimeout(release.current);
+    release.current = window.setTimeout(() => ((held.current = false), spy.current()), 600);
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     sectionRefs.current[cat]?.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
   }
@@ -405,6 +417,11 @@ function CategoryBar({
 
         <div ref={tray} className="mx-5 mb-3 overflow-x-auto rounded-full bg-white p-1.5 shadow-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="relative flex w-max gap-1.5">
+            <span
+              ref={pill}
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-0 rounded-full bg-accent-600 opacity-0 shadow-sm transition-[transform,width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform"
+            />
             {pills.map((c) => (
               <button
                 key={c}
@@ -414,20 +431,13 @@ function CategoryBar({
                 type="button"
                 onClick={() => jumpTo(c)}
                 aria-current={active === c ? "true" : undefined}
-                className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold text-slate-600 [@media(hover:hover)]:hover:text-slate-900"
+                className={`relative whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-200 ${
+                  active === c ? "text-on" : "text-slate-600 [@media(hover:hover)]:hover:text-slate-900"
+                }`}
               >
                 {label(c)}
               </button>
             ))}
-            <span ref={pill} aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 w-0 overflow-hidden rounded-full bg-accent-600 will-change-transform">
-              <span ref={pillText} className="flex w-max gap-1.5 will-change-transform">
-                {pills.map((c) => (
-                  <span key={c} className="whitespace-nowrap px-4 py-2 text-sm font-semibold text-on">
-                    {label(c)}
-                  </span>
-                ))}
-              </span>
-            </span>
           </div>
         </div>
     </>
