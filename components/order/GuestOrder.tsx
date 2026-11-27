@@ -585,8 +585,10 @@ function CartReview({
   ).filter((m) => !!m) as (readonly ["counter" | "fpx", string, string])[];
 
   const guest = signedIn === false;
-  // Delivery earns on the fee too (the points trigger adds it).
-  const earns = pointsPerRm !== null ? Math.floor((cart.totalPrice + deliveryFee) * pointsPerRm) : 0;
+  // Points are on what's paid, as the points trigger counts it: after the discount, with
+  // service charge and SST, plus the delivery fee.
+  const paid = (shown.total ?? shown.sub - shown.disc + shown.service + shown.sst) + deliveryFee;
+  const earns = pointsPerRm !== null ? Math.floor(paid * pointsPerRm) : 0;
 
   async function place() {
     if (shut) return setError(closed!.ahead ? "Choose a pickup time." : closed!.text);
