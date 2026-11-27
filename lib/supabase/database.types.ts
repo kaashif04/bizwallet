@@ -956,12 +956,13 @@ export type Database = {
           id: string
           lalamove_order_id: string | null
           lalamove_price: number
+          own: boolean
           lat: number
           lng: number
           outlet_id: string
           picked_up_at: string | null
           problem: string | null
-          quotation_id: string
+          quotation_id: string | null
           quote_expires_at: string
           recipient_name: string | null
           recipient_phone: string | null
@@ -985,12 +986,13 @@ export type Database = {
           id?: string
           lalamove_order_id?: string | null
           lalamove_price: number
+          own?: boolean
           lat: number
           lng: number
           outlet_id: string
           picked_up_at?: string | null
           problem?: string | null
-          quotation_id: string
+          quotation_id?: string | null
           quote_expires_at: string
           recipient_name?: string | null
           recipient_phone?: string | null
@@ -1014,12 +1016,13 @@ export type Database = {
           id?: string
           lalamove_order_id?: string | null
           lalamove_price?: number
+          own?: boolean
           lat?: number
           lng?: number
           outlet_id?: string
           picked_up_at?: string | null
           problem?: string | null
-          quotation_id?: string
+          quotation_id?: string | null
           quote_expires_at?: string
           recipient_name?: string | null
           recipient_phone?: string | null
@@ -2778,6 +2781,8 @@ export type Database = {
           currency: string
           delivery_enabled: boolean
           delivery_free_above: number | null
+          own_delivery_fee: number
+          own_delivery_km: number | null
           delivery_markup_pct: number
           delivery_markup_rm: number
           delivery_max_km: number
@@ -2863,6 +2868,8 @@ export type Database = {
           currency?: string
           delivery_enabled?: boolean
           delivery_free_above?: number | null
+          own_delivery_fee?: number
+          own_delivery_km?: number | null
           delivery_markup_pct?: number
           delivery_markup_rm?: number
           delivery_max_km?: number
@@ -2948,6 +2955,8 @@ export type Database = {
           currency?: string
           delivery_enabled?: boolean
           delivery_free_above?: number | null
+          own_delivery_fee?: number
+          own_delivery_km?: number | null
           delivery_markup_pct?: number
           delivery_markup_rm?: number
           delivery_max_km?: number

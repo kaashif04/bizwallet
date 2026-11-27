@@ -6,8 +6,9 @@ import { storeStatus } from "@/lib/hours";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// The delivery fee for a dropped pin: Lalamove's motorbike price + the branch's markup. Saved as a
-// quote the order then points at (guest_place_order checks it), so the browser never sets the price.
+// The delivery fee for a dropped pin. Inside the branch's own-rider zone (straight-line km): its flat
+// fee, no Lalamove. Further out: Lalamove's motorbike price + the branch's markup. Saved as a quote the
+// order then points at (guest_place_order checks it), so the browser never sets the price.
 // ponytail: no rate limit beyond the distance check; add one if quotes get spammed.
 export async function POST(request: Request) {
   const { outlet_id, lat, lng, address } = await request.json().catch(() => ({}));
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
   const [{ data: s }, { data: o }] = await Promise.all([
     admin
       .from("outlet_settings")
-      .select("delivery_enabled, delivery_max_km, delivery_markup_rm, delivery_markup_pct, delivery_free_above, store_lat, store_lng, store_address")
+      .select("delivery_enabled, delivery_max_km, delivery_markup_rm, delivery_markup_pct, delivery_free_above, own_delivery_km, own_delivery_fee, store_lat, store_lng, store_address")
       .eq("outlet_id", outlet_id)
       .maybeSingle(),
     admin.from("outlets").select("name, address, company_id").eq("id", outlet_id).maybeSingle(),
@@ -35,12 +36,39 @@ export async function POST(request: Request) {
   if (status && !status.open) {
     return NextResponse.json({ error: `We're closed now${status.opens ? `. Delivery starts again ${status.opens}` : ""}.` }, { status: 409 });
   }
-  const maxKm = Number(s.delivery_max_km);
   const store = { lat: Number(s.store_lat), lng: Number(s.store_lng) };
-  if (km(store, { lat, lng }) > maxKm) {
-    return NextResponse.json({ error: `Sorry, that's too far. We deliver up to ${maxKm} km.` }, { status: 400 });
+  const straight = km(store, { lat, lng });
+  const freeAbove = s.delivery_free_above == null ? null : Number(s.delivery_free_above);
+  // Quotes nobody ordered with are only kept a day.
+  const sweep = () =>
+    admin.from("deliveries").delete().eq("status", "quoted").lt("created_at", new Date(Date.now() - 86_400_000).toISOString());
+
+  const ownKm = s.own_delivery_km == null ? null : Number(s.own_delivery_km);
+  if (ownKm != null && straight <= ownKm) {
+    const fee = Number(s.own_delivery_fee);
+    const expires = new Date(Date.now() + 30 * 60_000).toISOString(); // a flat fee; 30 min just keeps it fresh
+    await sweep();
+    const { data: row, error } = await admin
+      .from("deliveries")
+      .insert({
+        outlet_id, own: true, quote_expires_at: expires, lalamove_price: 0, fee,
+        distance_m: Math.round(straight * 1000), address: address.trim().slice(0, 300),
+        lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6,
+      })
+      .select("id")
+      .single();
+    if (error) {
+      console.error("own delivery quote", error);
+      return NextResponse.json({ error: "Couldn't get a delivery price. Try again." }, { status: 502 });
+    }
+    return NextResponse.json({ id: row.id, fee, distance_km: Math.round(straight * 10) / 10, expires_at: expires, free_above: freeAbove, own: true });
   }
+
   const keys = await companyKeys(o.company_id);
+  const maxKm = keys ? Number(s.delivery_max_km) : ownKm ?? 0;
+  if (straight > maxKm) {
+    return NextResponse.json({ error: `Sorry, that's too far. We deliver up to ${Math.max(maxKm, ownKm ?? 0)} km.` }, { status: 400 });
+  }
   if (!keys) return NextResponse.json({ error: "Delivery isn't available here right now." }, { status: 404 });
 
   try {
@@ -51,8 +79,7 @@ export async function POST(request: Request) {
     }
     const price = Number(q.priceBreakdown.total);
     const fee = customerFee(price, Number(s.delivery_markup_rm), Number(s.delivery_markup_pct));
-    // Quotes nobody ordered with are only kept a day.
-    await admin.from("deliveries").delete().eq("status", "quoted").lt("created_at", new Date(Date.now() - 86_400_000).toISOString());
+    await sweep();
     const { data: row, error } = await admin
       .from("deliveries")
       .insert({
@@ -74,7 +101,7 @@ export async function POST(request: Request) {
       fee,
       distance_km: Math.round(roadKm * 10) / 10,
       expires_at: q.expiresAt,
-      free_above: s.delivery_free_above == null ? null : Number(s.delivery_free_above),
+      free_above: freeAbove,
     });
   } catch (e) {
     console.error("delivery quote", e);

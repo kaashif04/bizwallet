@@ -124,7 +124,8 @@ export type GuestOrderStatus = {
   // Delivery orders (Lalamove): the driver's progress. status: waiting | booking | assigning |
   // on_going (driver heading to the restaurant) | picked_up | completed | cancelled
   delivery?: {
-    status: string;
+    status: string; // own riders: waiting | rider | picked_up | completed | cancelled
+    own?: boolean; // the restaurant's own rider, not Lalamove
     fee: number | null;
     address: string;
     unit: string | null;

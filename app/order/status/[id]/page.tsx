@@ -36,6 +36,7 @@ const DELIVERY: Record<string, string> = {
   picked_up: "Your food is on its way to you.",
   completed: "Delivered. Enjoy!",
   cancelled: "Delivery cancelled.",
+  rider: "Our own rider brings it to you once it's ready.",
 };
 
 function stepOf(o: GuestOrderStatus): number {
@@ -241,7 +242,7 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
           ? "Delivered. Enjoy!"
         : !order.table_label && order.kitchen_status === "ready"
           ? order.delivery
-            ? "Ready. Your driver picks it up soon."
+            ? order.delivery.own ? "Ready. Our rider is heading out soon." : "Ready. Your driver picks it up soon."
             : "Ready. Collect it at the counter."
           : STEPS[order.kitchen_status ?? "queued"];
   const stage: OrbStage =
@@ -371,7 +372,9 @@ export default function GuestOrderStatusPage({ params }: { params: { id: string 
       {order.delivery && order.paid && (
         <div className="mt-5 rounded-2xl bg-white px-4 py-3 text-sm">
           <p className="font-bold text-ink-900" aria-live="polite">
-            {DELIVERY[order.delivery.status] ?? DELIVERY.booking}
+            {order.delivery.own && order.delivery.status === "waiting"
+              ? "Our own rider delivers this once the kitchen has your order."
+              : DELIVERY[order.delivery.status] ?? DELIVERY.booking}
           </p>
           <p className="mt-0.5 text-ink-500">
             {order.delivery.address}
