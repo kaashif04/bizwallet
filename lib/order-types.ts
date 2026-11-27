@@ -46,4 +46,5 @@ export type CartLine = {
   quantity: number;
   selections: VariantSelection[];
   unitPrice: number; // base price + selection deltas
+  note?: string; // the customer's note for the kitchen on this dish ("no chilli")
 };

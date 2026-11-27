@@ -9,6 +9,7 @@ import { useKept } from "@/lib/kept";
 import { currencySymbol } from "@/lib/format";
 import { pickSummary, type MenuItem } from "@/lib/order-types";
 import type { VariantGroup } from "@/lib/menu-variants";
+import DishNote from "./DishNote";
 import { guestLabel, loadContact, outletLogos, phoneOk, saveClaimToken, saveContact, toMenu, toOrderItem, type Banner, type GuestMenu, type PickupOutlet } from "@/lib/guest-order";
 import type { AccountState } from "./AccountChip";
 import { rememberPlace } from "@/lib/place";
@@ -606,7 +607,16 @@ function CartReview({
         customer_name: memberName ?? (payName.trim() || (token ? guestLabel() : undefined)),
         // Guests' contact for the restaurant (BizPos stores it once guest_place_order reads these).
         ...(guest && phoneOk(payPhone) && { customer_phone: payPhone.replace(/\D/g, ""), customer_email: email.trim() || undefined }),
-        note: note.trim() || undefined,
+        // Each dish's note also goes in the order note, the one the kitchen sees today
+        // (BizPos doesn't keep a note per item yet).
+        // ponytail: the server keeps 200 chars, so a long list of dish notes gets cut; drop this once items carry note.
+        note:
+          [
+            ...cart.lines.filter((l) => l.note?.trim()).map((l) => `${l.item.name}${l.quantity > 1 ? ` ×${l.quantity}` : ""}: ${l.note!.trim()}`),
+            note.trim(),
+          ]
+            .filter(Boolean)
+            .join(" · ") || undefined,
         pay_now: payNow || undefined,
         pickup_at: (!isDelivery && pickupAt) || undefined,
         ...(dq && {
@@ -784,6 +794,7 @@ function CartReview({
                     )}
                   </p>
                 )}
+                <DishNote value={l.note ?? ""} onChange={(v) => cart.setNote(l.lineId, v)} name={l.item.name} className="-mb-2.5 mt-1" />
               </div>
               <div className="flex items-center gap-2">
                 <button

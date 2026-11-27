@@ -6,6 +6,7 @@ import { pickSummary, type MenuItem, type VariantSelection } from "@/lib/order-t
 import type { VariantGroup } from "@/lib/menu-variants";
 import { currencySymbol } from "@/lib/format";
 import { useCart } from "./cart-context";
+import DishNote from "./DishNote";
 import ItemMark from "./ItemMark";
 import Price from "./Price";
 import { VegMark } from "./Veg";
@@ -109,6 +110,8 @@ export default function AddToCartSheet({
   );
 
   const [qty, setQty] = useState(() => lineOf(dish)?.quantity ?? 1);
+  const [note, setNote] = useState(() => lineOf(dish)?.note ?? "");
+  const noteField = <DishNote value={note} onChange={setNote} name={dish.name} className="mt-4" />;
   const groupRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const scroller = useRef<HTMLDivElement>(null);
   const advance = useRef<number>();
@@ -199,9 +202,12 @@ export default function AddToCartSheet({
       shake(unmetGroup);
       return;
     }
-    if (!inCart) cart.add(item, qty, selections);
+    if (!inCart) cart.add(item, qty, selections, note);
     else if (!qty) cart.remove(inCart.lineId);
-    else if (qty !== inCart.quantity) cart.add(item, qty - inCart.quantity, []); // merges into the line
+    else {
+      if (qty !== inCart.quantity) cart.add(item, qty - inCart.quantity, [], inCart.note); // merges into the line
+      if ((inCart.note ?? "") !== note.trim()) cart.setNote(inCart.lineId, note);
+    }
     navigator.vibrate?.(12);
     onClose();
   }
@@ -316,6 +322,7 @@ export default function AddToCartSheet({
                   </div>
                 </motion.div>
               ))}
+              {noteField}
             </>
           ) : (
             <>
@@ -442,6 +449,7 @@ export default function AddToCartSheet({
                   </div>
                 </motion.section>
               </AnimatePresence>
+              {last && noteField}
             </>
           )}
         </div>

@@ -46,6 +46,7 @@ export const toOrderItem = (l: CartLine) => ({
   combo_id: l.item.comboOf ? l.item.id : undefined,
   quantity: l.quantity,
   modifier_ids: l.selections.map((s) => s.modifierId),
+  note: l.note?.trim() || undefined, // not kept by guest_place_order yet (BizPos); GuestOrder also puts it in the order note
 });
 
 // The table QR start page (guest_table_home).

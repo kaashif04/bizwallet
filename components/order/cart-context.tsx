@@ -15,16 +15,19 @@ import { lineTotals } from "@/lib/free-items";
 type State = { lines: CartLine[] };
 
 type Action =
-  | { type: "add"; item: MenuItem; quantity: number; selections: VariantSelection[] }
+  | { type: "add"; item: MenuItem; quantity: number; selections: VariantSelection[]; note?: string }
+  | { type: "note"; lineId: string; note: string }
   | { type: "inc"; lineId: string }
   | { type: "dec"; lineId: string }
   | { type: "remove"; lineId: string }
   | { type: "clear" }
   | { type: "load"; lines: CartLine[] };
 
-function signature(itemId: string, selections: VariantSelection[]): string {
+function signature(itemId: string, selections: VariantSelection[], note = ""): string {
   return (
     itemId +
+    "|" +
+    note.trim().toLowerCase() +
     "|" +
     selections
       .map((s) => s.modifierId)
@@ -46,10 +49,10 @@ function newLineId(): string {
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "add": {
-      const key = signature(action.item.id, action.selections);
-      // Merge identical item + variant combos into one line.
+      const key = signature(action.item.id, action.selections, action.note);
+      // Merge identical item + variant + note combos into one line (a different note is its own line).
       const existing = state.lines.find(
-        (l) => signature(l.item.id, l.selections) === key
+        (l) => signature(l.item.id, l.selections, l.note) === key
       );
       if (existing) {
         return {
@@ -64,6 +67,7 @@ function reducer(state: State, action: Action): State {
         quantity: action.quantity,
         selections: action.selections,
         unitPrice: unitPriceOf(action.item, action.selections),
+        note: action.note?.trim() || undefined,
       };
       return { lines: [...state.lines, line] };
     }
@@ -83,6 +87,12 @@ function reducer(state: State, action: Action): State {
             : [l]
         ),
       };
+    case "note":
+      return {
+        lines: state.lines.map((l) =>
+          l.lineId === action.lineId ? { ...l, note: action.note || undefined } : l
+        ),
+      };
     case "remove":
       return { lines: state.lines.filter((l) => l.lineId !== action.lineId) };
     case "clear":
@@ -98,7 +108,8 @@ type CartValue = {
   totalPrice: number;
   saved: number; // menu deals: what the struck-out prices would have cost more
   lineTotal: (lineId: string) => number; // after free-with-spend items
-  add: (item: MenuItem, quantity: number, selections: VariantSelection[]) => void;
+  add: (item: MenuItem, quantity: number, selections: VariantSelection[], note?: string) => void;
+  setNote: (lineId: string, note: string) => void;
   inc: (lineId: string) => void;
   dec: (lineId: string) => void;
   remove: (lineId: string) => void;
@@ -133,10 +144,11 @@ export function CartProvider({ children, storageKey }: { children: React.ReactNo
   }, [storageKey, state.lines]);
 
   const add = useCallback(
-    (item: MenuItem, quantity: number, selections: VariantSelection[]) =>
-      dispatch({ type: "add", item, quantity, selections }),
+    (item: MenuItem, quantity: number, selections: VariantSelection[], note?: string) =>
+      dispatch({ type: "add", item, quantity, selections, note }),
     []
   );
+  const setNote = useCallback((lineId: string, note: string) => dispatch({ type: "note", lineId, note }), []);
   const inc = useCallback((lineId: string) => dispatch({ type: "inc", lineId }), []);
   const dec = useCallback((lineId: string) => dispatch({ type: "dec", lineId }), []);
   const remove = useCallback(
@@ -155,12 +167,13 @@ export function CartProvider({ children, storageKey }: { children: React.ReactNo
       saved: state.lines.reduce((s, l) => s + Math.max(0, (l.item.regularPrice ?? l.item.price) - l.item.price) * l.quantity, 0),
       lineTotal: (lineId: string) => totals.get(lineId) ?? 0,
       add,
+      setNote,
       inc,
       dec,
       remove,
       clear,
     };
-  }, [state.lines, totalItems, add, inc, dec, remove, clear]);
+  }, [state.lines, totalItems, add, setNote, inc, dec, remove, clear]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
