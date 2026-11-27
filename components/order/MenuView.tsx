@@ -60,27 +60,38 @@ export default function MenuView({
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const clickScrolling = useRef(false);
 
-  // Scroll-spy: highlight the category nearest the top of the viewport.
+  // Scroll-spy: the category is the last section whose top has passed under the
+  // sticky header, read every frame while scrolling so the chips keep pace.
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (clickScrolling.current) return;
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        const top = visible[0]?.target as HTMLElement | undefined;
-        if (top?.dataset.category) setActive(top.dataset.category);
-      },
-      { rootMargin: `-${groups.length ? 192 : 128}px 0px -60% 0px`, threshold: 0 }
-    );
-    Object.values(sectionRefs.current).forEach((el) => el && observer.observe(el));
-    return () => observer.disconnect();
+    const offset = groups.length ? 192 : 128;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      if (clickScrolling.current) return;
+      let cur = categories[0] ?? "";
+      for (const c of categories) {
+        const el = sectionRefs.current[c];
+        if (!el) continue;
+        if (el.getBoundingClientRect().top > offset) break;
+        cur = c;
+      }
+      setActive(cur);
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
   }, [categories, groups.length]);
 
-  // Keep the active category in view in the chip tray as the page scrolls.
+  // Keep the active chip centred in its tray. Scrolls the tray only (scrollIntoView
+  // also nudged the page, fighting the user's own scroll).
   const chips = useRef<Record<string, HTMLButtonElement | null>>({});
   useEffect(() => {
-    chips.current[active]?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    center(chips.current[active], true);
   }, [active]);
 
   function pickTab(g: string) {
@@ -122,7 +133,7 @@ export default function MenuView({
               <button
                 key={g}
                 ref={(el) => {
-                  if (el && tab === g) el.scrollIntoView({ inline: "nearest", block: "nearest" });
+                  if (tab === g) center(el, false);
                 }}
                 role="tab"
                 aria-selected={tab === g}
@@ -165,7 +176,7 @@ export default function MenuView({
                 <motion.span
                   layoutId={`menu-cat-pill-${tab}`}
                   className="absolute inset-0 rounded-full bg-accent-600"
-                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                  transition={{ type: "spring", stiffness: 700, damping: 45 }}
                 />
               )}
               <span className="relative z-10">{label(c)}</span>
@@ -198,7 +209,7 @@ export default function MenuView({
               return (
                 <div className={cards ? "grid grid-cols-2 gap-3" : "divide-y divide-ink-100 overflow-hidden rounded-3xl bg-white shadow-sm"}>
                   {list.map((item, i) => (
-                    <MenuItemCard key={item.id} index={i} item={item} row={!cards} currency={currency} onAdd={() => onItemClick(item)} onOpen={() => onItemOpen(item)} />
+                    <MenuItemCard key={item.id} item={item} row={!cards} currency={currency} onAdd={() => onItemClick(item)} onOpen={() => onItemOpen(item)} />
                   ))}
                 </div>
               );
@@ -228,14 +239,12 @@ function GroupBanner({ name }: { name: string }) {
 
 function MenuItemCard({
   item,
-  index,
   row,
   currency,
   onAdd,
   onOpen,
 }: {
   item: MenuItem;
-  index: number;
   row: boolean;
   currency: string;
   onAdd: () => void;
@@ -296,17 +305,9 @@ function MenuItemCard({
   const hint = item.freeHint && (
     <span className="mt-1 inline-block rounded-full bg-mint-100 px-2 py-0.5 text-2xs font-semibold text-mint-700">{item.freeHint}</span>
   );
-  const enter = {
-    initial: { opacity: 0, y: 14 },
-    whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, margin: "0px 0px -40px 0px" },
-    transition: { duration: 0.3, delay: Math.min(index, 6) * 0.04, ease: [0.22, 1, 0.36, 1] as const },
-  };
-
   if (row) {
     return (
-      <motion.div
-        {...enter}
+      <div
         className={`pointer-events-none relative flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${
           soldOut ? "" : "[@media(hover:hover)]:has-[.open:hover]:bg-brand-50/60 has-[.open:active]:bg-brand-50"
         }`}
@@ -326,13 +327,12 @@ function MenuItemCard({
           {hint}
         </span>
         {badge}
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div
-      {...enter}
+    <div
       className={`pointer-events-none relative flex flex-col rounded-3xl bg-white p-2.5 text-left shadow-sm transition ${soldOut ? "" : "has-[.open:active]:scale-[0.97]"}`}
     >
       {open}
@@ -361,6 +361,15 @@ function MenuItemCard({
         {price}
         {badge}
       </span>
-    </motion.div>
+    </div>
   );
+}
+
+// Scroll a chip/tab to the middle of its own horizontal row, leaving the page alone.
+function center(el: HTMLElement | null | undefined, smooth: boolean) {
+  const row = el?.parentElement;
+  if (!el || !row) return;
+  const r = el.getBoundingClientRect();
+  const p = row.getBoundingClientRect();
+  row.scrollTo({ left: row.scrollLeft + r.left - p.left - (p.width - r.width) / 2, behavior: smooth ? "smooth" : "auto" });
 }
