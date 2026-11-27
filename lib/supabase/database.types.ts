@@ -2782,6 +2782,7 @@ export type Database = {
           delivery_enabled: boolean
           delivery_free_above: number | null
           own_delivery_fee: number
+          own_delivery_hours: string[] | null
           own_delivery_km: number | null
           delivery_markup_pct: number
           delivery_markup_rm: number
@@ -2869,6 +2870,7 @@ export type Database = {
           delivery_enabled?: boolean
           delivery_free_above?: number | null
           own_delivery_fee?: number
+          own_delivery_hours?: string[] | null
           own_delivery_km?: number | null
           delivery_markup_pct?: number
           delivery_markup_rm?: number
@@ -2956,6 +2958,7 @@ export type Database = {
           delivery_enabled?: boolean
           delivery_free_above?: number | null
           own_delivery_fee?: number
+          own_delivery_hours?: string[] | null
           own_delivery_km?: number | null
           delivery_markup_pct?: number
           delivery_markup_rm?: number
@@ -7665,6 +7668,7 @@ export type Database = {
         Returns: Json
       }
       guest_check_promo: { Args: { p_payload: Json }; Returns: Json }
+      fn_own_delivery_on: { Args: { p_outlet: string }; Returns: boolean }
       guest_delivery_info: { Args: { p_outlet: string }; Returns: Json }
       guest_game_board: {
         Args: { p_game?: string; p_token: string }

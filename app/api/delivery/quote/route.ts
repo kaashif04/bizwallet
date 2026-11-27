@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     typeof lat !== "number" || typeof lng !== "number" || Math.abs(lat) > 90 || Math.abs(lng) > 180 ||
     typeof address !== "string" || address.trim().length < 3
   ) {
-    return NextResponse.json({ error: "Pick your address on the map." }, { status: 400 });
+    return NextResponse.json({ error: "Choose your address from the list." }, { status: 400 });
   }
   const admin = createAdminClient();
   const [{ data: s }, { data: o }] = await Promise.all([
@@ -43,7 +43,9 @@ export async function POST(request: Request) {
   const sweep = () =>
     admin.from("deliveries").delete().eq("status", "quoted").lt("created_at", new Date(Date.now() - 86_400_000).toISOString());
 
-  const ownKm = s.own_delivery_km == null ? null : Number(s.own_delivery_km);
+  // The own rider only counts inside the branch's own-rider times (fn_own_delivery_on).
+  const { data: ownOn } = await admin.rpc("fn_own_delivery_on", { p_outlet: outlet_id });
+  const ownKm = ownOn && s.own_delivery_km != null ? Number(s.own_delivery_km) : null;
   if (ownKm != null && straight <= ownKm) {
     const fee = Number(s.own_delivery_fee);
     const expires = new Date(Date.now() + 30 * 60_000).toISOString(); // a flat fee; 30 min just keeps it fresh
@@ -65,11 +67,15 @@ export async function POST(request: Request) {
   }
 
   const keys = await companyKeys(o.company_id);
-  const maxKm = keys ? Number(s.delivery_max_km) : ownKm ?? 0;
+  if (!keys) {
+    return ownKm == null
+      ? NextResponse.json({ error: "Delivery isn't available here right now." }, { status: 404 })
+      : NextResponse.json({ error: `Sorry, that's too far. We deliver up to ${ownKm} km.` }, { status: 400 });
+  }
+  const maxKm = Number(s.delivery_max_km);
   if (straight > maxKm) {
     return NextResponse.json({ error: `Sorry, that's too far. We deliver up to ${Math.max(maxKm, ownKm ?? 0)} km.` }, { status: 400 });
   }
-  if (!keys) return NextResponse.json({ error: "Delivery isn't available here right now." }, { status: 404 });
 
   try {
     const q = await quote(keys, { ...store, address: s.store_address || o.address || o.name }, { lat, lng, address: address.trim() });

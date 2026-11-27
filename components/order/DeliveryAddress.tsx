@@ -1,14 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-// Delivery: the customer searches their address or uses their current location, checks the
-// address we read back, and we get Lalamove's price for it from /api/delivery/quote. No map.
-// ponytail: Nominatim is free with fair use (search on submit only, ~1 req/s); move to a paid
-// geocoder if delivery volume grows or house-level results aren't good enough.
+// Delivery: the customer types and picks their building, street or taman (suggestions as they type),
+// or uses their current location, then adds house/unit no. as text for the rider, like Grab and
+// foodpanda: the point only has to be close, the text gets the rider to the door. No map.
+// ponytail: Photon (type-ahead) + Nominatim (on Find, if Photon has nothing) are free OpenStreetMap
+// geocoders with patchy Malaysian house numbers; swap in Google Places Autocomplete (10k free/month,
+// needs a billing account) if customers still can't find their street.
 
 export type DeliveryInfo = { max_km: number; free_above: number | null; lat: number; lng: number };
-export type DeliveryQuote = { id: string; fee: number; distance_km: number; expires_at: string; free_above: number | null };
+export type DeliveryQuote = { id: string; fee: number; distance_km: number; expires_at: string; free_above: number | null; own?: boolean };
 export type DeliveryState = {
   lat: number | null;
   lng: number | null;
@@ -37,8 +39,23 @@ export async function fetchQuote(outletId: string, d: { lat: number; lng: number
 }
 
 const NOMINATIM = "https://nominatim.openstreetmap.org";
-type Place = { lat: string; lon: string; display_name: string };
+const PHOTON = "https://photon.komoot.io/api/";
+type Place = { lat: number; lng: number; label: string };
 const short = (s: string) => s.split(", ").filter((p) => !/^\d{5}$/.test(p) && p !== "Malaysia").slice(0, 4).join(", ");
+// "No 12, Jalan PJU 7/3" / "A-3-1 The Rafflesia": geocoders rarely know Malaysian house numbers, so
+// search without it and keep it for the unit field.
+const HOUSE = /^\s*((?:no\.?|lot|unit)?\s*[a-z]?-?\d+[a-z]?(?:-\d+[a-z]?)*)\s*,?\s+(?=\D)/i;
+const LAST = "bw-last-delivery-address"; // this phone's last address, one tap next time
+
+type PhotonFeature = { geometry: { coordinates: [number, number] }; properties: Record<string, string | undefined> };
+function photonLabel(p: PhotonFeature["properties"]) {
+  const street = [p.housenumber, p.street].filter(Boolean).join(" ");
+  return [...new Set([p.name, street, p.district ?? p.locality, p.city].filter(Boolean))].slice(0, 4).join(", ");
+}
+function dedupe(list: Place[]) {
+  const seen = new Set<string>();
+  return list.filter((p) => p.label && !seen.has(p.label) && seen.add(p.label));
+}
 
 export default function DeliveryAddress({
   outletId,
@@ -54,12 +71,22 @@ export default function DeliveryAddress({
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<Place[] | null>(null);
   const [busy, setBusy] = useState<"search" | "locate" | null>(null);
+  const [last, setLast] = useState<{ lat: number; lng: number; address: string; unit: string } | null>(null);
   const seq = useRef(0); // only the latest address gets its price shown
+  const typed = useRef(0); // only the latest search's suggestions are shown
 
-  async function choose(lat: number, lng: number, address: string) {
+  useEffect(() => {
+    try {
+      const l = JSON.parse(localStorage.getItem(LAST) ?? "null");
+      if (l && typeof l.lat === "number" && typeof l.lng === "number" && typeof l.address === "string") setLast({ unit: "", ...l });
+    } catch {}
+  }, []);
+
+  async function choose(lat: number, lng: number, address: string, unit?: string) {
     const n = ++seq.current;
+    typed.current++;
     setResults(null);
-    onChange((d) => ({ ...d, lat, lng, address, quote: null, quoting: true, error: null }));
+    onChange((d) => ({ ...d, lat, lng, address, unit: unit ?? d.unit, quote: null, quoting: true, error: null }));
     try {
       const q = await fetchQuote(outletId, { lat, lng, address });
       if (n === seq.current) onChange((d) => ({ ...d, quote: q, quoting: false }));
@@ -68,20 +95,64 @@ export default function DeliveryAddress({
     }
   }
 
+  // Remember the address (with the unit typed later) once it has a price.
+  useEffect(() => {
+    if (!value.quote || value.lat == null || value.lng == null) return;
+    try {
+      localStorage.setItem(LAST, JSON.stringify({ lat: value.lat, lng: value.lng, address: value.address, unit: value.unit }));
+    } catch {}
+  }, [value.quote, value.lat, value.lng, value.address, value.unit]);
+
+  const query = search.trim();
+  const [house, setHouse] = useState<string | undefined>(); // stripped house no., when that's what found it
+
+  // Suggestions as they type, nearest to the restaurant first (the server checks the distance).
+  async function suggest(full: string, fallback: boolean) {
+    const n = ++typed.current;
+    const box = [info.lng - 0.3, info.lat - 0.3, info.lng + 0.3, info.lat + 0.3].join(",");
+    const photon = (q: string): Promise<Place[]> =>
+      fetch(`${PHOTON}?q=${encodeURIComponent(q)}&lat=${info.lat}&lon=${info.lng}&bbox=${box}&limit=6&lang=en`)
+        .then((r) => r.json())
+        .then((j: { features: PhotonFeature[] }) =>
+          j.features.map((f) => ({ lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], label: photonLabel(f.properties) }))
+        )
+        .catch(() => []);
+    let list = await photon(full);
+    const m = full.match(HOUSE);
+    let found: string | undefined;
+    if (!list.length && m) {
+      list = await photon(full.slice(m[0].length).trim());
+      if (list.length) found = m[1];
+    }
+    if (!list.length && fallback) {
+      const vb = [info.lng - 0.3, info.lat + 0.3, info.lng + 0.3, info.lat - 0.3].join(",");
+      list = await fetch(`${NOMINATIM}/search?format=jsonv2&countrycodes=my&limit=5&viewbox=${vb}&q=${encodeURIComponent(full)}`, {
+        headers: { "Accept-Language": "en" },
+      })
+        .then((r) => r.json())
+        .then((r: { lat: string; lon: string; display_name: string }[]) =>
+          r.map((p) => ({ lat: Number(p.lat), lng: Number(p.lon), label: short(p.display_name) }))
+        )
+        .catch(() => []);
+    }
+    if (n !== typed.current) return;
+    setHouse(found);
+    setResults(dedupe(list).slice(0, 5));
+  }
+
+  useEffect(() => {
+    if (query.length < 3) return setResults(null);
+    const t = setTimeout(() => suggest(query, false), 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
   async function find(e: React.FormEvent) {
     e.preventDefault();
-    if (search.trim().length < 3) return;
+    if (query.length < 3) return;
     setBusy("search");
-    // Results near the restaurant first (not limited to it: the server checks the distance).
-    const box = [info.lng - 0.15, info.lat + 0.15, info.lng + 0.15, info.lat - 0.15].join(",");
-    const r = await fetch(
-      `${NOMINATIM}/search?format=jsonv2&countrycodes=my&limit=5&viewbox=${box}&q=${encodeURIComponent(search.trim())}`,
-      { headers: { "Accept-Language": "en" } }
-    )
-      .then((r) => r.json())
-      .catch(() => []);
+    await suggest(query, true);
     setBusy(null);
-    setResults(r);
   }
 
   function locate() {
@@ -127,6 +198,21 @@ export default function DeliveryAddress({
         </div>
       ) : (
         <>
+          {last && (
+            <button
+              type="button"
+              onClick={() => choose(last.lat, last.lng, last.address, last.unit)}
+              className="flex min-h-12 w-full items-center gap-3 rounded-xl bg-white px-4 py-2.5 text-left shadow-sm active:scale-[0.98]"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs font-semibold text-ink-500">Last time</span>
+                <span className="block truncate text-sm font-bold text-ink-900">
+                  {[last.unit, last.address].filter(Boolean).join(", ")}
+                </span>
+              </span>
+              <span className="shrink-0 text-sm font-bold text-brand-700">Use</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={locate}
@@ -143,7 +229,7 @@ export default function DeliveryAddress({
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Or type your address or building"
+              placeholder="Or type your street, taman or building"
               aria-label="Search your address"
               autoComplete="street-address"
               className={`${input} min-w-0 flex-1`}
@@ -158,35 +244,44 @@ export default function DeliveryAddress({
           </form>
           {results && (
             <ul aria-label="Addresses found" className="divide-y divide-ink-100 overflow-hidden rounded-xl bg-white">
-              {results.length === 0 && <li className="px-4 py-3 text-sm text-ink-500">Nothing found. Try a building, street or area name.</li>}
+              {results.length === 0 && (
+                <li className="px-4 py-3 text-sm text-ink-500">Nothing found. Try just your street, taman or condo name, or use your current location.</li>
+              )}
               {results.map((r) => (
-                <li key={r.lat + r.lon}>
+                <li key={`${r.lat},${r.lng}`}>
                   <button
                     type="button"
-                    onClick={() => choose(Number(r.lat), Number(r.lon), short(r.display_name))}
+                    onClick={() => choose(r.lat, r.lng, r.label, house)}
                     className="block min-h-11 w-full px-4 py-2.5 text-left text-sm text-ink-800"
                   >
-                    {short(r.display_name)}
+                    {r.label}
                   </button>
                 </li>
               ))}
             </ul>
           )}
+          {results && results.length > 0 && (
+            <p className="text-xs text-ink-500">Can&apos;t see your house? Pick your street or taman, then add your house no. below.</p>
+          )}
           <p className="text-xs text-ink-500">We deliver up to {info.max_km} km.</p>
         </>
       )}
-      {value.quoting && <p className="text-sm text-ink-500">Getting the Lalamove price… this takes a few seconds.</p>}
+      {value.quoting && <p className="text-sm text-ink-500">Getting the delivery price… this takes a few seconds.</p>}
       {value.error && (
         <p role="alert" className="text-sm font-semibold text-rose-700">
           {value.error}
         </p>
       )}
-      {value.quote && <p className="text-sm text-ink-700">Delivery by Lalamove · {value.quote.distance_km} km</p>}
+      {value.quote && (
+        <p className="text-sm text-ink-700">
+          {value.quote.own ? "Delivered by our own rider" : "Delivery by Lalamove"} · {value.quote.distance_km} km
+        </p>
+      )}
       {picked && (
         <input
           value={value.unit}
           onChange={(e) => onChange((d) => ({ ...d, unit: e.target.value }))}
-          placeholder="Unit, floor or house no."
+          placeholder="House no., unit or floor (and street if not above)"
           aria-label="Unit, floor or house number"
           maxLength={100}
           className={input}
