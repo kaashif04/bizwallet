@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { MenuItem } from "@/lib/order-types";
 import { useCart } from "./cart-context";
@@ -58,52 +58,72 @@ export default function MenuView({
   // Inside the Steamboat tab, "Steamboat · Sets" reads just "Sets".
   const label = (c: string) => (tab && c.startsWith(`${tab} · `) ? c.slice(tab.length + 3) : c);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-  const clickScrolling = useRef(false);
+  const tray = useRef<HTMLDivElement>(null);
+  const pill = useRef<HTMLSpanElement>(null);
+  const pillText = useRef<HTMLSpanElement>(null);
+  const chips = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  // Scroll-spy: the category is the last section whose top has passed under the
-  // sticky header, read every frame while scrolling so the chips keep pace.
-  useEffect(() => {
+  // The highlight is driven by the scroll itself, not animated after it: while the
+  // next section rises under the header (the last GLIDE px), the pill slides from
+  // one chip to the next in step with the finger, and the tray scrolls with it.
+  // White labels sit on a copy of the row clipped to the pill, so text flips colour
+  // exactly at the pill's edge (as in iOS segmented controls).
+  const place = useRef(() => {});
+  place.current = () => {
     const offset = groups.length ? 192 : 128;
+    const GLIDE = 96;
+    let i = 0;
+    for (let k = 0; k < categories.length; k++) {
+      const el = sectionRefs.current[categories[k]];
+      if (!el) continue;
+      if (el.getBoundingClientRect().top > offset) break;
+      i = k;
+    }
+    // The last short sections never reach the header: at the bottom, the last one is current.
+    const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+    if (atEnd) i = categories.length - 1;
+    const cur = categories[i];
+    const next = atEnd ? undefined : categories[i + 1];
+    const nextTop = next ? sectionRefs.current[next]?.getBoundingClientRect().top : undefined;
+    const t = nextTop === undefined ? 0 : Math.min(1, Math.max(0, 1 - (nextTop - offset) / GLIDE));
+    if (cur !== undefined) setActive(t > 0.5 && next ? next : cur);
+
+    const from = chips.current[cur ?? ""];
+    const to = (next && chips.current[next]) || from; // next menu's chips aren't shown yet: hold still
+    if (!from || !to || !pill.current || !pillText.current || !tray.current) return;
+    const x = from.offsetLeft + (to.offsetLeft - from.offsetLeft) * t;
+    const w = from.offsetWidth + (to.offsetWidth - from.offsetWidth) * t;
+    pill.current.style.transform = `translateX(${x}px)`;
+    pill.current.style.width = `${w}px`;
+    pillText.current.style.transform = `translateX(${-x}px)`;
+    tray.current.scrollLeft = x + w / 2 - tray.current.clientWidth / 2;
+  };
+
+  useEffect(() => {
     let raf = 0;
-    const update = () => {
-      raf = 0;
-      if (clickScrolling.current) return;
-      let cur = categories[0] ?? "";
-      for (const c of categories) {
-        const el = sectionRefs.current[c];
-        if (!el) continue;
-        if (el.getBoundingClientRect().top > offset) break;
-        cur = c;
-      }
-      setActive(cur);
-    };
     const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(update);
+      if (!raf) raf = requestAnimationFrame(() => ((raf = 0), place.current()));
     };
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
       cancelAnimationFrame(raf);
     };
-  }, [categories, groups.length]);
-
-  // Keep the active chip centred in its tray. Scrolls the tray only (scrollIntoView
-  // also nudged the page, fighting the user's own scroll).
-  const chips = useRef<Record<string, HTMLButtonElement | null>>({});
-  useEffect(() => {
-    center(chips.current[active], true);
-  }, [active]);
+  }, []);
+  // New chips (another menu's tab, a filter): place the pill before the frame paints.
+  useLayoutEffect(() => place.current(), [tab, categories]);
 
   function pickTab(g: string) {
     const first = categories.find((c) => groupOf(c) === g);
     if (first) jumpTo(first);
   }
 
+  // The page glides there and the pill rides along with it.
   function jumpTo(cat: string) {
-    setActive(cat);
-    clickScrolling.current = true;
-    sectionRefs.current[cat]?.scrollIntoView({ behavior: "smooth", block: "start" });
-    window.setTimeout(() => (clickScrolling.current = false), 700);
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    sectionRefs.current[cat]?.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
   }
 
   return (
@@ -133,7 +153,7 @@ export default function MenuView({
               <button
                 key={g}
                 ref={(el) => {
-                  if (tab === g) center(el, false);
+                  if (tab === g) center(el);
                 }}
                 role="tab"
                 aria-selected={tab === g}
@@ -156,32 +176,32 @@ export default function MenuView({
           </div>
         )}
 
-        <div className="mx-5 mb-3 flex gap-1.5 overflow-x-auto rounded-full bg-white p-1.5 shadow-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {pills.map((c) => (
-            <button
-              key={c}
-              ref={(el) => {
-                chips.current[c] = el;
-              }}
-              type="button"
-              onClick={() => jumpTo(c)}
-              aria-current={active === c ? "true" : undefined}
-              className={`relative whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                active === c
-                  ? "text-on"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              {active === c && (
-                <motion.span
-                  layoutId={`menu-cat-pill-${tab}`}
-                  className="absolute inset-0 rounded-full bg-accent-600"
-                  transition={{ type: "spring", stiffness: 700, damping: 45 }}
-                />
-              )}
-              <span className="relative z-10">{label(c)}</span>
-            </button>
-          ))}
+        <div ref={tray} className="mx-5 mb-3 overflow-x-auto rounded-full bg-white p-1.5 shadow-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="relative flex w-max gap-1.5">
+            {pills.map((c) => (
+              <button
+                key={c}
+                ref={(el) => {
+                  chips.current[c] = el;
+                }}
+                type="button"
+                onClick={() => jumpTo(c)}
+                aria-current={active === c ? "true" : undefined}
+                className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold text-slate-600 [@media(hover:hover)]:hover:text-slate-900"
+              >
+                {label(c)}
+              </button>
+            ))}
+            <span ref={pill} aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 w-0 overflow-hidden rounded-full bg-accent-600 will-change-transform">
+              <span ref={pillText} className="flex w-max gap-1.5 will-change-transform">
+                {pills.map((c) => (
+                  <span key={c} className="whitespace-nowrap px-4 py-2 text-sm font-semibold text-on">
+                    {label(c)}
+                  </span>
+                ))}
+              </span>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -365,11 +385,11 @@ function MenuItemCard({
   );
 }
 
-// Scroll a chip/tab to the middle of its own horizontal row, leaving the page alone.
-function center(el: HTMLElement | null | undefined, smooth: boolean) {
+// Scroll a tab to the middle of its own row, leaving the page alone.
+function center(el: HTMLElement | null | undefined) {
   const row = el?.parentElement;
   if (!el || !row) return;
   const r = el.getBoundingClientRect();
   const p = row.getBoundingClientRect();
-  row.scrollTo({ left: row.scrollLeft + r.left - p.left - (p.width - r.width) / 2, behavior: smooth ? "smooth" : "auto" });
+  row.scrollLeft += r.left - p.left - (p.width - r.width) / 2;
 }

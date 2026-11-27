@@ -16,6 +16,7 @@ import { storeNames } from "@/lib/places";
 import JoinPrompt from "./JoinPrompt";
 import { useCart } from "./cart-context";
 import { useVisitCheck } from "./TableVisit";
+import MenuSkeleton from "./MenuSkeleton";
 import MenuView from "./MenuView";
 import AddToCartSheet from "./AddToCartSheet";
 import PickupTime from "./PickupTime";
@@ -259,29 +260,7 @@ export default function GuestOrder(
     );
   }
 
-  if (!menu) {
-    return (
-      <main className="mx-auto max-w-md px-5 pt-6" aria-busy="true" aria-label="Loading menu">
-        <div className="h-8 w-52 animate-pulse rounded-lg bg-slate-200" />
-        <div className="mt-4 flex gap-2">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-9 w-20 animate-pulse rounded-full bg-white" />
-          ))}
-        </div>
-        <div className="mt-8 divide-y divide-slate-100 rounded-3xl bg-white">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center gap-4 p-4">
-              <div className="h-16 w-16 animate-pulse rounded-2xl bg-slate-100" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100" />
-                <div className="h-3 w-1/3 animate-pulse rounded bg-slate-100" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
-    );
-  }
+  if (!menu) return <MenuSkeleton />;
 
   const byId = new Map(items.map((i) => [i.id, i]));
   const oneTap = new Map(items.filter((i) => !groupsByItem[i.id]?.length && !i.combos?.length).map((i) => [i.id, i]));
