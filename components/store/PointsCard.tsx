@@ -41,10 +41,11 @@ export default function PointsCard({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="relative block w-full overflow-hidden rounded-3xl bg-marple-card p-5 text-left text-on shadow-sm transition active:scale-[0.99]"
+        className="relative block w-full overflow-hidden rounded-3xl bg-[#CA2851] bg-cover bg-bottom p-5 text-left text-on shadow-sm transition active:scale-[0.99]"
+        // Crimson silk with its glow bottom-right; a light shade top-left keeps the number and buttons crisp.
+        style={{ backgroundImage: "linear-gradient(135deg, rgba(120,10,40,.35), rgba(120,10,40,0) 60%), url(/cards/points.jpg)" }}
         aria-label={`${points} points. Open rewards`}
       >
-        <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#FFE3B3]/30 blur-3xl" />
         <span className="relative flex items-center justify-between gap-3">
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-on/80">Your points</span>
           {place.tier.name && (
