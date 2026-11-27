@@ -2782,6 +2782,7 @@ export type Database = {
           delivery_enabled: boolean
           delivery_free_above: number | null
           own_delivery_fee: number
+          own_delivery_free_above: number | null
           own_delivery_hours: string[] | null
           own_delivery_km: number | null
           delivery_markup_pct: number
@@ -2870,6 +2871,7 @@ export type Database = {
           delivery_enabled?: boolean
           delivery_free_above?: number | null
           own_delivery_fee?: number
+          own_delivery_free_above?: number | null
           own_delivery_hours?: string[] | null
           own_delivery_km?: number | null
           delivery_markup_pct?: number
@@ -2958,6 +2960,7 @@ export type Database = {
           delivery_enabled?: boolean
           delivery_free_above?: number | null
           own_delivery_fee?: number
+          own_delivery_free_above?: number | null
           own_delivery_hours?: string[] | null
           own_delivery_km?: number | null
           delivery_markup_pct?: number

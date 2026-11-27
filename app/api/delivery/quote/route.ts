@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   const [{ data: s }, { data: o }] = await Promise.all([
     admin
       .from("outlet_settings")
-      .select("delivery_enabled, delivery_max_km, delivery_markup_rm, delivery_markup_pct, delivery_free_above, own_delivery_km, own_delivery_fee, store_lat, store_lng, store_address")
+      .select("delivery_enabled, delivery_max_km, delivery_markup_rm, delivery_markup_pct, delivery_free_above, own_delivery_km, own_delivery_fee, own_delivery_free_above, store_lat, store_lng, store_address")
       .eq("outlet_id", outlet_id)
       .maybeSingle(),
     admin.from("outlets").select("name, address, company_id").eq("id", outlet_id).maybeSingle(),
@@ -63,7 +63,8 @@ export async function POST(request: Request) {
       console.error("own delivery quote", error);
       return NextResponse.json({ error: "Couldn't get a delivery price. Try again." }, { status: 502 });
     }
-    return NextResponse.json({ id: row.id, fee, distance_km: Math.round(straight * 10) / 10, expires_at: expires, free_above: freeAbove, own: true });
+    return NextResponse.json({ id: row.id, fee, distance_km: Math.round(straight * 10) / 10, expires_at: expires, own: true,
+      free_above: s.own_delivery_free_above == null ? null : Number(s.own_delivery_free_above) });
   }
 
   const keys = await companyKeys(o.company_id);
