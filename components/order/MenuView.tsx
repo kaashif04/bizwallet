@@ -47,84 +47,12 @@ export default function MenuView({
   );
   const groupOf = (c: string) => items.find((i) => i.category === c)?.menuGroup ?? "Other";
 
-  const [active, setActive] = useState(categories[0] ?? "");
-  // A filter (Vegetarian only) can hide the highlighted category.
-  useEffect(() => {
-    if (!categories.includes(active)) setActive(categories[0] ?? "");
-  }, [categories, active]);
-  // The tab follows the section on screen; the pills show that tab's categories only.
-  const tab = groups.length ? groupOf(active) : "";
-  const pills = groups.length ? categories.filter((c) => groupOf(c) === tab) : categories;
-  // Inside the Steamboat tab, "Steamboat · Sets" reads just "Sets".
-  const label = (c: string) => (tab && c.startsWith(`${tab} · `) ? c.slice(tab.length + 3) : c);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-  const tray = useRef<HTMLDivElement>(null);
-  const pill = useRef<HTMLSpanElement>(null);
-  const pillText = useRef<HTMLSpanElement>(null);
-  const chips = useRef<Record<string, HTMLButtonElement | null>>({});
-
-  // The highlight is driven by the scroll itself, not animated after it: while the
-  // next section rises under the header (the last GLIDE px), the pill slides from
-  // one chip to the next in step with the finger, and the tray scrolls with it.
-  // White labels sit on a copy of the row clipped to the pill, so text flips colour
-  // exactly at the pill's edge (as in iOS segmented controls).
-  const place = useRef(() => {});
-  place.current = () => {
-    const offset = groups.length ? 192 : 128;
-    const GLIDE = 96;
-    let i = 0;
-    for (let k = 0; k < categories.length; k++) {
-      const el = sectionRefs.current[categories[k]];
-      if (!el) continue;
-      if (el.getBoundingClientRect().top > offset) break;
-      i = k;
-    }
-    // The last short sections never reach the header: at the bottom, the last one is current.
-    const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
-    if (atEnd) i = categories.length - 1;
-    const cur = categories[i];
-    const next = atEnd ? undefined : categories[i + 1];
-    const nextTop = next ? sectionRefs.current[next]?.getBoundingClientRect().top : undefined;
-    const t = nextTop === undefined ? 0 : Math.min(1, Math.max(0, 1 - (nextTop - offset) / GLIDE));
-    if (cur !== undefined) setActive(t > 0.5 && next ? next : cur);
-
-    const from = chips.current[cur ?? ""];
-    const to = (next && chips.current[next]) || from; // next menu's chips aren't shown yet: hold still
-    if (!from || !to || !pill.current || !pillText.current || !tray.current) return;
-    const x = from.offsetLeft + (to.offsetLeft - from.offsetLeft) * t;
-    const w = from.offsetWidth + (to.offsetWidth - from.offsetWidth) * t;
-    pill.current.style.transform = `translateX(${x}px)`;
-    pill.current.style.width = `${w}px`;
-    pillText.current.style.transform = `translateX(${-x}px)`;
-    tray.current.scrollLeft = x + w / 2 - tray.current.clientWidth / 2;
+  // Inside the Steamboat menu, "Steamboat · Sets" reads just "Sets".
+  const label = (c: string) => {
+    const g = groupOf(c);
+    return groups.length && c.startsWith(`${g} · `) ? c.slice(g.length + 3) : c;
   };
-
-  useEffect(() => {
-    let raf = 0;
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(() => ((raf = 0), place.current()));
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-  // New chips (another menu's tab, a filter): place the pill before the frame paints.
-  useLayoutEffect(() => place.current(), [tab, categories]);
-
-  function pickTab(g: string) {
-    const first = categories.find((c) => groupOf(c) === g);
-    if (first) jumpTo(first);
-  }
-
-  // The page glides there and the pill rides along with it.
-  function jumpTo(cat: string) {
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    sectionRefs.current[cat]?.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
-  }
 
   return (
     <div className="mx-auto max-w-md">
@@ -141,68 +69,7 @@ export default function MenuView({
           <AccountChip state={account} />
         </div>
 
-        {/* Menus (Chinese / Steamboat / Beverages): text tabs on an underline, so they read as
-            the level above the category pills rather than a second row of pills. */}
-        {groups.length > 0 && (
-          <div
-            role="tablist"
-            aria-label="Menus"
-            className="mx-4 mb-3 flex overflow-x-auto border-b border-ink-200 min-[360px]:mx-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            {groups.map((g) => (
-              <button
-                key={g}
-                ref={(el) => {
-                  if (tab === g) center(el);
-                }}
-                role="tab"
-                aria-selected={tab === g}
-                type="button"
-                onClick={() => pickTab(g)}
-                className={`relative min-h-11 flex-1 shrink-0 whitespace-nowrap px-2 pb-2.5 pt-1 text-sm font-bold transition-colors min-[360px]:px-3 min-[360px]:text-[0.9375rem] ${
-                  tab === g ? "text-ink-900" : "text-ink-500 hover:text-ink-700"
-                }`}
-              >
-                {g}
-                {tab === g && (
-                  <motion.span
-                    layoutId="menu-group-bar"
-                    className="absolute inset-x-2 -bottom-px h-[3px] rounded-full bg-accent-600"
-                    transition={{ type: "spring", stiffness: 500, damping: 38 }}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div ref={tray} className="mx-5 mb-3 overflow-x-auto rounded-full bg-white p-1.5 shadow-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="relative flex w-max gap-1.5">
-            {pills.map((c) => (
-              <button
-                key={c}
-                ref={(el) => {
-                  chips.current[c] = el;
-                }}
-                type="button"
-                onClick={() => jumpTo(c)}
-                aria-current={active === c ? "true" : undefined}
-                className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold text-slate-600 [@media(hover:hover)]:hover:text-slate-900"
-              >
-                {label(c)}
-              </button>
-            ))}
-            <span ref={pill} aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 w-0 overflow-hidden rounded-full bg-accent-600 will-change-transform">
-              <span ref={pillText} className="flex w-max gap-1.5 will-change-transform">
-                {pills.map((c) => (
-                  <span key={c} className="whitespace-nowrap px-4 py-2 text-sm font-semibold text-on">
-                    {label(c)}
-                  </span>
-                ))}
-              </span>
-            </span>
-          </div>
-        </div>
+        <CategoryBar categories={categories} groups={groups} groupOf={groupOf} label={label} sectionRefs={sectionRefs} />
       </div>
 
       {/* Menu sections */}
@@ -392,4 +259,177 @@ function center(el: HTMLElement | null | undefined) {
   const r = el.getBoundingClientRect();
   const p = row.getBoundingClientRect();
   row.scrollLeft += r.left - p.left - (p.width - r.width) / 2;
+}
+
+// Menu tabs + category chips. Its own component so the highlight changing re-renders
+// only this bar, never the dish cards below (that re-render was the stutter).
+//
+// The pill is driven by the scroll itself: while the next section rises under the
+// header (the last GLIDE px) it slides chip to chip in step with the finger, and the
+// tray scrolls with it. Positions are measured once (and on resize / images loading),
+// so a frame only reads scrollY and writes transforms. White labels sit on a copy of
+// the row clipped to the pill, so text turns white exactly at its edge.
+function CategoryBar({
+  categories,
+  groups,
+  groupOf,
+  label,
+  sectionRefs,
+}: {
+  categories: string[];
+  groups: string[];
+  groupOf: (c: string) => string;
+  label: (c: string) => string;
+  sectionRefs: React.MutableRefObject<Record<string, HTMLElement | null>>;
+}) {
+  const [active, setActive] = useState(categories[0] ?? "");
+  const tab = groups.length ? groupOf(active) : "";
+  const pills = groups.length ? categories.filter((c) => groupOf(c) === tab) : categories;
+  const tray = useRef<HTMLDivElement>(null);
+  const pill = useRef<HTMLSpanElement>(null);
+  const pillText = useRef<HTMLSpanElement>(null);
+  const chips = useRef<Record<string, HTMLButtonElement | null>>({});
+  const m = useRef({ tops: [] as number[], end: 0, chip: {} as Record<string, [number, number]>, trayW: 0 });
+
+  const measure = useRef(() => {});
+  measure.current = () => {
+    const y = window.scrollY;
+    m.current.tops = categories.map((c) => (sectionRefs.current[c]?.getBoundingClientRect().top ?? Infinity) + y);
+    m.current.end = document.documentElement.scrollHeight - window.innerHeight - 2;
+    m.current.chip = {};
+    for (const c of pills) {
+      const el = chips.current[c];
+      if (el) m.current.chip[c] = [el.offsetLeft, el.offsetWidth];
+    }
+    m.current.trayW = tray.current?.clientWidth ?? 0;
+  };
+
+  const place = useRef(() => {});
+  place.current = () => {
+    const { tops, end, chip, trayW } = m.current;
+    const y = window.scrollY;
+    const line = y + (groups.length ? 192 : 128); // just under the sticky header
+    const GLIDE = 96;
+    let i = 0;
+    while (i + 1 < tops.length && tops[i + 1] <= line) i++;
+    const atEnd = y >= end; // short last sections never reach the header
+    if (atEnd) i = categories.length - 1;
+    const cur = categories[i];
+    const next = atEnd ? undefined : categories[i + 1];
+    const t = next ? Math.min(1, Math.max(0, 1 - (tops[i + 1] - line) / GLIDE)) : 0;
+    if (cur !== undefined) setActive(t > 0.5 && next ? next : cur);
+
+    const from = chip[cur ?? ""];
+    const to = (next && chip[next]) || from; // next menu's chips aren't shown yet: hold
+    if (!from || !to || !pill.current || !pillText.current || !tray.current) return;
+    const x = from[0] + (to[0] - from[0]) * t;
+    const w = from[1] + (to[1] - from[1]) * t;
+    pill.current.style.transform = `translate3d(${x}px,0,0)`;
+    pill.current.style.width = `${w}px`;
+    pillText.current.style.transform = `translate3d(${-x}px,0,0)`;
+    const left = Math.round(x + w / 2 - trayW / 2);
+    if (Math.abs(tray.current.scrollLeft - left) >= 1) tray.current.scrollLeft = left;
+  };
+
+  useEffect(() => {
+    let raf = 0;
+    const frame = () => {
+      if (!raf) raf = requestAnimationFrame(() => ((raf = 0), place.current()));
+    };
+    const remeasure = () => (measure.current(), frame());
+    window.addEventListener("scroll", frame, { passive: true });
+    window.addEventListener("resize", remeasure);
+    // Photos, the best-sellers row and the vegetarian filter all move the sections.
+    const ro = new ResizeObserver(remeasure);
+    const list = Object.values(sectionRefs.current).find(Boolean)?.parentElement;
+    if (list) ro.observe(list);
+    return () => {
+      window.removeEventListener("scroll", frame);
+      window.removeEventListener("resize", remeasure);
+      ro.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [categories, sectionRefs]);
+  // New chips (another menu's tab, a filter): measure and place before the frame paints.
+  useLayoutEffect(() => {
+    measure.current();
+    place.current();
+  }, [tab, categories]);
+
+  function pickTab(g: string) {
+    const first = categories.find((c) => groupOf(c) === g);
+    if (first) jumpTo(first);
+  }
+  // The page glides there and the pill rides along with it.
+  function jumpTo(cat: string) {
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    sectionRefs.current[cat]?.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
+  }
+
+  return (
+    <>
+        {/* Menus (Chinese / Steamboat / Beverages): text tabs on an underline, so they read as
+            the level above the category pills rather than a second row of pills. */}
+        {groups.length > 0 && (
+          <div
+            role="tablist"
+            aria-label="Menus"
+            className="mx-4 mb-3 flex overflow-x-auto border-b border-ink-200 min-[360px]:mx-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {groups.map((g) => (
+              <button
+                key={g}
+                ref={(el) => {
+                  if (tab === g) center(el);
+                }}
+                role="tab"
+                aria-selected={tab === g}
+                type="button"
+                onClick={() => pickTab(g)}
+                className={`relative min-h-11 flex-1 shrink-0 whitespace-nowrap px-2 pb-2.5 pt-1 text-sm font-bold transition-colors min-[360px]:px-3 min-[360px]:text-[0.9375rem] ${
+                  tab === g ? "text-ink-900" : "text-ink-500 hover:text-ink-700"
+                }`}
+              >
+                {g}
+                {tab === g && (
+                  <motion.span
+                    layoutId="menu-group-bar"
+                    className="absolute inset-x-2 -bottom-px h-[3px] rounded-full bg-accent-600"
+                    transition={{ type: "spring", stiffness: 500, damping: 38 }}
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div ref={tray} className="mx-5 mb-3 overflow-x-auto rounded-full bg-white p-1.5 shadow-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="relative flex w-max gap-1.5">
+            {pills.map((c) => (
+              <button
+                key={c}
+                ref={(el) => {
+                  chips.current[c] = el;
+                }}
+                type="button"
+                onClick={() => jumpTo(c)}
+                aria-current={active === c ? "true" : undefined}
+                className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold text-slate-600 [@media(hover:hover)]:hover:text-slate-900"
+              >
+                {label(c)}
+              </button>
+            ))}
+            <span ref={pill} aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 w-0 overflow-hidden rounded-full bg-accent-600 will-change-transform">
+              <span ref={pillText} className="flex w-max gap-1.5 will-change-transform">
+                {pills.map((c) => (
+                  <span key={c} className="whitespace-nowrap px-4 py-2 text-sm font-semibold text-on">
+                    {label(c)}
+                  </span>
+                ))}
+              </span>
+            </span>
+          </div>
+        </div>
+    </>
+  );
 }
